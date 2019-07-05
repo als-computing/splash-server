@@ -1,5 +1,5 @@
-# splash-ui
-User interface web app for M-WET splash application
+# splash-server
+Server for the Splash application
 
 # Description
 This application demonstrates capabilities of a web application that serves MWET data. It consists of 
