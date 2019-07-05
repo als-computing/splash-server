@@ -1,0 +1,5 @@
+
+db.compounds.createIndex(
+    {"name": "text"},
+    {"unique": true}
+)

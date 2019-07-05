@@ -1,0 +1,10 @@
+sphinx
+recommonmark
+pytest
+pytest-flask
+pytest-mongodb
+
+#only use CORS when in dev and you don't share a port behind a web server
+flask_cors==3.0.7
+
+###
