@@ -8,12 +8,12 @@ import json
 import os
 from splash.config import Config
 from splash.data import MongoCollectionDao, ObjectNotFoundError, BadIdError
-from splash.bluesky_dao import IntakeBlueSkyDao
 from splash.visualization import rsoxs
 from splash.util import context_timer
 from bokeh.plotting import figure
 from bokeh.embed import json_item
 import logging
+import pathlib
 
 API_URL_ROOT = "/api"
 COMPOUNDS_URL_ROOT = API_URL_ROOT + "/compounds"
@@ -59,6 +59,10 @@ def create_app():
 # if app is None:
 #     app = create_app()
 SPLASH_SERVER_DIR = os.environ.get("SPLASH_SERVER_DIR")
+if SPLASH_SERVER_DIR == None:
+    SPLASH_SERVER_DIR = str(pathlib.Path.home() / ".splash")
+
+
 SPLASH_CONFIG_FILE = SPLASH_SERVER_DIR + "/config.cfg" if SPLASH_SERVER_DIR is not None else "/config.cfg"
 config = Config(SPLASH_CONFIG_FILE)
 CFG_APP_DB = 'AppDB'
@@ -70,10 +74,10 @@ WEB_IMAGE_FOLDER_ROOT = config.get(CFG_WEB, 'image_root_folder', fallback='image
 app = create_app()
 
 
-def get_experiment_dao():
+def get_compound_dao():
     try:
         db = MongoClient(MONGO_URL)  # , ssl=True, ssl_ca_certs=certifi.where(), connect=False)
-        return MongoCollectionDao(db.efrc.experiments)
+        return MongoCollectionDao(db.efrc.compounds)
     except Exception as e:
         logger.info("Unable to connect to database: " + str(e))
         print("Unable to connect to database: " + str(e))
@@ -153,9 +157,7 @@ def delete_compound(compound_id):
     except BadIdError as e:
         abort(400, e)
 
-def naxafs_to_xy_graph(event):
-    xy_obj = {'y': event['data']['det1'], 'x': event['data']['mono_chrome_motor']}
-    return dumps(xy_obj)
+
 
 
 
