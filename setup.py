@@ -15,7 +15,7 @@ setup(
     description='RESTFul splash for CRUD operations on Splash data',  # Optional
     long_description=long_description,  # Optional
     long_description_content_type='text/markdown',  # Optional (see note above)
-    url='https://github.com/als-compute/splash-app',  # Optional
+    url='https://github.com/als-computing/splash-server',  # Optional
     author='Dylan McReynolds',  # Optional
     author_email='dmcreynolds@lbl.gov',  # Optional
 
@@ -36,26 +36,11 @@ setup(
 
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),  # Required
     python_requires='>=3.5',
-    install_requires=['flask', 'flask_cors', 'pymongo', 'certifi', 
-    'suitcase-json1', 'suitcase-mongo', 'suitcase-tiff', 'event', 'bluesky', 'pytest', 'pytest-flask',
-    'pytest-mongodb','bokeh'],  # Optional
+    install_requires=['flask', 'flask_cors', 'pymongo', 'bokeh'],  # Optional
 
-#    extras_require={  # Optional
-#        'dev': ['check-manifest'],
-#        'test': ['coverage'],
-#    },
-
-
-    # To provide executable scripts, use entry points in preference to the
-    # "scripts" keyword. Entry points provide cross-platform support and allow
-    # `pip` to create the appropriate form of executable for the target
-    # platform.
-    #
-    # For example, the following would provide a command called `sample` which
-    # executes the function `main` from this package when invoked:
     entry_points={  # Optional
         'console_scripts': [
-            'srun=rest_service:main',
+            'splash=server:main',
         ],
     },
 
