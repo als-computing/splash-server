@@ -162,8 +162,9 @@ def delete_compound(compound_id):
 
 
 # </editor-fold>
-
-
-if __name__ == '__main__':
+def main(args=None):
     logger.info("-----In Main")
     app.run()
+
+if __name__ == '__main__':
+    main()

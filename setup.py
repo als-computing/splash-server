@@ -10,23 +10,16 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
 
-    name='splash-service-alscompute',  # Required
-    version='0.0.1',  # Required
-    description='RESTFul splash for CRUD operations on Splash data',  # Optional
-    long_description=long_description,  # Optional
-    long_description_content_type='text/markdown',  # Optional (see note above)
-    url='https://github.com/als-computing/splash-server',  # Optional
-    author='Dylan McReynolds',  # Optional
-    author_email='dmcreynolds@lbl.gov',  # Optional
+    name='splash-server',  
+    version='0.0.1',
+    description='RESTFul splash for CRUD operations on Splash data', 
+    long_description=long_description,  
+    long_description_content_type='text/markdown', 
+    url='https://github.com/als-computing/splash-server',  
+    author='Dylan McReynolds', 
+    author_email='dmcreynolds@lbl.gov',  
 
-    # Classifiers help users find your project by categorizing it.
-    #
-    # For a list of valid classifiers, see https://pypi.org/classifiers/
     classifiers=[  # Optional
-        # How mature is this project? Common values are
-        #   3 - Alpha
-        #   4 - Beta
-        #   5 - Production/Stable
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Science/Research',
         'Topic :: Software Development :: Build Tools',
@@ -34,11 +27,11 @@ setup(
         'Programming Language :: Python :: 3.7',
     ],
 
-    packages=find_packages(exclude=['contrib', 'docs', 'tests']),  # Required
+    packages=find_packages(exclude=['contrib', 'docs', 'tests']), 
     python_requires='>=3.5',
-    install_requires=['flask', 'flask_cors', 'pymongo', 'bokeh'],  # Optional
+    install_requires=['flask', 'flask_cors', 'pymongo', 'bokeh'], 
 
-    entry_points={  # Optional
+    entry_points={
         'console_scripts': [
             'splash=server:main',
         ],
