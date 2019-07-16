@@ -14,10 +14,19 @@ from bokeh.plotting import figure
 from bokeh.embed import json_item
 import logging
 import pathlib
+import jsonschema 
+
+dirname = os.path.dirname(__file__)
 
 API_URL_ROOT = "/api"
 COMPOUNDS_URL_ROOT = API_URL_ROOT + "/compounds"
+EXPERIMENTS_URL_ROOT = API_URL_ROOT + "/experiments"
 RUNS_URL_ROOT = API_URL_ROOT + "/runs"
+
+experiments_schema_file = open(os.path.join(dirname, "schema", "experiment_schema.json"))
+EXPERIMENTS_SCHEMA = json.load(experiments_schema_file)
+experiments_schema_file.close()
+
 app = None
 logger = logging.getLogger('simple_example')
 
@@ -83,6 +92,14 @@ def get_compound_dao():
         print("Unable to connect to database: " + str(e))
         return
 
+def get_experiments_dao():
+    try:
+        db = MongoClient(MONGO_URL)
+        return MongoCollectionDao(db.efrc.experiments)
+    except Exception as e:
+        logger.info("Unable to connect to database: " + str(e))
+        print("Unable to connect to database: " + str(e))
+        return
 
 # @app.teardown_appcontext
 # def teardown_db(exception):
@@ -127,7 +144,7 @@ def create_compound():
         data = json.loads(request.data)
         get_compound_dao().create(data)
         return dumps({'message': 'CREATE SUCCESS', 'uid': str(data['uid'])})
-    except Exception as e:
+    except Exception as e: # TODO: make the except blocks more specific to different error types
         return dumps({'error': str(e)})
 
 
@@ -157,7 +174,17 @@ def delete_compound(compound_id):
     except BadIdError as e:
         abort(400, e)
 
-
+@app.route(EXPERIMENTS_URL_ROOT, methods=['POST'])
+def create_experiment():
+    try:
+        data = json.loads(request.data)
+        jsonschema.validate(data, EXPERIMENTS_SCHEMA)
+        get_experiments_dao().create(data)
+        return dumps({'message': 'CREATE SUCCESS', 'uid': str(data['uid'])})
+    except jsonschema.exceptions.ValidationError as e:
+        abort(400, e)
+    except Exception as e: # TODO: make the except blocks more specific to different error types
+        return dumps({'error': str(e)})
 
 
 
