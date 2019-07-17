@@ -92,7 +92,7 @@ def get_compound_dao():
         print("Unable to connect to database: " + str(e))
         return
 
-def get_experiments_dao():
+def get_experiment_dao():
     try:
         db = MongoClient(MONGO_URL)
         return MongoCollectionDao(db.efrc.experiments)
@@ -179,13 +179,26 @@ def create_experiment():
     try:
         data = json.loads(request.data)
         jsonschema.validate(data, EXPERIMENTS_SCHEMA)
-        get_experiments_dao().create(data)
+        get_experiment_dao().create(data)
         return dumps({'message': 'CREATE SUCCESS', 'uid': str(data['uid'])})
     except jsonschema.exceptions.ValidationError as e:
         abort(400, e)
     except Exception as e: # TODO: make the except blocks more specific to different error types
         return dumps({'error': str(e)})
 
+@app.route(EXPERIMENTS_URL_ROOT + "/<experiment_id>", methods=['GET'])
+def retrieve_experiment(experiment_id):
+    try:
+        data_svc = get_experiment_dao()
+        experiment = data_svc.retrieve(experiment_id)
+        if experiment is None:
+            abort(404)
+        json = dumps(experiment)
+        return json
+    except ObjectNotFoundError as e:
+        abort(404)
+    except BadIdError as e:
+        abort(400, str(BadIdError))
 
 
 # </editor-fold>
