@@ -174,6 +174,7 @@ def delete_compound(compound_id):
     except BadIdError as e:
         abort(400, e)
 
+
 @app.route(EXPERIMENTS_URL_ROOT, methods=['POST'])
 def create_experiment():
     try:
@@ -185,6 +186,7 @@ def create_experiment():
         abort(400, e)
     except Exception as e: # TODO: make the except blocks more specific to different error types
         return dumps({'error': str(e)})
+
 
 @app.route(EXPERIMENTS_URL_ROOT + "/<experiment_id>", methods=['GET'])
 def retrieve_experiment(experiment_id):
@@ -199,6 +201,18 @@ def retrieve_experiment(experiment_id):
         abort(404)
     except BadIdError as e:
         abort(400, str(BadIdError))
+
+@app.route(EXPERIMENTS_URL_ROOT, methods=['GET'])
+def retrieve_experiments():
+    try:
+        data_svc = get_experiment_dao()
+        experiments = data_svc.retrieve_many()
+        json = dumps(experiments)
+        return json
+    except Exception as e:
+        logger.warning(str(e))
+        return dumps({'error': str(e)})
+
 
 
 # </editor-fold>
