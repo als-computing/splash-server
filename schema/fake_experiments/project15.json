@@ -1,0 +1,82 @@
+{
+    "name": "incubate viral web services tests",
+    "technique": {
+        "name": "sample_technique",
+        "technique_metadata": {
+            "some_stuff": "some more things",
+            "some_more_stuff": "some things"
+        }
+    },
+    "experiment_metadata": {
+        "gap": "2"
+    },
+    "researcher": {
+        "mwet_id": "4368a8dc-4cf0-4516-9dfd-cb640c82b87d",
+        "name": "Kaylee Hopkins",
+        "group": "Matthews",
+        "institution": "UT"
+    },
+    "experimental_conditions": {
+        "run_time": "7 days",
+        "membrane_or_polymer_area": "1 cm^2"
+    },
+    "trials": [
+        {
+            "membrane_or_polymer": "H35",
+            "ph": 7,
+            "ionic_strength": {
+                "value": 0.01,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Kc"
+            ],
+            "adsorbing": "Kc"
+        },
+        {
+            "membrane_or_polymer": "H35",
+            "ph": 10,
+            "ionic_strength": {
+                "value": 0.01,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Kc"
+            ],
+            "adsorbing": "Kc"
+        },
+        {
+            "membrane_or_polymer": "H35",
+            "pH": 7,
+            "ionic_strength": {
+                "value": 0.1,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Kc"
+            ],
+            "adsorbing": "Kc"
+        },
+        {
+            "membrane_or_polymer": "H35",
+            "ph": 10,
+            "ionic_strength": {
+                "value": 0.1,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Kc"
+            ],
+            "adsorbing": "Kc"
+        }
+    ],
+    "uid": "ffaa3645-c836-44d1-a085-8d334fc23c95"
+}

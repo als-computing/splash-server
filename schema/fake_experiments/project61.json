@@ -1,0 +1,82 @@
+{
+    "name": "streamline synergistic info-mediaries tests",
+    "technique": {
+        "name": "sample_technique",
+        "technique_metadata": {
+            "some_stuff": "some more things",
+            "some_more_stuff": "some things"
+        }
+    },
+    "experiment_metadata": {
+        "gap": "3"
+    },
+    "researcher": {
+        "mwet_id": "ac3677b8-b2ce-4e46-9651-5c1fc9ead6ff",
+        "name": "Amanda Reilly",
+        "group": "Ford",
+        "institution": "UT"
+    },
+    "experimental_conditions": {
+        "run_time": "7 days",
+        "membrane_or_polymer_area": "1 cm^2"
+    },
+    "trials": [
+        {
+            "membrane_or_polymer": "I47",
+            "ph": 7,
+            "ionic_strength": {
+                "value": 0.01,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Db"
+            ],
+            "adsorbing": "Db"
+        },
+        {
+            "membrane_or_polymer": "I47",
+            "ph": 10,
+            "ionic_strength": {
+                "value": 0.01,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Db"
+            ],
+            "adsorbing": "Db"
+        },
+        {
+            "membrane_or_polymer": "I47",
+            "pH": 7,
+            "ionic_strength": {
+                "value": 0.1,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Db"
+            ],
+            "adsorbing": "Db"
+        },
+        {
+            "membrane_or_polymer": "I47",
+            "ph": 10,
+            "ionic_strength": {
+                "value": 0.1,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Db"
+            ],
+            "adsorbing": "Db"
+        }
+    ],
+    "uid": "cf24645d-e9f5-4b73-8dae-04958e44558f"
+}
