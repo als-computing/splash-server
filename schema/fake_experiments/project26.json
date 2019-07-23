@@ -1,0 +1,82 @@
+{
+    "name": "embrace revolutionary action-items tests",
+    "technique": {
+        "name": "sample_technique",
+        "technique_metadata": {
+            "some_stuff": "some more things",
+            "some_more_stuff": "some things"
+        }
+    },
+    "experiment_metadata": {
+        "gap": "2"
+    },
+    "researcher": {
+        "mwet_id": "4368a8dc-4cf0-4516-9dfd-cb640c82b87d",
+        "name": "Kaylee Hopkins",
+        "group": "Hartman",
+        "institution": "UCSB"
+    },
+    "experimental_conditions": {
+        "run_time": "7 days",
+        "membrane_or_polymer_area": "1 cm^2"
+    },
+    "trials": [
+        {
+            "membrane_or_polymer": "E46",
+            "ph": 7,
+            "ionic_strength": {
+                "value": 0.01,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Kc"
+            ],
+            "adsorbing": "Kc"
+        },
+        {
+            "membrane_or_polymer": "E46",
+            "ph": 10,
+            "ionic_strength": {
+                "value": 0.01,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Kc"
+            ],
+            "adsorbing": "Kc"
+        },
+        {
+            "membrane_or_polymer": "E46",
+            "pH": 7,
+            "ionic_strength": {
+                "value": 0.1,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Kc"
+            ],
+            "adsorbing": "Kc"
+        },
+        {
+            "membrane_or_polymer": "E46",
+            "ph": 10,
+            "ionic_strength": {
+                "value": 0.1,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Kc"
+            ],
+            "adsorbing": "Kc"
+        }
+    ],
+    "uid": "1a990f7a-8ad4-4dbc-9b9a-2a05d13f2f5d"
+}

@@ -1,5 +1,5 @@
 from flask import Flask, jsonify
-from flask import request, Response
+from flask import request, Response, make_response
 from pymongo import MongoClient
 from bson.json_util import dumps
 from flask_cors import CORS, cross_origin
@@ -29,6 +29,11 @@ experiments_schema_file.close()
 
 app = None
 logger = logging.getLogger('simple_example')
+
+
+#define custom exceptions
+class NoIdProvidedError(Exception):
+    pass
 
 
 def setup_logging():
@@ -84,22 +89,12 @@ app = create_app()
 
 
 def get_compound_dao():
-    try:
-        db = MongoClient(MONGO_URL)  # , ssl=True, ssl_ca_certs=certifi.where(), connect=False)
-        return MongoCollectionDao(db.efrc.compounds)
-    except Exception as e:
-        logger.info("Unable to connect to database: " + str(e))
-        print("Unable to connect to database: " + str(e))
-        return
+    db = MongoClient(MONGO_URL)  # , ssl=True, ssl_ca_certs=certifi.where(), connect=False)
+    return MongoCollectionDao(db.efrc.compounds)
 
 def get_experiment_dao():
-    try:
-        db = MongoClient(MONGO_URL)
-        return MongoCollectionDao(db.efrc.experiments)
-    except Exception as e:
-        logger.info("Unable to connect to database: " + str(e))
-        print("Unable to connect to database: " + str(e))
-        return
+    db = MongoClient(MONGO_URL)
+    return MongoCollectionDao(db.efrc.experiments)
 
 # @app.teardown_appcontext
 # def teardown_db(exception):
@@ -109,159 +104,153 @@ def get_experiment_dao():
 
 @app.route(COMPOUNDS_URL_ROOT, methods=['GET'])
 def retrieve_compounds():
-    try:
-        data_svc = get_compound_dao()
+    data_svc = get_compound_dao()
 
-        logger.info("-----In retrieve_copounds")
-        compounds = data_svc.retrieve_many()
-        logger.info("-----In retrieve_copounds find")
-        json = dumps(compounds)
-        logger.info("-----In retrieve_copounds dump")
-        return json
-    except Exception as e:
-        logger.warning(str(e))
-        return dumps({'error': str(e)})
+    logger.info("-----In retrieve_copounds")
+    compounds = data_svc.retrieve_many()
+    logger.info("-----In retrieve_copounds find")
+    json = dumps(compounds)
+    logger.info("-----In retrieve_copounds dump")
+    return json
+
 
 
 @app.route(COMPOUNDS_URL_ROOT + "/<compound_id>", methods=['GET'])
 def retrieve_compound(compound_id):
-    try:
+    if compound_id:
         data_svc = get_compound_dao()
         compound = data_svc.retrieve(compound_id)
-        if compound is None:
-            abort(404)
-        json = dumps(compound)
-        return json
-    except ObjectNotFoundError as e:
-        abort(404)
-    except BadIdError as e:
-        abort(400, str(BadIdError))
+    else:
+        raise NoIdProvidedError()
+    if compound is None:
+        raise ObjectNotFoundError()
+    json = dumps(compound)
+    return json
 
 
 @app.route(COMPOUNDS_URL_ROOT, methods=['POST'])
 def create_compound():
-    try:
-        data = json.loads(request.data)
-        get_compound_dao().create(data)
-        return dumps({'message': 'CREATE SUCCESS', 'uid': str(data['uid'])})
-    except Exception as e: # TODO: make the except blocks more specific to different error types
-        return dumps({'error': str(e)})
+    data = json.loads(request.data)
+    get_compound_dao().create(data)
+    return dumps({'message': 'CREATE SUCCESS', 'uid': str(data['uid'])})
 
 
 @app.route(COMPOUNDS_URL_ROOT + "/<compound_id>", methods=['PATCH'])
 def update_compound(compound_id):
-    try:
-        data = json.loads(request.data)
-        if compound_id:
-            get_compound_dao().update(compound_id, data)
-        else:
-            abort(400, "id not provided")
-        return dumps({'message': 'SUCCESS'})
-    except ObjectNotFoundError as e:
-        abort(404)
-    except BadIdError as e:
-        abort(400, e)
-
+    data = json.loads(request.data)
+    if compound_id:
+        get_compound_dao().update(compound_id, data)
+    else:
+        raise NoIdProvidedError()
+    return dumps({'message': 'SUCCESS'})
 
 @app.route(COMPOUNDS_URL_ROOT + "/<compound_id>", methods=['DELETE'])
 def delete_compound(compound_id):
-    try:
-        if compound_id:
-            get_compound_dao().delete(compound_id)
-        return dumps({'message': 'SUCCESS'})
-    except ObjectNotFoundError as e:
-        abort(404)
-    except BadIdError as e:
-        abort(400, e)
+    if compound_id:
+        get_compound_dao().delete(compound_id)
+    else:
+        raise NoIdProvidedError()
+    return dumps({'message': 'SUCCESS'})
 
 
 @app.route(EXPERIMENTS_URL_ROOT, methods=['POST'])
 def create_experiment():
-    try:
-        data = json.loads(request.data)
-        jsonschema.validate(data, EXPERIMENTS_SCHEMA)
-        get_experiment_dao().create(data)
-        return dumps({'message': 'CREATE SUCCESS', 'uid': str(data['uid'])})
-    except jsonschema.exceptions.ValidationError as e:
-        abort(400, e)
-    except Exception as e: # TODO: make the except blocks more specific to different error types
-        logger.warning(str(e))
-        abort(500)
+    data = json.loads(request.data)
+    jsonschema.validate(data, EXPERIMENTS_SCHEMA)
+    get_experiment_dao().create(data)
+    return dumps({'message': 'CREATE SUCCESS', 'uid': str(data['uid'])})
 
 
 @app.route(EXPERIMENTS_URL_ROOT + "/<experiment_id>", methods=['GET'])
 def retrieve_experiment(experiment_id):
-    try:
+    if experiment_id:
         data_svc = get_experiment_dao()
         experiment = data_svc.retrieve(experiment_id)
-        if experiment is None:
-            abort(404)
-        json = dumps(experiment)
-        return json 
-    except ObjectNotFoundError as e:
-        abort(404)
-    except BadIdError as e:
-        abort(400, str(BadIdError))
-    except Exception as e:
-        logger.warning(str(e))
-        abort(500)
+    else:
+        raise NoIdProvidedError()
+    if experiment is None:
+        raise ObjectNotFoundError()
+    json = dumps(experiment)
+    return json
         
 
 
 @app.route(EXPERIMENTS_URL_ROOT, methods=['GET'])
 def retrieve_experiments():
-    try:
-        data_svc = get_experiment_dao()
-        experiments = data_svc.retrieve_many()
-        json = dumps(experiments)
-        return json
-    except Exception as e:
-        logger.warning(str(e))
-        return dumps({'error': str(e)})
-
+    data_svc = get_experiment_dao()
+    experiments = data_svc.retrieve_many()
+    json = dumps(experiments)
+    return json
 
 @app.route(EXPERIMENTS_URL_ROOT + "/<experiment_id>", methods=['DELETE'])
 def delete_experiment(experiment_id):
-    try:
-        if experiment_id:
-            get_experiment_dao().delete(experiment_id)
-        return dumps({'message': 'SUCCESS'})
-    except ObjectNotFoundError as e:
-        abort(404)
-    except BadIdError as e:
-        abort(400, e)
-    except Exception as e:
-        logger.warning(str(e))
-        abort(500)
+    if experiment_id:
+        get_experiment_dao().delete(experiment_id)
+    else:
+        raise NoIdProvidedError()
+    return dumps({'message': 'SUCCESS'})
+    
 
 
 @app.route(EXPERIMENTS_URL_ROOT + "/<experiment_id>", methods=['PUT'])
 def update_experiment(experiment_id):
-    try:
-        data = json.loads(request.data)
-        jsonschema.validate(data, EXPERIMENTS_SCHEMA)
+    data = json.loads(request.data)
+    jsonschema.validate(data, EXPERIMENTS_SCHEMA)
 
-        if experiment_id:
-            get_experiment_dao().update(experiment_id, data)
-        else:
-            abort(400, "id not provided")
-        return dumps({'message': 'SUCCESS'})
-    except jsonschema.exceptions.ValidationError as e:
-        abort(400, e)
-    except ObjectNotFoundError as e:
-        abort(404)
-    except BadIdError as e:
-        abort(400, e)
-    except Exception as e:
-        logger.warning(str(e))
-        abort(500)
+    if experiment_id:
+        get_experiment_dao().update(experiment_id, data)
+    else:
+        raise NoIdProvidedError()
+    return dumps({'message': 'SUCCESS'})
+
+
+
+
+
+
+
+@app.errorhandler(404)
+def resource_not_found(error):
+    logger.info("Resource not found: ", exc_info=1)
+    return make_response(str({'error': 'resource not found'}), 404)
+
+
+@app.errorhandler(jsonschema.exceptions.ValidationError)
+def validation_error(error):
+    logger.info(" Validation Error: ", exc_info=1 )
+    return make_response(str(error), 400)
+
+#This actually might never get called because trailing slashes with
+#no parameters won't get routed to the route that would raise a
+#NoIdProvidedError, they would get routed to a route that just 
+#has the trailing slash
+@app.errorhandler(NoIdProvidedError)
+def no_id_provided_error(error):
+    logger.info("No Id Provided Error: ", exc_info=1)
+    return make_response(str({'error': 'no id provided'}), 400)
+
+@app.errorhandler(ObjectNotFoundError)
+def object_not_found_error(error):
+     logger.info(" Object Not Found Error: ", exc_info=1 )
+     return make_response(str({'error': 'object not found'}), 404)
+
+
+@app.errorhandler(BadIdError)
+def bad_id_error(error):
+    logger.info(" Bad ID error: ", exc_info=1)
+    return make_response(str(error), 400)
+
+@app.errorhandler(Exception)
+def general_error(error):
+    logger.critical(" Houston we have a problem: ", exc_info=1)
+    return make_response(str(error), 500)
 
 
 
 # </editor-fold>
 def main(args=None):
     logger.info("-----In Main")
-    app.run(debug=True)
+    app.run()
 
 if __name__ == '__main__':
     main()

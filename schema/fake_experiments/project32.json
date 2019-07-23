@@ -1,0 +1,82 @@
+{
+    "name": "seize 24/365 portals tests",
+    "technique": {
+        "name": "sample_technique",
+        "technique_metadata": {
+            "some_stuff": "some more things",
+            "some_more_stuff": "some things"
+        }
+    },
+    "experiment_metadata": {
+        "gap": "2"
+    },
+    "researcher": {
+        "mwet_id": "5d74341b-533a-473d-9728-bd28ddfc2afc",
+        "name": "Alexis Whitney",
+        "group": "Hartman",
+        "institution": "UCSB"
+    },
+    "experimental_conditions": {
+        "run_time": "7 days",
+        "membrane_or_polymer_area": "1 cm^2"
+    },
+    "trials": [
+        {
+            "membrane_or_polymer": "S38",
+            "ph": 7,
+            "ionic_strength": {
+                "value": 0.01,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Id"
+            ],
+            "adsorbing": "Id"
+        },
+        {
+            "membrane_or_polymer": "S38",
+            "ph": 10,
+            "ionic_strength": {
+                "value": 0.01,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Id"
+            ],
+            "adsorbing": "Id"
+        },
+        {
+            "membrane_or_polymer": "S38",
+            "pH": 7,
+            "ionic_strength": {
+                "value": 0.1,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Id"
+            ],
+            "adsorbing": "Id"
+        },
+        {
+            "membrane_or_polymer": "S38",
+            "ph": 10,
+            "ionic_strength": {
+                "value": 0.1,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Id"
+            ],
+            "adsorbing": "Id"
+        }
+    ],
+    "uid": "23882696-9ff5-4b1f-9639-4fcd5b7009b9"
+}

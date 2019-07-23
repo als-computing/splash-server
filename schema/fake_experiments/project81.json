@@ -1,0 +1,82 @@
+{
+    "name": "synthesize transparent channels tests",
+    "technique": {
+        "name": "sample_technique",
+        "technique_metadata": {
+            "some_stuff": "some more things",
+            "some_more_stuff": "some things"
+        }
+    },
+    "experiment_metadata": {
+        "gap": "1"
+    },
+    "researcher": {
+        "mwet_id": "31be9f3e-0c70-467f-8377-f3a084911c3c",
+        "name": "Crystal Murphy",
+        "group": "Hartman",
+        "institution": "UCSB"
+    },
+    "experimental_conditions": {
+        "run_time": "7 days",
+        "membrane_or_polymer_area": "1 cm^2"
+    },
+    "trials": [
+        {
+            "membrane_or_polymer": "H35",
+            "ph": 7,
+            "ionic_strength": {
+                "value": 0.01,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Db"
+            ],
+            "adsorbing": "Db"
+        },
+        {
+            "membrane_or_polymer": "H35",
+            "ph": 10,
+            "ionic_strength": {
+                "value": 0.01,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Db"
+            ],
+            "adsorbing": "Db"
+        },
+        {
+            "membrane_or_polymer": "H35",
+            "pH": 7,
+            "ionic_strength": {
+                "value": 0.1,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Db"
+            ],
+            "adsorbing": "Db"
+        },
+        {
+            "membrane_or_polymer": "H35",
+            "ph": 10,
+            "ionic_strength": {
+                "value": 0.1,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Db"
+            ],
+            "adsorbing": "Db"
+        }
+    ],
+    "uid": "ebab13f0-9199-41b1-8256-db21d369aca5"
+}

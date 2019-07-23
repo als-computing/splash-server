@@ -1,0 +1,82 @@
+{
+    "name": "incubate magnetic deliverables tests",
+    "technique": {
+        "name": "sample_technique",
+        "technique_metadata": {
+            "some_stuff": "some more things",
+            "some_more_stuff": "some things"
+        }
+    },
+    "experiment_metadata": {
+        "gap": "IF"
+    },
+    "researcher": {
+        "mwet_id": "5184b141-ec99-4327-8cbc-0f7e24387345",
+        "name": "Paul Griffith",
+        "group": "Hartman",
+        "institution": "UT"
+    },
+    "experimental_conditions": {
+        "run_time": "7 days",
+        "membrane_or_polymer_area": "1 cm^2"
+    },
+    "trials": [
+        {
+            "membrane_or_polymer": "E46",
+            "ph": 7,
+            "ionic_strength": {
+                "value": 0.01,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Pn"
+            ],
+            "adsorbing": "Pn"
+        },
+        {
+            "membrane_or_polymer": "E46",
+            "ph": 10,
+            "ionic_strength": {
+                "value": 0.01,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Pn"
+            ],
+            "adsorbing": "Pn"
+        },
+        {
+            "membrane_or_polymer": "E46",
+            "pH": 7,
+            "ionic_strength": {
+                "value": 0.1,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Pn"
+            ],
+            "adsorbing": "Pn"
+        },
+        {
+            "membrane_or_polymer": "E46",
+            "ph": 10,
+            "ionic_strength": {
+                "value": 0.1,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Pn"
+            ],
+            "adsorbing": "Pn"
+        }
+    ],
+    "uid": "90f38339-cf8b-4645-80f7-705e2c191a75"
+}

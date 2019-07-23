@@ -1,0 +1,82 @@
+{
+    "name": "envisioneer world-class deliverables tests",
+    "technique": {
+        "name": "sample_technique",
+        "technique_metadata": {
+            "some_stuff": "some more things",
+            "some_more_stuff": "some things"
+        }
+    },
+    "experiment_metadata": {
+        "gap": "2"
+    },
+    "researcher": {
+        "mwet_id": "2bf58eea-5d43-4870-ab88-660c0bcc3da5",
+        "name": "Darrell Weaver",
+        "group": "Ford",
+        "institution": "UCSB"
+    },
+    "experimental_conditions": {
+        "run_time": "7 days",
+        "membrane_or_polymer_area": "1 cm^2"
+    },
+    "trials": [
+        {
+            "membrane_or_polymer": "B84",
+            "ph": 7,
+            "ionic_strength": {
+                "value": 0.01,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Ak"
+            ],
+            "adsorbing": "Ak"
+        },
+        {
+            "membrane_or_polymer": "B84",
+            "ph": 10,
+            "ionic_strength": {
+                "value": 0.01,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Ak"
+            ],
+            "adsorbing": "Ak"
+        },
+        {
+            "membrane_or_polymer": "B84",
+            "pH": 7,
+            "ionic_strength": {
+                "value": 0.1,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Ak"
+            ],
+            "adsorbing": "Ak"
+        },
+        {
+            "membrane_or_polymer": "B84",
+            "ph": 10,
+            "ionic_strength": {
+                "value": 0.1,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Ak"
+            ],
+            "adsorbing": "Ak"
+        }
+    ],
+    "uid": "a06f9836-feb8-45fc-a49f-1e71f1d66e6a"
+}
