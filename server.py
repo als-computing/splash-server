@@ -201,6 +201,7 @@ def update_experiment(experiment_id):
         get_experiment_dao().update(experiment_id, data)
     else:
         raise NoIdProvidedError()
+    return dumps({'message': 'SUCCESS'})
 
 
 
