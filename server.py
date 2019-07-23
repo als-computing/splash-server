@@ -102,7 +102,7 @@ def retrieve_compounds():
     data_svc = get_compound_dao()
 
     logger.info("-----In retrieve_copounds")
-    compounds = data_svc.retrieve_many()
+    compounds = data_svc.retrieve_many(page=10)
     logger.info("-----In retrieve_copounds find")
     json = dumps(compounds)
     logger.info("-----In retrieve_copounds dump")
@@ -172,10 +172,19 @@ def retrieve_experiment(experiment_id):
 
 @app.route(EXPERIMENTS_URL_ROOT, methods=['GET'])
 def retrieve_experiments():
-    data_svc = get_experiment_dao()
-    experiments = data_svc.retrieve_many()
-    json = dumps(experiments)
-    return json
+    try:
+        data_svc = get_experiment_dao()
+        page = request.args.get('page')
+        if page is None:
+            page = 1
+        else:
+            page = int(page)
+        experiments = data_svc.retrieve_many(page=page)
+        json = dumps(experiments)
+        return json
+    except ValueError:
+        raise TypeError("page parameter must be of type int")
+
 
 @app.route(EXPERIMENTS_URL_ROOT + "/<experiment_id>", methods=['DELETE'])
 def delete_experiment(experiment_id):
@@ -213,6 +222,11 @@ def resource_not_found(error):
 @app.errorhandler(jsonschema.exceptions.ValidationError)
 def validation_error(error):
     logger.info(" Validation Error: ", exc_info=1 )
+    return make_response(str(error), 400)
+
+@app.errorhandler(TypeError)
+def type_error(error):
+    logger.info(" TypeError ", exc_info=1)
     return make_response(str(error), 400)
 
 #This actually might never get called because trailing slashes with
