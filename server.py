@@ -14,10 +14,19 @@ from bokeh.plotting import figure
 from bokeh.embed import json_item
 import logging
 import pathlib
+import jsonschema 
+
+dirname = os.path.dirname(__file__)
 
 API_URL_ROOT = "/api"
 COMPOUNDS_URL_ROOT = API_URL_ROOT + "/compounds"
+EXPERIMENTS_URL_ROOT = API_URL_ROOT + "/experiments"
 RUNS_URL_ROOT = API_URL_ROOT + "/runs"
+
+experiments_schema_file = open(os.path.join(dirname, "schema", "experiment_schema.json"))
+EXPERIMENTS_SCHEMA = json.load(experiments_schema_file)
+experiments_schema_file.close()
+
 app = None
 logger = logging.getLogger('simple_example')
 
@@ -83,6 +92,14 @@ def get_compound_dao():
         print("Unable to connect to database: " + str(e))
         return
 
+def get_experiment_dao():
+    try:
+        db = MongoClient(MONGO_URL)
+        return MongoCollectionDao(db.efrc.experiments)
+    except Exception as e:
+        logger.info("Unable to connect to database: " + str(e))
+        print("Unable to connect to database: " + str(e))
+        return
 
 # @app.teardown_appcontext
 # def teardown_db(exception):
@@ -127,7 +144,7 @@ def create_compound():
         data = json.loads(request.data)
         get_compound_dao().create(data)
         return dumps({'message': 'CREATE SUCCESS', 'uid': str(data['uid'])})
-    except Exception as e:
+    except Exception as e: # TODO: make the except blocks more specific to different error types
         return dumps({'error': str(e)})
 
 
@@ -158,13 +175,93 @@ def delete_compound(compound_id):
         abort(400, e)
 
 
+@app.route(EXPERIMENTS_URL_ROOT, methods=['POST'])
+def create_experiment():
+    try:
+        data = json.loads(request.data)
+        jsonschema.validate(data, EXPERIMENTS_SCHEMA)
+        get_experiment_dao().create(data)
+        return dumps({'message': 'CREATE SUCCESS', 'uid': str(data['uid'])})
+    except jsonschema.exceptions.ValidationError as e:
+        abort(400, e)
+    except Exception as e: # TODO: make the except blocks more specific to different error types
+        logger.warning(str(e))
+        abort(500)
+
+
+@app.route(EXPERIMENTS_URL_ROOT + "/<experiment_id>", methods=['GET'])
+def retrieve_experiment(experiment_id):
+    try:
+        data_svc = get_experiment_dao()
+        experiment = data_svc.retrieve(experiment_id)
+        if experiment is None:
+            abort(404)
+        json = dumps(experiment)
+        return json 
+    except ObjectNotFoundError as e:
+        abort(404)
+    except BadIdError as e:
+        abort(400, str(BadIdError))
+    except Exception as e:
+        logger.warning(str(e))
+        abort(500)
+        
+
+
+@app.route(EXPERIMENTS_URL_ROOT, methods=['GET'])
+def retrieve_experiments():
+    try:
+        data_svc = get_experiment_dao()
+        experiments = data_svc.retrieve_many()
+        json = dumps(experiments)
+        return json
+    except Exception as e:
+        logger.warning(str(e))
+        return dumps({'error': str(e)})
+
+
+@app.route(EXPERIMENTS_URL_ROOT + "/<experiment_id>", methods=['DELETE'])
+def delete_experiment(experiment_id):
+    try:
+        if experiment_id:
+            get_experiment_dao().delete(experiment_id)
+        return dumps({'message': 'SUCCESS'})
+    except ObjectNotFoundError as e:
+        abort(404)
+    except BadIdError as e:
+        abort(400, e)
+    except Exception as e:
+        logger.warning(str(e))
+        abort(500)
+
+
+@app.route(EXPERIMENTS_URL_ROOT + "/<experiment_id>", methods=['PUT'])
+def update_experiment(experiment_id):
+    try:
+        data = json.loads(request.data)
+        jsonschema.validate(data, EXPERIMENTS_SCHEMA)
+
+        if experiment_id:
+            get_experiment_dao().update(experiment_id, data)
+        else:
+            abort(400, "id not provided")
+        return dumps({'message': 'SUCCESS'})
+    except jsonschema.exceptions.ValidationError as e:
+        abort(400, e)
+    except ObjectNotFoundError as e:
+        abort(404)
+    except BadIdError as e:
+        abort(400, e)
+    except Exception as e:
+        logger.warning(str(e))
+        abort(500)
 
 
 
 # </editor-fold>
 def main(args=None):
     logger.info("-----In Main")
-    app.run()
+    app.run(debug=True)
 
 if __name__ == '__main__':
     main()
