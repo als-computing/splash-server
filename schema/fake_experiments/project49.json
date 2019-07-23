@@ -1,0 +1,82 @@
+{
+    "name": "strategize B2C partnerships tests",
+    "technique": {
+        "name": "sample_technique",
+        "technique_metadata": {
+            "some_stuff": "some more things",
+            "some_more_stuff": "some things"
+        }
+    },
+    "experiment_metadata": {
+        "gap": "3"
+    },
+    "researcher": {
+        "mwet_id": "9b48cf0c-9225-40fa-8e2a-f9e23195dc11",
+        "name": "Max Carter",
+        "group": "Ford",
+        "institution": "UT"
+    },
+    "experimental_conditions": {
+        "run_time": "7 days",
+        "membrane_or_polymer_area": "1 cm^2"
+    },
+    "trials": [
+        {
+            "membrane_or_polymer": "O71",
+            "ph": 7,
+            "ionic_strength": {
+                "value": 0.01,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "En"
+            ],
+            "adsorbing": "En"
+        },
+        {
+            "membrane_or_polymer": "O71",
+            "ph": 10,
+            "ionic_strength": {
+                "value": 0.01,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "En"
+            ],
+            "adsorbing": "En"
+        },
+        {
+            "membrane_or_polymer": "O71",
+            "pH": 7,
+            "ionic_strength": {
+                "value": 0.1,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "En"
+            ],
+            "adsorbing": "En"
+        },
+        {
+            "membrane_or_polymer": "O71",
+            "ph": 10,
+            "ionic_strength": {
+                "value": 0.1,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "En"
+            ],
+            "adsorbing": "En"
+        }
+    ],
+    "uid": "a8073d6d-fd4e-4006-a0ca-b8dabe265b58"
+}

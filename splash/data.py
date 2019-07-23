@@ -53,6 +53,7 @@ class MongoCollectionDao(Dao):
         #update should not be able to change uid
         if 'uid' in doc and doc['uid'] != uid:
             raise BadIdError('Cannot change object uid')
+        doc["uid"] = uid
         status = self.collection.replace_one({"uid": uid}, doc) #update_one might be more efficient, but kinda tricky
         if status.modified_count == 0:
             raise ObjectNotFoundError

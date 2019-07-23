@@ -1,0 +1,82 @@
+{
+    "name": "exploit distributed metrics tests",
+    "technique": {
+        "name": "sample_technique",
+        "technique_metadata": {
+            "some_stuff": "some more things",
+            "some_more_stuff": "some things"
+        }
+    },
+    "experiment_metadata": {
+        "gap": "3"
+    },
+    "researcher": {
+        "mwet_id": "31be9f3e-0c70-467f-8377-f3a084911c3c",
+        "name": "Crystal Murphy",
+        "group": "Hartman",
+        "institution": "UCSB"
+    },
+    "experimental_conditions": {
+        "run_time": "7 days",
+        "membrane_or_polymer_area": "1 cm^2"
+    },
+    "trials": [
+        {
+            "membrane_or_polymer": "U11",
+            "ph": 7,
+            "ionic_strength": {
+                "value": 0.01,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Db"
+            ],
+            "adsorbing": "Db"
+        },
+        {
+            "membrane_or_polymer": "U11",
+            "ph": 10,
+            "ionic_strength": {
+                "value": 0.01,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Db"
+            ],
+            "adsorbing": "Db"
+        },
+        {
+            "membrane_or_polymer": "U11",
+            "pH": 7,
+            "ionic_strength": {
+                "value": 0.1,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Db"
+            ],
+            "adsorbing": "Db"
+        },
+        {
+            "membrane_or_polymer": "U11",
+            "ph": 10,
+            "ionic_strength": {
+                "value": 0.1,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Db"
+            ],
+            "adsorbing": "Db"
+        }
+    ],
+    "uid": "bc0bcb2c-bbca-4a4d-98a8-a23d06aafd86"
+}

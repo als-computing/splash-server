@@ -1,0 +1,82 @@
+{
+    "name": "synergize synergistic supply-chains tests",
+    "technique": {
+        "name": "sample_technique",
+        "technique_metadata": {
+            "some_stuff": "some more things",
+            "some_more_stuff": "some things"
+        }
+    },
+    "experiment_metadata": {
+        "gap": "3"
+    },
+    "researcher": {
+        "mwet_id": "ea6fab44-aec3-4f78-8879-dff3febcec37",
+        "name": "Christina Hayes",
+        "group": "Carr",
+        "institution": "UT"
+    },
+    "experimental_conditions": {
+        "run_time": "7 days",
+        "membrane_or_polymer_area": "1 cm^2"
+    },
+    "trials": [
+        {
+            "membrane_or_polymer": "Z65",
+            "ph": 7,
+            "ionic_strength": {
+                "value": 0.01,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Ak"
+            ],
+            "adsorbing": "Ak"
+        },
+        {
+            "membrane_or_polymer": "Z65",
+            "ph": 10,
+            "ionic_strength": {
+                "value": 0.01,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Ak"
+            ],
+            "adsorbing": "Ak"
+        },
+        {
+            "membrane_or_polymer": "Z65",
+            "pH": 7,
+            "ionic_strength": {
+                "value": 0.1,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Ak"
+            ],
+            "adsorbing": "Ak"
+        },
+        {
+            "membrane_or_polymer": "Z65",
+            "ph": 10,
+            "ionic_strength": {
+                "value": 0.1,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Ak"
+            ],
+            "adsorbing": "Ak"
+        }
+    ],
+    "uid": "56799056-777d-4335-9c37-f58ad58a38ea"
+}

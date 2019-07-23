@@ -1,0 +1,82 @@
+{
+    "name": "extend collaborative solutions tests",
+    "technique": {
+        "name": "sample_technique",
+        "technique_metadata": {
+            "some_stuff": "some more things",
+            "some_more_stuff": "some things"
+        }
+    },
+    "experiment_metadata": {
+        "gap": "2"
+    },
+    "researcher": {
+        "mwet_id": "c67251ee-880a-4959-a8cd-46a81c7f2888",
+        "name": "Jacob Dillon",
+        "group": "Carr",
+        "institution": "UCSB"
+    },
+    "experimental_conditions": {
+        "run_time": "7 days",
+        "membrane_or_polymer_area": "1 cm^2"
+    },
+    "trials": [
+        {
+            "membrane_or_polymer": "S38",
+            "ph": 7,
+            "ionic_strength": {
+                "value": 0.01,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Db"
+            ],
+            "adsorbing": "Db"
+        },
+        {
+            "membrane_or_polymer": "S38",
+            "ph": 10,
+            "ionic_strength": {
+                "value": 0.01,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Db"
+            ],
+            "adsorbing": "Db"
+        },
+        {
+            "membrane_or_polymer": "S38",
+            "pH": 7,
+            "ionic_strength": {
+                "value": 0.1,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Db"
+            ],
+            "adsorbing": "Db"
+        },
+        {
+            "membrane_or_polymer": "S38",
+            "ph": 10,
+            "ionic_strength": {
+                "value": 0.1,
+                "unit": "mM"
+            },
+            "solutes_present": [
+                "Na+",
+                "Cl-",
+                "Db"
+            ],
+            "adsorbing": "Db"
+        }
+    ],
+    "uid": "905aa5c0-69c9-4fe0-b0e2-0c31006f1f2e"
+}
