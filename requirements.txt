@@ -2,4 +2,8 @@ pymongo==3.7.2
 flask==1.0.2
 bokeh
 jsonschema
+<<<<<<< HEAD
 uwsgi
+=======
+uwsgi
+>>>>>>> Updated dockerization
