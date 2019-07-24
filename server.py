@@ -2,7 +2,7 @@ from flask import Flask, jsonify
 from flask import request, Response, make_response
 from pymongo import MongoClient
 from bson.json_util import dumps
-from flask_cors import CORS, cross_origin
+# from flask_cors import CORS, cross_origin
 from flask import g, abort
 import json
 import os
@@ -27,8 +27,10 @@ experiments_schema_file = open(os.path.join(dirname, "schema", "experiment_schem
 EXPERIMENTS_SCHEMA = json.load(experiments_schema_file)
 experiments_schema_file.close()
 
-app = None
-logger = logging.getLogger('simple_example')
+logger = logging.getLogger('splas-server')
+
+app = Flask(__name__)
+
 
 
 #define custom exceptions
@@ -38,8 +40,8 @@ class NoIdProvidedError(Exception):
 
 def setup_logging():
     try:
-        flask_cors_logger = logging.getLogger('flask_cors')
-        flask_cors_logger.setLevel(logging.DEBUG)
+        # flask_cors_logger = logging.getLogger('flask_cors')
+        # flask_cors_logger.setLevel(logging.DEBUG)
         logging_level = os.environ.get("LOGLEVEL")
 
         logger.setLevel(logging.DEBUG)
@@ -61,17 +63,9 @@ def setup_logging():
     except Exception as e:
         print("cannot setup logging: {}".format(str(e)))
 
+setup_logging()
+logger = logging.getLogger('simple_example')
 
-def create_app():
-    app = Flask(__name__)
-    CORS(app)
-    setup_logging()
-    # app.app_context().push()
-    return app
-
-
-# if app is None:
-#     app = create_app()
 SPLASH_SERVER_DIR = os.environ.get("SPLASH_SERVER_DIR")
 if SPLASH_SERVER_DIR == None:
     SPLASH_SERVER_DIR = str(pathlib.Path.home() / ".splash")
@@ -85,7 +79,6 @@ MONGO_URL = config.get(CFG_APP_DB, 'mongo_url', fallback='localhost:27017')
 WEB_SERVER_HOST = config.get(CFG_WEB, 'server_host', fallback='0.0.0.0')
 WEB_SERVER_HOST = config.get(CFG_WEB, 'server_port', fallback='80')
 WEB_IMAGE_FOLDER_ROOT = config.get(CFG_WEB, 'image_root_folder', fallback='images')
-app = create_app()
 
 
 def get_compound_dao():
@@ -246,8 +239,6 @@ def general_error(error):
     return make_response(str(error), 500)
 
 
-
-# </editor-fold>
 def main(args=None):
     logger.info("-----In Main")
     app.run()
