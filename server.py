@@ -104,14 +104,27 @@ def get_experiment_dao():
 
 @app.route(COMPOUNDS_URL_ROOT, methods=['GET'])
 def retrieve_compounds():
-    data_svc = get_compound_dao()
+    try:
+        data_svc = get_compound_dao()
+        logger.info("-----In retrieve_copounds")
+        page = request.args.get('page')
+        if page is None:
+            page = 1
+        else:
+            page = int(page)
+        if page <= 0:
+            raise ValueError("Page parameter must be positive")
+        results = data_svc.retrieve_many(page=page)
+        data = {"total_results": results[0], "results": results[1]}
+        logger.info("-----In retrieve_copounds find")
+        json = dumps(data)
+        logger.info("-----In retrieve_copounds dump")
+        return json
+    except ValueError as e:
+        if str(e) == "Page parameter must be positive":
+            raise e from None
+        raise TypeError("page parameter must be a positive integer") from None
 
-    logger.info("-----In retrieve_copounds")
-    compounds = data_svc.retrieve_many(page=10)
-    logger.info("-----In retrieve_copounds find")
-    json = dumps(compounds)
-    logger.info("-----In retrieve_copounds dump")
-    return json
 
 
 
@@ -184,11 +197,16 @@ def retrieve_experiments():
             page = 1
         else:
             page = int(page)
-        experiments = data_svc.retrieve_many(page=page)
-        json = dumps(experiments)
+        if page <= 0:
+            raise ValueError("Page parameter must be positive")
+        results = data_svc.retrieve_many(page=page)
+        data = {"total_results": results[0], "results": results[1]}
+        json = dumps(data)
         return json
-    except ValueError:
-        raise TypeError("page parameter must be of type int")
+    except ValueError as e:
+        if str(e) == "Page parameter must be positive":
+            raise e from None
+        raise TypeError("page parameter must be a positive integer") from None
 
 
 @app.route(EXPERIMENTS_URL_ROOT + "/<experiment_id>", methods=['DELETE'])
@@ -252,6 +270,11 @@ def object_not_found_error(error):
 @app.errorhandler(BadIdError)
 def bad_id_error(error):
     logger.info(" Bad ID error: ", exc_info=1)
+    return make_response(str(error), 400)
+
+@app.errorhandler(ValueError)
+def value_error(error):
+    logger.info(" ValueError ", exc_info=1)
     return make_response(str(error), 400)
 
 @app.errorhandler(Exception)
