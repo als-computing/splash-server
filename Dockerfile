@@ -6,27 +6,14 @@ FROM python:3.6
 
 COPY ./requirements.txt /tmp/
 
-#TODO combine these two RUN apk commands
-# RUN apk add --no-cache \
-#             --allow-untrusted \
-#             --repository \
-#              http://dl-3.alpinelinux.org/alpine/edge/testing \
-#             hdf5 \
-#             hdf5-dev && \
-#     apk add --no-cache build-base
-
-# RUN apk add snappy g++ snappy-dev && \ 
-#         pip install -U pip && \
-#         pip install -r /tmp/requirements.txt
-
 RUN pip install uwsgi
 
 RUN pip install -U pip &&        pip install -r /tmp/requirements.txt
-COPY ./splash /app/splash
+RUN useradd -ms /bin/bash uwsgi
+COPY ./ /app
 EXPOSE 8000
 WORKDIR /app
 
-#COPY  nginx/ /etc/nginx/conf.d/
 
-#COPY ./server /app/
-
+ENTRYPOINT  [ "uwsgi", "--socket", "0.0.0.0:3031", "--uid", "uwsgi", "--master", "--processes", "8", \
+        "--protocol", "uwsgi", "--wsgi", "server:app", "--stats", "127.0.0.1:1717", "--stats-http", "--http", "0.0.0.0:8080"]
