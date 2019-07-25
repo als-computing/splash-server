@@ -2,6 +2,8 @@ import os
 import configparser
 import logging
 
+logger = logging.getLogger('splash-server')
+
 class Config:
     '''
         Gets configuration entries from either a config file or environmnet variable.
@@ -16,6 +18,7 @@ class Config:
         '''
 
     def __init__(self, config_file_name = 'config.cfg'):
+        logger.info(f'using config file name {config_file_name}')
         self.config_parser = self.setup_config_parser(config_file_name)
 
     def get(self, key, sub_key, fallback=None):
@@ -28,7 +31,7 @@ class Config:
             else:
                 value = self.config_parser.get(key, sub_key, fallback=fallback)
             msg = "config {}.{} = {} from env = {}".format(key, sub_key, value, from_env)
-            logging.info(msg)
+            logger.info(msg)
             return value
         except Exception as e:
             if fallback is not None:
@@ -39,11 +42,11 @@ class Config:
     def setup_config_parser(self, config_file_name):
         try:
             if config_file_name is None or len(config_file_name) == 0:
-                logging.info("No config file name passed to Config")
+                logger.info("No config file name passed to Config")
                 return
             config = configparser.ConfigParser()
             config.read_file(open(config_file_name))
             return config
         except Exception as e:
-            logging.warning("Unexpected exception reading config file: " + str(e))
+            logger.warning("Unexpected exception reading config file: " + str(e))
 

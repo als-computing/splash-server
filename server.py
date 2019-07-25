@@ -12,7 +12,7 @@ from splash.visualization import rsoxs
 from splash.util import context_timer
 from bokeh.plotting import figure
 from bokeh.embed import json_item
-import logging
+import logging, sys
 import pathlib
 import jsonschema 
 
@@ -27,7 +27,7 @@ experiments_schema_file = open(os.path.join(dirname, "schema", "experiment_schem
 EXPERIMENTS_SCHEMA = json.load(experiments_schema_file)
 experiments_schema_file.close()
 
-logger = logging.getLogger('splas-server')
+logger = logging.getLogger('splash-server')
 
 app = Flask(__name__)
 
@@ -42,13 +42,14 @@ def setup_logging():
     try:
         # flask_cors_logger = logging.getLogger('flask_cors')
         # flask_cors_logger.setLevel(logging.DEBUG)
+        
         logging_level = os.environ.get("LOGLEVEL")
-
-        logger.setLevel(logging.DEBUG)
+        print (f"Setting log level to {logging_level}")
+        logger.setLevel(logging_level)
 
         # create console handler and set level to debug
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.DEBUG)
+        ch = logging.StreamHandler(sys.stdout)
+        ch.setLevel(logging_level)
 
         # create formatter
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -59,14 +60,15 @@ def setup_logging():
         # add ch to logger
         logger.addHandler(ch)
 
-
+        logger.debug('testing debug')
+        logger.info('testing info')
     except Exception as e:
         print("cannot setup logging: {}".format(str(e)))
 
 setup_logging()
-logger = logging.getLogger('simple_example')
 
 SPLASH_SERVER_DIR = os.environ.get("SPLASH_SERVER_DIR")
+logger.info(f'Reading log file {SPLASH_SERVER_DIR}')
 if SPLASH_SERVER_DIR == None:
     SPLASH_SERVER_DIR = str(pathlib.Path.home() / ".splash")
 
