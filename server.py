@@ -27,11 +27,7 @@ experiments_schema_file = open(os.path.join(dirname, "schema", "experiment_schem
 EXPERIMENTS_SCHEMA = json.load(experiments_schema_file)
 experiments_schema_file.close()
 
-<<<<<<< HEAD
 logger = logging.getLogger('splash-server')
-=======
-logger = logging.getLogger('splas-server')
->>>>>>> Updated dockerization
 
 app = Flask(__name__)
 
@@ -46,10 +42,7 @@ def setup_logging():
     try:
         # flask_cors_logger = logging.getLogger('flask_cors')
         # flask_cors_logger.setLevel(logging.DEBUG)
-<<<<<<< HEAD
-        
-=======
->>>>>>> Updated dockerization
+
         logging_level = os.environ.get("LOGLEVEL")
         print (f"Setting log level to {logging_level}")
         logger.setLevel(logging_level)
@@ -73,10 +66,7 @@ def setup_logging():
         print("cannot setup logging: {}".format(str(e)))
 
 setup_logging()
-<<<<<<< HEAD
-=======
-logger = logging.getLogger('simple_example')
->>>>>>> Updated dockerization
+
 
 SPLASH_SERVER_DIR = os.environ.get("SPLASH_SERVER_DIR")
 logger.info(f'Reading log file {SPLASH_SERVER_DIR}')
