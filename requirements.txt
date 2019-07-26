@@ -3,3 +3,4 @@ flask==1.0.2
 bokeh
 jsonschema
 uwsgi
+Flask-Dance

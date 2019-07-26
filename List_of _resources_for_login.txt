@@ -1,0 +1,4 @@
+This file has a list of important resources for implementing a login schem using OAuth.
+Here is google's way to sign in with google: https://developers.google.com/identity/protocols/OpenIDConnect
+This is from the official OAuth website explaining what OAuth is and isn't relating to authentication and authorization https://oauth.net/articles/authentication/
+This is from flask dance's docs explaining an implementation fo authentication using their framework https://flask-dance.readthedocs.io/en/latest/multi-user.html
