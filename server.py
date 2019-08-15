@@ -119,12 +119,6 @@ def retrieve_compounds():
             raise e from None
         raise TypeError("page parameter must be a positive integer") from None
 
-    logger.info("-----In retrieve_copounds")
-    compounds = data_svc.retrieve_many(page=10)
-    logger.info("-----In retrieve_copounds find")
-    json = dumps(compounds)
-    logger.info("-----In retrieve_copounds dump")
-    return json
 
 
 
@@ -197,11 +191,24 @@ def retrieve_experiments():
             page = 1
         else:
             page = int(page)
+<<<<<<< HEAD
         experiments = data_svc.retrieve_many(page=page)
         json = dumps(experiments)
         return json
     except ValueError:
         raise TypeError("page parameter must be of type int")
+=======
+        if page <= 0:
+            raise ValueError("Page parameter must be positive")
+        results = data_svc.retrieve_many(page=page)
+        data = {"total_results": results[0], "results": results[1]}
+        json = dumps(data)
+        return json
+    except ValueError as e:
+        if str(e) == "Page parameter must be positive":
+            raise e from None
+        raise TypeError("page parameter must be a positive integer") from None
+>>>>>>> 99d6638c0491351cebec26ebdba9e627ba423f2f
 
 
 @app.route(EXPERIMENTS_URL_ROOT + "/<experiment_id>", methods=['DELETE'])
