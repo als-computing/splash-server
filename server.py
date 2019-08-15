@@ -99,14 +99,27 @@ def get_experiment_dao():
 
 @app.route(COMPOUNDS_URL_ROOT, methods=['GET'])
 def retrieve_compounds():
-    data_svc = get_compound_dao()
+    try:
+        data_svc = get_compound_dao()
+        logger.info("-----In retrieve_copounds")
+        page = request.args.get('page')
+        if page is None:
+            page = 1
+        else:
+            page = int(page)
+        if page <= 0:
+            raise ValueError("Page parameter must be positive")
+        results = data_svc.retrieve_many(page=page)
+        data = {"total_results": results[0], "results": results[1]}
+        logger.info("-----In retrieve_copounds find")
+        json = dumps(data)
+        logger.info("-----In retrieve_copounds dump")
+        return json
+    except ValueError as e:
+        if str(e) == "Page parameter must be positive":
+            raise e from None
+        raise TypeError("page parameter must be a positive integer") from None
 
-    logger.info("-----In retrieve_copounds")
-    compounds = data_svc.retrieve_many()
-    logger.info("-----In retrieve_copounds find")
-    json = dumps(compounds)
-    logger.info("-----In retrieve_copounds dump")
-    return json
 
 
 
@@ -172,10 +185,24 @@ def retrieve_experiment(experiment_id):
 
 @app.route(EXPERIMENTS_URL_ROOT, methods=['GET'])
 def retrieve_experiments():
-    data_svc = get_experiment_dao()
-    experiments = data_svc.retrieve_many()
-    json = dumps(experiments)
-    return json
+    try:
+        data_svc = get_experiment_dao()
+        page = request.args.get('page')
+        if page is None:
+            page = 1
+        else:
+            page = int(page)
+        if page <= 0:
+            raise ValueError("Page parameter must be positive")
+        results = data_svc.retrieve_many(page=page)
+        data = {"total_results": results[0], "results": results[1]}
+        json = dumps(data)
+        return json
+    except ValueError as e:
+        if str(e) == "Page parameter must be positive":
+            raise e from None
+        raise TypeError("page parameter must be a positive integer") from None
+
 
 @app.route(EXPERIMENTS_URL_ROOT + "/<experiment_id>", methods=['DELETE'])
 def delete_experiment(experiment_id):
@@ -215,6 +242,11 @@ def validation_error(error):
     logger.info(" Validation Error: ", exc_info=1 )
     return make_response(str(error), 400)
 
+@app.errorhandler(TypeError)
+def type_error(error):
+    logger.info(" TypeError ", exc_info=1)
+    return make_response(str(error), 400)
+
 #This actually might never get called because trailing slashes with
 #no parameters won't get routed to the route that would raise a
 #NoIdProvidedError, they would get routed to a route that just 
@@ -233,6 +265,11 @@ def object_not_found_error(error):
 @app.errorhandler(BadIdError)
 def bad_id_error(error):
     logger.info(" Bad ID error: ", exc_info=1)
+    return make_response(str(error), 400)
+
+@app.errorhandler(ValueError)
+def value_error(error):
+    logger.info(" ValueError ", exc_info=1)
     return make_response(str(error), 400)
 
 @app.errorhandler(Exception)
