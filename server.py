@@ -9,8 +9,7 @@ import os
 from splash.config import Config
 from splash.data import MongoCollectionDao, ObjectNotFoundError, BadIdError
 from splash.util import context_timer
-from bokeh.plotting import figure
-from bokeh.embed import json_item
+
 import logging, sys
 import pathlib
 import jsonschema 
