@@ -9,7 +9,6 @@ import os
 from splash.config import Config
 from splash.data import MongoCollectionDao, ObjectNotFoundError, BadIdError
 from splash.util import context_timer
-
 import logging, sys
 import pathlib
 import jsonschema 
@@ -40,7 +39,7 @@ def setup_logging():
     try:
         # flask_cors_logger = logging.getLogger('flask_cors')
         # flask_cors_logger.setLevel(logging.DEBUG)
-
+        
         logging_level = os.environ.get("LOGLEVEL")
         print (f"Setting log level to {logging_level}")
         logger.setLevel(logging_level)
@@ -65,7 +64,6 @@ def setup_logging():
 
 setup_logging()
 
-
 SPLASH_SERVER_DIR = os.environ.get("SPLASH_SERVER_DIR")
 logger.info(f'Reading log file {SPLASH_SERVER_DIR}')
 if SPLASH_SERVER_DIR == None:
@@ -84,11 +82,11 @@ WEB_IMAGE_FOLDER_ROOT = config.get(CFG_WEB, 'image_root_folder', fallback='image
 
 def get_compound_dao():
     db = MongoClient(MONGO_URL)  # , ssl=True, ssl_ca_certs=certifi.where(), connect=False)
-    return MongoCollectionDao(db.splash.compounds)
+    return MongoCollectionDao(db.efrc.compounds)
 
 def get_experiment_dao():
     db = MongoClient(MONGO_URL)
-    return MongoCollectionDao(db.splash.experiments)
+    return MongoCollectionDao(db.efrc.experiments)
 
 # @app.teardown_appcontext
 # def teardown_db(exception):
@@ -98,27 +96,14 @@ def get_experiment_dao():
 
 @app.route(COMPOUNDS_URL_ROOT, methods=['GET'])
 def retrieve_compounds():
-    try:
-        data_svc = get_compound_dao()
-        logger.info("-----In retrieve_copounds")
-        page = request.args.get('page')
-        if page is None:
-            page = 1
-        else:
-            page = int(page)
-        if page <= 0:
-            raise ValueError("Page parameter must be positive")
-        results = data_svc.retrieve_many(page=page)
-        data = {"total_results": results[0], "results": results[1]}
-        logger.info("-----In retrieve_copounds find")
-        json = dumps(data)
-        logger.info("-----In retrieve_copounds dump")
-        return json
-    except ValueError as e:
-        if str(e) == "Page parameter must be positive":
-            raise e from None
-        raise TypeError("page parameter must be a positive integer") from None
+    data_svc = get_compound_dao()
 
+    logger.info("-----In retrieve_copounds")
+    compounds = data_svc.retrieve_many()
+    logger.info("-----In retrieve_copounds find")
+    json = dumps(compounds)
+    logger.info("-----In retrieve_copounds dump")
+    return json
 
 
 
@@ -184,32 +169,10 @@ def retrieve_experiment(experiment_id):
 
 @app.route(EXPERIMENTS_URL_ROOT, methods=['GET'])
 def retrieve_experiments():
-    try:
-        data_svc = get_experiment_dao()
-        page = request.args.get('page')
-        if page is None:
-            page = 1
-        else:
-            page = int(page)
-<<<<<<< HEAD
-        experiments = data_svc.retrieve_many(page=page)
-        json = dumps(experiments)
-        return json
-    except ValueError:
-        raise TypeError("page parameter must be of type int")
-=======
-        if page <= 0:
-            raise ValueError("Page parameter must be positive")
-        results = data_svc.retrieve_many(page=page)
-        data = {"total_results": results[0], "results": results[1]}
-        json = dumps(data)
-        return json
-    except ValueError as e:
-        if str(e) == "Page parameter must be positive":
-            raise e from None
-        raise TypeError("page parameter must be a positive integer") from None
->>>>>>> 99d6638c0491351cebec26ebdba9e627ba423f2f
-
+    data_svc = get_experiment_dao()
+    experiments = data_svc.retrieve_many()
+    json = dumps(experiments)
+    return json
 
 @app.route(EXPERIMENTS_URL_ROOT + "/<experiment_id>", methods=['DELETE'])
 def delete_experiment(experiment_id):
@@ -249,11 +212,6 @@ def validation_error(error):
     logger.info(" Validation Error: ", exc_info=1 )
     return make_response(str(error), 400)
 
-@app.errorhandler(TypeError)
-def type_error(error):
-    logger.info(" TypeError ", exc_info=1)
-    return make_response(str(error), 400)
-
 #This actually might never get called because trailing slashes with
 #no parameters won't get routed to the route that would raise a
 #NoIdProvidedError, they would get routed to a route that just 
@@ -272,11 +230,6 @@ def object_not_found_error(error):
 @app.errorhandler(BadIdError)
 def bad_id_error(error):
     logger.info(" Bad ID error: ", exc_info=1)
-    return make_response(str(error), 400)
-
-@app.errorhandler(ValueError)
-def value_error(error):
-    logger.info(" ValueError ", exc_info=1)
     return make_response(str(error), 400)
 
 @app.errorhandler(Exception)
