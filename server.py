@@ -85,11 +85,11 @@ WEB_IMAGE_FOLDER_ROOT = config.get(CFG_WEB, 'image_root_folder', fallback='image
 
 def get_compound_dao():
     db = MongoClient(MONGO_URL)  # , ssl=True, ssl_ca_certs=certifi.where(), connect=False)
-    return MongoCollectionDao(db.efrc.compounds)
+    return MongoCollectionDao(db.splash.compounds)
 
 def get_experiment_dao():
     db = MongoClient(MONGO_URL)
-    return MongoCollectionDao(db.efrc.experiments)
+    return MongoCollectionDao(db.splash.experiments)
 
 # @app.teardown_appcontext
 # def teardown_db(exception):
