@@ -84,7 +84,10 @@ WEB_SERVER_HOST = config.get(CFG_WEB, 'server_port', fallback='80')
 WEB_IMAGE_FOLDER_ROOT = config.get(CFG_WEB, 'image_root_folder', fallback='images')
 SPLASH_DB_NAME = 'splash'
 
+db = None
+
 def get_app_db():
+    #TODO: we need to cache the connections?
     db = MongoClient(MONGO_URL, 
         username=MONGO_APP_USER,        
         password=MONGO_APP_PW,
