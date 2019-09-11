@@ -77,17 +77,27 @@ config = Config(SPLASH_CONFIG_FILE)
 CFG_APP_DB = 'AppDB'
 CFG_WEB = 'Web'
 MONGO_URL = config.get(CFG_APP_DB, 'mongo_url', fallback='localhost:27017')
+MONGO_APP_USER = config.get(CFG_APP_DB, 'mongo_app_user', fallback='')
+MONGO_APP_PW = config.get(CFG_APP_DB, 'mongo_app_pw', fallback='')
 WEB_SERVER_HOST = config.get(CFG_WEB, 'server_host', fallback='0.0.0.0')
 WEB_SERVER_HOST = config.get(CFG_WEB, 'server_port', fallback='80')
 WEB_IMAGE_FOLDER_ROOT = config.get(CFG_WEB, 'image_root_folder', fallback='images')
+SPLASH_DB_NAME = 'splash'
 
+def get_app_db():
+    db = MongoClient(MONGO_URL, 
+        username=MONGO_APP_USER,        
+        password=MONGO_APP_PW,
+        authSource=SPLASH_DB_NAME,
+        authMechanism='SCRAM-SHA-256')
+    return db
 
 def get_compound_dao():
-    db = MongoClient(MONGO_URL)  # , ssl=True, ssl_ca_certs=certifi.where(), connect=False)
-    return MongoCollectionDao(db.splash.compounds)
+    db = get_app_db()
+    return MongoCollectionDao(db.SPLASH_DB_NAME.compounds)
 
 def get_experiment_dao():
-    db = MongoClient(MONGO_URL)
+    db = get_app_db()
     return MongoCollectionDao(db.splash.experiments)
 
 # @app.teardown_appcontext
@@ -191,13 +201,6 @@ def retrieve_experiments():
             page = 1
         else:
             page = int(page)
-<<<<<<< HEAD
-        experiments = data_svc.retrieve_many(page=page)
-        json = dumps(experiments)
-        return json
-    except ValueError:
-        raise TypeError("page parameter must be of type int")
-=======
         if page <= 0:
             raise ValueError("Page parameter must be positive")
         results = data_svc.retrieve_many(page=page)
@@ -208,7 +211,6 @@ def retrieve_experiments():
         if str(e) == "Page parameter must be positive":
             raise e from None
         raise TypeError("page parameter must be a positive integer") from None
->>>>>>> 99d6638c0491351cebec26ebdba9e627ba423f2f
 
 
 @app.route(EXPERIMENTS_URL_ROOT + "/<experiment_id>", methods=['DELETE'])
