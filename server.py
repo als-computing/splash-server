@@ -77,17 +77,30 @@ config = Config(SPLASH_CONFIG_FILE)
 CFG_APP_DB = 'AppDB'
 CFG_WEB = 'Web'
 MONGO_URL = config.get(CFG_APP_DB, 'mongo_url', fallback='localhost:27017')
+MONGO_APP_USER = config.get(CFG_APP_DB, 'mongo_app_user', fallback='')
+MONGO_APP_PW = config.get(CFG_APP_DB, 'mongo_app_pw', fallback='')
 WEB_SERVER_HOST = config.get(CFG_WEB, 'server_host', fallback='0.0.0.0')
 WEB_SERVER_HOST = config.get(CFG_WEB, 'server_port', fallback='80')
 WEB_IMAGE_FOLDER_ROOT = config.get(CFG_WEB, 'image_root_folder', fallback='images')
+SPLASH_DB_NAME = 'splash'
 
+db = None
+
+def get_app_db():
+    #TODO: we need to cache the connections?
+    db = MongoClient(MONGO_URL, 
+        username=MONGO_APP_USER,        
+        password=MONGO_APP_PW,
+        authSource=SPLASH_DB_NAME,
+        authMechanism='SCRAM-SHA-256')
+    return db
 
 def get_compound_dao():
-    db = MongoClient(MONGO_URL)  # , ssl=True, ssl_ca_certs=certifi.where(), connect=False)
-    return MongoCollectionDao(db.splash.compounds)
+    db = get_app_db()
+    return MongoCollectionDao(db.SPLASH_DB_NAME.compounds)
 
 def get_experiment_dao():
-    db = MongoClient(MONGO_URL)
+    db = get_app_db()
     return MongoCollectionDao(db.splash.experiments)
 
 # @app.teardown_appcontext
