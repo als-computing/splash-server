@@ -85,3 +85,5 @@ out/
 ui/public/static
 
 .pytest_cache/
+
+instance/
