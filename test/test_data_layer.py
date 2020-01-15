@@ -1,28 +1,34 @@
 import pytest
 import mongomock
 
-from splash.data import MongoCollectionDao
+from splash.data import MongoCollectionDao, BadIdError
+
 
 @pytest.fixture
 def mongodb():
     return mongomock.MongoClient().db
 
+
 def test_crud_compounds(mongodb):
     mongo_crud_service = MongoCollectionDao(mongodb.compounds)
     compound = dict(name='boron')
-    id = mongo_crud_service.create(compound)
-    assert id is not None
-    retrieved_compound = mongo_crud_service.retrieve(id)
-    assert retrieved_compound['_id'] == id
+    uid = mongo_crud_service.create(compound)
+    assert uid is not None
+    retrieved_compound = mongo_crud_service.retrieve(uid)
+    assert retrieved_compound['uid'] == uid
     assert retrieved_compound['name'] == 'boron'
 
-    #test update
+    # test update
     compound['name'] = 'dilithium crystals'
     mongo_crud_service.update(compound)
-    retrieved_compound = mongo_crud_service.retrieve(id)
+    retrieved_compound = mongo_crud_service.retrieve(uid)
     assert retrieved_compound['name'] == 'dilithium crystals'
 
-    #test delete
-    mongo_crud_service.delete(retrieved_compound['_id'])
-    assert mongo_crud_service.retrieve(id) is None
+    # test that you get error updating doc with no id
+    bad_compound = {'name': 'foo'}
+    with pytest.raises(BadIdError):
+        mongo_crud_service.update(bad_compound)
 
+    # test delete
+    mongo_crud_service.delete(retrieved_compound['uid'])
+    assert mongo_crud_service.retrieve(uid) is None

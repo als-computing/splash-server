@@ -2,7 +2,7 @@ import pytest
 import pytest_flask
 import pytest_mongodb
 from flask import Response
-import server
+import splash
 
 compounds = [  {
     "name": "Boron",

@@ -1,11 +1,14 @@
 import logging
-from bson.objectid import ObjectId
-from bson.errors import InvalidId
+# from bson.objectid import ObjectId
+# from bson.errors import InvalidId
 import uuid
+
+db = None
+
+
 class Dao(object):
-
-
     '''Interface for CRUD Serverice'''
+
     def create(self, doc):
         raise NotImplementedError
 
@@ -22,10 +25,10 @@ class Dao(object):
         raise NotImplementedError
 
 
-
 class SearchService(object):
     def search(self, query, start=0, count=100):
         raise NotImplementedError
+
 
 class MongoCollectionDao(Dao):
     ''' Mongo data service for mapping CRUD and search
@@ -34,7 +37,7 @@ class MongoCollectionDao(Dao):
         self.collection = collection
 
     def create(self, doc):
-        logging.debug(f"update collection {0}, doc: {1}", self.collection, doc)
+        logging.debug(f"create doc in collection {0}, doc: {1}", self.collection, doc)
         uid = uuid.uuid4()
         doc['uid'] = str(uid)
         self.collection.insert_one(doc)
@@ -57,12 +60,12 @@ class MongoCollectionDao(Dao):
         else:
             raise NotImplementedError
 
-    def update(self, uid, doc):
+    def update(self, doc):
         #update should not be able to change uid
-        if 'uid' in doc and doc['uid'] != uid:
+        if 'uid' not in doc:
             raise BadIdError('Cannot change object uid')
-        doc["uid"] = uid
-        status = self.collection.replace_one({"uid": uid}, doc) #update_one might be more efficient, but kinda tricky
+        # update_one might be more efficient, but kinda tricky
+        status = self.collection.replace_one({"uid": doc['uid']}, doc)
         if status.modified_count == 0:
             raise ObjectNotFoundError
 

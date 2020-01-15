@@ -1,13 +1,13 @@
-from bson.json_util import dumps
-from flask import request
-from flask_restful import Resource
 import json
-import jsonschema 
 import os
-from splash import app, api, db
-from splash.data import MongoCollectionDao, ObjectNotFoundError, BadIdError
 
-dao = MongoCollectionDao(db.splash.experiments)
+import jsonschema
+from bson.json_util import dumps
+from flask import request, current_app, app
+from flask_restful import Resource
+from splash.data import (BadIdError, MongoCollectionDao,
+                         ObjectNotFoundError)
+
 dirname = os.path.dirname(__file__)
 experiments_schema_file = open(os.path.join(dirname, "experiment_schema.json"))
 EXPERIMENTS_SCHEMA = json.load(experiments_schema_file)
@@ -15,12 +15,16 @@ experiments_schema_file.close()
 
 
 class Experiments(Resource):
+    def __init__(self):
+        self.dao = MongoCollectionDao(current_app.db.splash.experiments)
+        super()
+
     def get(self):
         try:
             pageNum = request.args.get('page', 1)
             if pageNum is None or pageNum <= 0:
                 raise ValueError("Page parameter must be positive")
-            results = dao.retrieve_many(page=pageNum)
+            results = self.dao.retrieve_many(page=pageNum)
             data = {"total_results": results[0], "results": results[1]}
             json = dumps(data)
             return json
@@ -32,7 +36,18 @@ class Experiments(Resource):
     def post(self):
         data = json.loads(request.data)
         jsonschema.validate(data, EXPERIMENTS_SCHEMA)
-        dao.create(data)
+        self.dao.create(data)
         return dumps({'message': 'CREATE SUCCESS', 'uid': str(data['uid'])})
 
-api.add_resource(Experiments, "/api/experiments")
+    def put(self):
+        data = json.loads(request.data)
+        jsonschema.validate(data, EXPERIMENTS_SCHEMA)
+
+        if 'uid' in data:
+            self.dao().update(data)
+        else:
+            raise BadIdError()
+        return dumps({'message': 'SUCCESS'})
+
+
+
