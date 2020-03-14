@@ -1,6 +1,6 @@
 import pytest
 import mongomock
-from splash.experiments.experiment_service import ExperimentService
+from splash.categories.experiments.experiment_service import ExperimentService
 
 @pytest.fixture
 def mongodb():
