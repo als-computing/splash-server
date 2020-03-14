@@ -1,7 +1,7 @@
 import jsonschema
 import json
-from .data import MongoCollectionDao
-from .base import Service, ValidationIssue
+from splash.data.base import MongoCollectionDao
+from splash.service.base import Service, ValidationIssue
 import os
 
 dirname = os.path.dirname(__file__)

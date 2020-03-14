@@ -2,7 +2,7 @@ from bson.json_util import dumps
 from flask import request
 from flask_restful import Resource
 import json
-from splash.service.data import BadIdError
+from splash.data.base import BadIdError
 
 
 class DAOResource(Resource):

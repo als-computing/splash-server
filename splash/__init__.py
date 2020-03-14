@@ -5,15 +5,14 @@ import jsonschema
 import logging
 import os
 import sys
-from splash.service.data import ObjectNotFoundError, BadIdError
-# from splash.util import context_timer
+from splash.data.base import ObjectNotFoundError, BadIdError
 
 
 def create_app(db):
     app = Flask(__name__, instance_relative_config=True)
     api = Api(app)
 
-    from splash.resources.experiments import Experiments, Experiment
+    from splash.experiments.experiments_resources import Experiments, Experiment
     api.add_resource(Experiments, "/api/experiments")
     api.add_resource(Experiment,  "/api/experiments/<uid>")
     app.config.from_object('config')

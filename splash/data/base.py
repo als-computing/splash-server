@@ -25,11 +25,6 @@ class Dao(object):
         raise NotImplementedError
 
 
-class SearchService(object):
-    def search(self, query, start=0, count=100):
-        raise NotImplementedError
-
-
 class MongoCollectionDao(Dao):
     ''' Mongo data service for mapping CRUD and search
     operations to a MongoDB. '''

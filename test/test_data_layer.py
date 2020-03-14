@@ -1,7 +1,7 @@
 import pytest
 import mongomock
 
-from splash.service.data import MongoCollectionDao, BadIdError
+from splash.data.base import MongoCollectionDao, BadIdError
 
 
 @pytest.fixture

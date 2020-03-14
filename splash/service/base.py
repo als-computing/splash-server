@@ -1,4 +1,4 @@
-from .data import MongoCollectionDao
+from splash.data.base import MongoCollectionDao
 from collections import namedtuple
 
 ValidationIssue = namedtuple('ValidationIssue', 'description, location, exception')
