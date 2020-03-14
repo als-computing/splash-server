@@ -42,6 +42,7 @@ typings/
 # python env folder
 env/
 venv/
+.pytest_cache/
 #pip egg info
 *.egg-info
 
