@@ -13,11 +13,12 @@ experiments_schema_file = open(os.path.join(dirname, "experiment_schema.json"))
 EXPERIMENTS_SCHEMA = json.load(experiments_schema_file)
 experiments_schema_file.close()
 
-
 class Experiments(Resource):
-    def __init__(self):
+    def __init__(self, ):
         self.dao = MongoCollectionDao(current_app.db.splash.experiments)
         super()
+
+   
 
     def get(self):
         try:
@@ -32,6 +33,7 @@ class Experiments(Resource):
             if str(e) == "Page parameter must be positive":
                 raise e from None
             raise TypeError("page parameter must be a positive integer") from None
+
 
     def post(self):
         data = json.loads(request.data)
@@ -49,5 +51,18 @@ class Experiments(Resource):
             raise BadIdError()
         return dumps({'message': 'SUCCESS'})
 
+class Experiment(Resource):
+    def __init__(self, ):
+        self.dao = MongoCollectionDao(current_app.db.splash.experiments)
+        super()
 
 
+    def get(self, uid):
+        results = self.dao.retrieve(uid)
+        return json.dumps(results)
+ 
+    def post(self):
+        data = json.loads(request.data)
+        jsonschema.validate(data, EXPERIMENTS_SCHEMA)
+        self.dao.create(data)
+        return dumps({'message': 'CREATE SUCCESS', 'uid': str(data['uid'])})

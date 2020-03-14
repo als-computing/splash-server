@@ -1,4 +1,4 @@
-from flask import Flask, Blueprint, make_response
+from flask import Flask, make_response
 from flask_restful import Api
 from pymongo import MongoClient
 import jsonschema
@@ -9,11 +9,9 @@ from splash.data import MongoCollectionDao, ObjectNotFoundError, BadIdError
 from splash.util import context_timer
 
 
-def create_app():
+def create_app(db):
     app = Flask(__name__, instance_relative_config=True)
-    api_blueprint = Blueprint('api', __name__)
-    api = Api(api_blueprint)
-    app.register_blueprint(api_blueprint)
+    api = Api(app)
     app.config.from_object('config')
     app.config.from_pyfile('config.py')
     logger = logging.getLogger('splash-server')
@@ -36,12 +34,15 @@ def create_app():
         logger.addHandler(ch)
     except Exception as e:
         print("cannot setup logging: {}".format(str(e)))
-        
-    app.db = MongoClient(app.config['MONGO_URL'],
-                username=app.config['MONGO_APP_USER'],
-                password=app.config['MONGO_APP_PW'],
-                authSource=app.config['SPLASH_DB_NAME'],
-                authMechanism='SCRAM-SHA-256')
+    
+    if db:
+        app.db = db
+    else:
+        app.db = MongoClient(app.config['MONGO_URL'],
+                    username=app.config['MONGO_APP_USER'],
+                    password=app.config['MONGO_APP_PW'],
+                    authSource=app.config['SPLASH_DB_NAME'],
+                    authMechanism='SCRAM-SHA-256')
 
     @app.errorhandler(404)
     def resource_not_found(error):
@@ -90,8 +91,12 @@ def create_app():
     def general_error(error):
         logger.critical(" Houston we have a problem: ", exc_info=1)
         return make_response(str(error), 500)
-    from splash.resources.experiments import Experiments
+
+
+    from splash.resources.experiments import Experiments, Experiment
     api.add_resource(Experiments, "/api/experiments")
+    api.add_resource(Experiment,  "/api/experiments/<uid>")
+
     return app
 
 #define custom exceptions
