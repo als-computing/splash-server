@@ -46,7 +46,7 @@ class MongoCollectionDao(Dao):
     def retrieve(self, uid):
         return self.collection.find_one({"uid": uid})
 
-    def retrieve_many(self, page, query=None, page_size=10):
+    def retrieve_multiple(self, page, query=None, page_size=10):
         if query is None:
             # Calculate number of documents to skip
             skips = page_size * (page - 1)
@@ -55,13 +55,13 @@ class MongoCollectionDao(Dao):
             cursor = self.collection.find().skip(skips).limit(page_size)
 
             # Return documents
-            return  num_results, cursor
+            return num_results, cursor
 
         else:
             raise NotImplementedError
 
     def update(self, doc):
-        #update should not be able to change uid
+        # update should not be able to change uid
         if 'uid' not in doc:
             raise BadIdError('Cannot change object uid')
         # update_one might be more efficient, but kinda tricky

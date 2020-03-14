@@ -1,8 +1,4 @@
 import splash
-from splash.data import MongoCollectionDao
-from splash.resources.experiments import Experiments
-import os
-import tempfile
 import mongomock
 import pytest
 import json

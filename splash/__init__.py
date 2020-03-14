@@ -5,7 +5,7 @@ import jsonschema
 import logging
 import os
 import sys
-from splash.data import ObjectNotFoundError, BadIdError
+from splash.service.data import ObjectNotFoundError, BadIdError
 # from splash.util import context_timer
 
 
