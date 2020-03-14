@@ -20,29 +20,32 @@ def client(mongodb):
 
 def test_crud_experiment(client, mongodb):
     url = '/api/experiments'
-    
-    #create 
-    response = client.post(
-        url, 
-        data = json.dumps(new_experiment), 
-        content_type='application/json')
+
+    # create
+    response = client.post(url,
+                           data=json.dumps(new_experiment),
+                           content_type='application/json')
+
     assert response.status_code == 200
-    response_dict= json.loads(response.get_json())
+    response_dict = json.loads(response.get_json())
     new_uid = response_dict['uid']
     assert new_uid
 
-    #retreive all
+    # retreive all
     response = client.get(url)
     assert response.status_code == 200
-    response_dict= json.loads(response.get_json())
+    response_dict = json.loads(response.get_json())
     assert response_dict['total_results'] == 1
 
-    #retrive one
+    # retrive one
     response = client.get(url + '/' + new_uid)
     assert response.status_code == 200
-    
+    response_experiment = json.loads(response.get_json())
+    response_experiment.pop('_id', None)
+    new_experiment['uid'] = response_experiment['uid']
+    assert response_experiment == new_experiment
 
-    
+
 new_experiment = {
     "name": "whiteboard enterprise interfaces tests",
     "technique": {
@@ -123,5 +126,4 @@ new_experiment = {
             "adsorbing": "In"
         }
     ],
-    "uid": "b0798c7c-a4fa-4754-a132-8fdabac0d71a"
 }
