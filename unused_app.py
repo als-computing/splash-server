@@ -9,37 +9,36 @@ import os
 from splash.config import Config
 from splash.data import MongoCollectionDao, ObjectNotFoundError, BadIdError
 from splash.util import context_timer
+
 import logging, sys
 import pathlib
 import jsonschema 
 
-dirname = os.path.dirname(__file__)
 
-API_URL_ROOT = "/api"
-COMPOUNDS_URL_ROOT = API_URL_ROOT + "/compounds"
-EXPERIMENTS_URL_ROOT = API_URL_ROOT + "/experiments"
-RUNS_URL_ROOT = API_URL_ROOT + "/runs"
+class Constants():
+    API_URL_ROOT = "/api"
+    COMPOUNDS_URL_ROOT = API_URL_ROOT + "/compounds"
+    EXPERIMENTS_URL_ROOT = API_URL_ROOT + "/experiments"
+    RUNS_URL_ROOT = API_URL_ROOT + "/runs"
 
-experiments_schema_file = open(os.path.join(dirname, "schema", "experiment_schema.json"))
-EXPERIMENTS_SCHEMA = json.load(experiments_schema_file)
-experiments_schema_file.close()
-
-logger = logging.getLogger('splash-server')
 
 app = Flask(__name__)
 
-
-
+if app.config["ENV"] == "production":
+    app.config.from_object("config.ProductionConfig")
+else:
+    app.config.from_object("config.DevelopmentConfig")
 #define custom exceptions
 class NoIdProvidedError(Exception):
     pass
 
 
 def setup_logging():
+    logger = logging.getLogger('splash-server')
     try:
         # flask_cors_logger = logging.getLogger('flask_cors')
         # flask_cors_logger.setLevel(logging.DEBUG)
-        
+
         logging_level = os.environ.get("LOGLEVEL")
         print (f"Setting log level to {logging_level}")
         logger.setLevel(logging_level)
@@ -64,6 +63,7 @@ def setup_logging():
 
 setup_logging()
 
+
 SPLASH_SERVER_DIR = os.environ.get("SPLASH_SERVER_DIR")
 logger.info(f'Reading log file {SPLASH_SERVER_DIR}')
 if SPLASH_SERVER_DIR == None:
@@ -72,21 +72,33 @@ if SPLASH_SERVER_DIR == None:
 
 SPLASH_CONFIG_FILE = SPLASH_SERVER_DIR + "/config.cfg" if SPLASH_SERVER_DIR is not None else "/config.cfg"
 config = Config(SPLASH_CONFIG_FILE)
-CFG_APP_DB = 'AppDB'
-CFG_WEB = 'Web'
+ 
 MONGO_URL = config.get(CFG_APP_DB, 'mongo_url', fallback='localhost:27017')
+MONGO_APP_USER = config.get(CFG_APP_DB, 'mongo_app_user', fallback='')
+MONGO_APP_PW = config.get(CFG_APP_DB, 'mongo_app_pw', fallback='')
 WEB_SERVER_HOST = config.get(CFG_WEB, 'server_host', fallback='0.0.0.0')
 WEB_SERVER_HOST = config.get(CFG_WEB, 'server_port', fallback='80')
 WEB_IMAGE_FOLDER_ROOT = config.get(CFG_WEB, 'image_root_folder', fallback='images')
+SPLASH_DB_NAME = 'splash'
 
+db = None
+
+def get_app_db():
+    #TODO: we need to cache the connections?
+    db = MongoClient(MONGO_URL, 
+        username=MONGO_APP_USER,        
+        password=MONGO_APP_PW,
+        authSource=SPLASH_DB_NAME,
+        authMechanism='SCRAM-SHA-256')
+    return db
 
 def get_compound_dao():
-    db = MongoClient(MONGO_URL)  # , ssl=True, ssl_ca_certs=certifi.where(), connect=False)
-    return MongoCollectionDao(db.efrc.compounds)
+    db = get_app_db()
+    return MongoCollectionDao(db.SPLASH_DB_NAME.compounds)
 
 def get_experiment_dao():
-    db = MongoClient(MONGO_URL)
-    return MongoCollectionDao(db.efrc.experiments)
+    db = get_app_db()
+    return MongoCollectionDao(db.splash.experiments)
 
 # @app.teardown_appcontext
 # def teardown_db(exception):
@@ -94,20 +106,33 @@ def get_experiment_dao():
 #     if db is not None:
 #         db.close()
 
-@app.route(COMPOUNDS_URL_ROOT, methods=['GET'])
+@app.route(Constants.COMPOUNDS_URL_ROOT, methods=['GET'])
 def retrieve_compounds():
-    data_svc = get_compound_dao()
+    try:
+        data_svc = get_compound_dao()
+        logger.info("-----In retrieve_copounds")
+        page = request.args.get('page')
+        if page is None:
+            page = 1
+        else:
+            page = int(page)
+        if page <= 0:
+            raise ValueError("Page parameter must be positive")
+        results = data_svc.retrieve_many(page=page)
+        data = {"total_results": results[0], "results": results[1]}
+        logger.info("-----In retrieve_copounds find")
+        json = dumps(data)
+        logger.info("-----In retrieve_copounds dump")
+        return json
+    except ValueError as e:
+        if str(e) == "Page parameter must be positive":
+            raise e from None
+        raise TypeError("page parameter must be a positive integer") from None
 
-    logger.info("-----In retrieve_copounds")
-    compounds = data_svc.retrieve_many()
-    logger.info("-----In retrieve_copounds find")
-    json = dumps(compounds)
-    logger.info("-----In retrieve_copounds dump")
-    return json
 
 
 
-@app.route(COMPOUNDS_URL_ROOT + "/<compound_id>", methods=['GET'])
+@app.route(Constants.COMPOUNDS_URL_ROOT + "/<compound_id>", methods=['GET'])
 def retrieve_compound(compound_id):
     if compound_id:
         data_svc = get_compound_dao()
@@ -120,14 +145,14 @@ def retrieve_compound(compound_id):
     return json
 
 
-@app.route(COMPOUNDS_URL_ROOT, methods=['POST'])
+@app.route(Constants.COMPOUNDS_URL_ROOT, methods=['POST'])
 def create_compound():
     data = json.loads(request.data)
     get_compound_dao().create(data)
     return dumps({'message': 'CREATE SUCCESS', 'uid': str(data['uid'])})
 
 
-@app.route(COMPOUNDS_URL_ROOT + "/<compound_id>", methods=['PATCH'])
+@app.route(Constants.COMPOUNDS_URL_ROOT + "/<compound_id>", methods=['PATCH'])
 def update_compound(compound_id):
     data = json.loads(request.data)
     if compound_id:
@@ -136,7 +161,7 @@ def update_compound(compound_id):
         raise NoIdProvidedError()
     return dumps({'message': 'SUCCESS'})
 
-@app.route(COMPOUNDS_URL_ROOT + "/<compound_id>", methods=['DELETE'])
+@app.route(Constants.COMPOUNDS_URL_ROOT + "/<compound_id>", methods=['DELETE'])
 def delete_compound(compound_id):
     if compound_id:
         get_compound_dao().delete(compound_id)
@@ -145,7 +170,7 @@ def delete_compound(compound_id):
     return dumps({'message': 'SUCCESS'})
 
 
-@app.route(EXPERIMENTS_URL_ROOT, methods=['POST'])
+@app.route(Constants.EXPERIMENTS_URL_ROOT, methods=['POST'])
 def create_experiment():
     data = json.loads(request.data)
     jsonschema.validate(data, EXPERIMENTS_SCHEMA)
@@ -153,7 +178,7 @@ def create_experiment():
     return dumps({'message': 'CREATE SUCCESS', 'uid': str(data['uid'])})
 
 
-@app.route(EXPERIMENTS_URL_ROOT + "/<experiment_id>", methods=['GET'])
+@app.route(Constants.EXPERIMENTS_URL_ROOT + "/<experiment_id>", methods=['GET'])
 def retrieve_experiment(experiment_id):
     if experiment_id:
         data_svc = get_experiment_dao()
@@ -167,14 +192,28 @@ def retrieve_experiment(experiment_id):
         
 
 
-@app.route(EXPERIMENTS_URL_ROOT, methods=['GET'])
+@app.route(Constants.EXPERIMENTS_URL_ROOT, methods=['GET'])
 def retrieve_experiments():
-    data_svc = get_experiment_dao()
-    experiments = data_svc.retrieve_many()
-    json = dumps(experiments)
-    return json
+    try:
+        data_svc = get_experiment_dao()
+        page = request.args.get('page')
+        if page is None:
+            page = 1
+        else:
+            page = int(page)
+        if page <= 0:
+            raise ValueError("Page parameter must be positive")
+        results = data_svc.retrieve_many(page=page)
+        data = {"total_results": results[0], "results": results[1]}
+        json = dumps(data)
+        return json
+    except ValueError as e:
+        if str(e) == "Page parameter must be positive":
+            raise e from None
+        raise TypeError("page parameter must be a positive integer") from None
 
-@app.route(EXPERIMENTS_URL_ROOT + "/<experiment_id>", methods=['DELETE'])
+
+@app.route(Constants.EXPERIMENTS_URL_ROOT + "/<experiment_id>", methods=['DELETE'])
 def delete_experiment(experiment_id):
     if experiment_id:
         get_experiment_dao().delete(experiment_id)
@@ -184,7 +223,7 @@ def delete_experiment(experiment_id):
     
 
 
-@app.route(EXPERIMENTS_URL_ROOT + "/<experiment_id>", methods=['PUT'])
+@app.route(Constants.EXPERIMENTS_URL_ROOT + "/<experiment_id>", methods=['PUT'])
 def update_experiment(experiment_id):
     data = json.loads(request.data)
     jsonschema.validate(data, EXPERIMENTS_SCHEMA)
@@ -212,6 +251,11 @@ def validation_error(error):
     logger.info(" Validation Error: ", exc_info=1 )
     return make_response(str(error), 400)
 
+@app.errorhandler(TypeError)
+def type_error(error):
+    logger.info(" TypeError ", exc_info=1)
+    return make_response(str(error), 400)
+
 #This actually might never get called because trailing slashes with
 #no parameters won't get routed to the route that would raise a
 #NoIdProvidedError, they would get routed to a route that just 
@@ -230,6 +274,11 @@ def object_not_found_error(error):
 @app.errorhandler(BadIdError)
 def bad_id_error(error):
     logger.info(" Bad ID error: ", exc_info=1)
+    return make_response(str(error), 400)
+
+@app.errorhandler(ValueError)
+def value_error(error):
+    logger.info(" ValueError ", exc_info=1)
     return make_response(str(error), 400)
 
 @app.errorhandler(Exception)

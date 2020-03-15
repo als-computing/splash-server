@@ -1,5 +1,6 @@
 pymongo==3.7.2
-flask==1.0.2
+flask
+flask_restful
 bokeh
 jsonschema
 uwsgi
