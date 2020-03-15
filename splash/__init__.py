@@ -21,11 +21,11 @@ def create_app(db):
     api.add_resource(User,  "/api/users/<uid>")
     
     app.config.from_object('config')
-    app.config.from_pyfile('config.py')
+    # app.config.from_pyfile('config.py')
     logger = logging.getLogger('splash-server')
     try:
         logging_level = os.environ.get("LOGLEVEL", logging.DEBUG)
-        print (f"Setting log level to {logging_level}")
+        print (f"Settinconfig.pg log level to {logging_level}")
         logger.setLevel(logging_level)
 
         # create console handler and set level to debug
