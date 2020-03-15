@@ -1,4 +1,0 @@
-[
-  "test/test_data_layer.py::test_crud_compounds",
-  "test/test_rest_compounds.py::test_get_compounds"
-]
