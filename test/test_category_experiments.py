@@ -1,45 +1,24 @@
-import splash
 import mongomock
 import pytest
-import json
+
+from splash.categories.experiments.experiment_service import ExperimentService
+from .testing_utils import generic_test_flask_crud
 
 @pytest.fixture
 def mongodb():
     return mongomock.MongoClient().db
 
 
-@pytest.fixture
-def client(mongodb):
-    app = splash.create_app(mongodb)
-    return app.test_client()
+
+def test_experiment_service_validate():
+    exp_svc = ExperimentService(None)
+    issues = exp_svc.validate({"foo": "bar"})
+    assert issues
 
 
-def test_crud_experiment(client, mongodb):
-    url = '/api/experiments'
-
-    # create
-    response = client.post(url,
-                           data=json.dumps(new_experiment),
-                           content_type='application/json')
-
-    assert response.status_code == 200
-    response_dict = json.loads(response.get_json())
-    new_uid = response_dict['uid']
-    assert new_uid
-
-    # retreive all
-    response = client.get(url)
-    assert response.status_code == 200
-    response_dict = json.loads(response.get_json())
-    assert response_dict['total_results'] == 1
-
-    # retrive one
-    response = client.get(url + '/' + new_uid)
-    assert response.status_code == 200
-    response_experiment = json.loads(response.get_json())
-    response_experiment.pop('_id', None)
-    new_experiment['uid'] = response_experiment['uid']
-    assert response_experiment == new_experiment
+@pytest.mark.usefixtures("splash_client", "mongodb")
+def test_flask_crud_experiments(splash_client, mongodb):
+    generic_test_flask_crud(new_experiment, '/api/experiments', splash_client, mongodb)
 
 
 new_experiment = {

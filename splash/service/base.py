@@ -4,6 +4,12 @@ from collections import namedtuple
 ValidationIssue = namedtuple('ValidationIssue', 'description, location, exception')
 
 
+class User():
+    def __init__(self, uid, groups=None):
+        super().__init__()
+        self.uid = uid
+
+
 class Service():
 
     def __init__(self, dao: MongoCollectionDao):
