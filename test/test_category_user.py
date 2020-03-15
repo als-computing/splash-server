@@ -1,6 +1,6 @@
 import pytest
 
-from splash.categories.user.user_service import UserService
+from splash.categories.users.users_service import UserService
 from .testing_utils import generic_test_flask_crud
 
 

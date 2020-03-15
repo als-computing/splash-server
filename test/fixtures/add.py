@@ -1,7 +1,6 @@
 import splash
 import pytest
 import mongomock
-import json
 
 
 @pytest.fixture

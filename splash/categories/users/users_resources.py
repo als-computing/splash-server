@@ -2,6 +2,7 @@ from flask import current_app
 from splash.resource.base import SingleObjectResource, MultiObjectResource
 from splash.data.base import MongoCollectionDao
 
+BASE_URL_SEGMENT = 'users' 
 
 class Users(MultiObjectResource):
     def __init__(self):

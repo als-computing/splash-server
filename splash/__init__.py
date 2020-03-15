@@ -15,9 +15,11 @@ def create_app(db):
     from splash.categories.experiments.experiments_resources import Experiments, Experiment
     api.add_resource(Experiments, "/api/experiments")
     api.add_resource(Experiment,  "/api/experiments/<uid>")
-    from splash.categories.user.user_resources import Users, User
+
+    from splash.categories.users.users_resources import Users, User
     api.add_resource(Users, "/api/users")
     api.add_resource(User,  "/api/users/<uid>")
+    
     app.config.from_object('config')
     app.config.from_pyfile('config.py')
     logger = logging.getLogger('splash-server')

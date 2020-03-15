@@ -1,13 +1,12 @@
 import mongomock
 import pytest
 
-from splash.categories.experiments.experiment_service import ExperimentService
+from splash.categories.experiments.experiments_service import ExperimentService
 from .testing_utils import generic_test_flask_crud
 
 @pytest.fixture
 def mongodb():
     return mongomock.MongoClient().db
-
 
 
 def test_experiment_service_validate():
