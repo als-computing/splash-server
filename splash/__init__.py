@@ -8,7 +8,7 @@ import sys
 from splash.data.base import ObjectNotFoundError, BadIdError
 
 
-def create_app(db):
+def create_app():
     app = Flask(__name__, instance_relative_config=True)
     api = Api(app)
 
@@ -42,15 +42,8 @@ def create_app(db):
         logger.addHandler(ch)
     except Exception as e:
         print("cannot setup logging: {}".format(str(e)))
-    
-    if db:
-        app.db = db
-    else:
-        app.db = MongoClient(app.config['MONGO_URL'],
-                             username=app.config['MONGO_APP_USER'],
-                             password=app.config['MONGO_APP_PW'],
-                             authSource=app.config['SPLASH_DB_NAME'],
-                             authMechanism='SCRAM-SHA-256')
+
+    app.db = MongoClient(app.config['MONGO_URL']).app.config['MONGO_DB_NAME']
 
     @app.errorhandler(404)
     def resource_not_found(error):
