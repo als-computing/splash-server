@@ -10,7 +10,7 @@ def mongodb():
 
 
 def test_crud_compounds(mongodb):
-    mongo_crud_service = MongoCollectionDao(mongodb.compounds)
+    mongo_crud_service = MongoCollectionDao(mongodb, 'compounds')
     compound = dict(name='boron')
     uid = mongo_crud_service.create(compound)
     assert uid is not None
