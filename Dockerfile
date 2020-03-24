@@ -1,4 +1,4 @@
-FROM python:3.6 
+FROM python:3.7 
 #parent image directs nginx to read from /app/static, so copy
 #javascript app files from build-stage into there
 #COPY --from=build-stage /app/ui/dist /usr/share/nginx/html
@@ -10,7 +10,8 @@ RUN pip install uwsgi
 
 RUN pip install -U pip &&        pip install -r /tmp/requirements.txt
 RUN useradd -ms /bin/bash uwsgi
-COPY ./ /app
+#COPY ./ /app
+
 EXPOSE 8000
 WORKDIR /app
 
