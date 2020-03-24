@@ -10,5 +10,6 @@ def mongodb():
 
 @pytest.fixture
 def splash_client(mongodb):
-    app = splash.create_app(mongodb)
+    app = splash.create_app()
+    app.db = mongodb
     return app.test_client()
