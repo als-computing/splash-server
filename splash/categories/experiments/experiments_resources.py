@@ -6,11 +6,11 @@ BASE_URL_SEGMENT = 'experiments'
 
 class Experiments(MultiObjectResource):
     def __init__(self):
-        dao = MongoCollectionDao(current_app.db.experiments)
+        dao = MongoCollectionDao(current_app.db, 'experiments')
         super().__init__(dao)
 
 
 class Experiment(SingleObjectResource):
     def __init__(self):
-        dao = MongoCollectionDao(current_app.db.experiments)
+        dao = MongoCollectionDao(current_app.db, 'experiments')
         super().__init__(dao)

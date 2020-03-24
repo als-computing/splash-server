@@ -12,13 +12,7 @@ def create_app():
     app = Flask(__name__, instance_relative_config=True)
     api = Api(app)
 
-    from splash.categories.experiments.experiments_resources import Experiments, Experiment
-    api.add_resource(Experiments, "/api/experiments")
-    api.add_resource(Experiment,  "/api/experiments/<uid>")
 
-    from splash.categories.users.users_resources import Users, User
-    api.add_resource(Users, "/api/users")
-    api.add_resource(User,  "/api/users/<uid>")
     
     app.config.from_object('config')
     # app.config.from_pyfile('config.py')
@@ -43,7 +37,17 @@ def create_app():
     except Exception as e:
         print("cannot setup logging: {}".format(str(e)))
 
-    app.db = MongoClient(app.config['MONGO_URL']).app.config['MONGO_DB_NAME']
+    from splash.categories.experiments.experiments_resources import Experiments, Experiment
+    api.add_resource(Experiments, "/api/experiments")
+    api.add_resource(Experiment,  "/api/experiments/<uid>")
+
+    from splash.categories.users.users_resources import Users, User
+    api.add_resource(Users, "/api/users")
+    api.add_resource(User,  "/api/users/<uid>")
+
+    # connect-false because frameworks like uwsgi fork after app is obtained, and are not
+    # fork-safe.
+    app.db = MongoClient(app.config['MONGO_URL'], connect=False)[app.config['MONGO_DB_NAME']]
 
     @app.errorhandler(404)
     def resource_not_found(error):
