@@ -17,7 +17,7 @@ class MultiObjectResource(DAOResource):
 
     def get(self):
         try:
-            pageNum = request.args.get('page', 1)
+            pageNum = int(request.args.get('page', 1))
             if pageNum is None or pageNum <= 0:
                 raise ValueError("Page parameter must be positive")
             results = self.dao.retrieve_multiple(pageNum)
