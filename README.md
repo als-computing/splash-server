@@ -1,45 +1,6 @@
 # splash-server
-Server for the Splash application
+Server for the Splash application. 
 
-# Description
-This application demonstrates capabilities of a web application that serves MWET data. It consists of 
-several parts:
+This project contains a service layer for running the Splash experimental database service. It includes a RESTFul interface served by a Flask container.
 
-* A Flask server processing REST requests.
-* A Vue-based Single Page Application (SPA). The SPA gets all of its data from the Flask REST service.
-* A MongoDB for persistence.
-
-# Installation
-To install the application, run pip to install dependencies:
-
-## Server
-
-### Install dependencies
-```
-pip install pymongo flask flask_cors
-```
-
-### Configure database location
-By default, the REST service reads and writes to a MongoDB started up at localhost:27107. The URL can be modified by changing the server_config.ini file.
-
-# Startup
-
-## UI
-Currently, the UI layer is served by a NPM. In the future, it will be built and distributed with the product. But for now, to start it up by navigating to the splash-app/ui folder and typing:
-```
-npm run serve
-````
-
-To build a production release of the UI code (pack up javascript and CSS, minify, etc.), run:
-```
-npm run build
-```
-
-## Flask server
-To start the flask RESTful service, create a python environmnet in the splas-app folder. Call it "env" to match the command in .gitignore. Then, type:
-
-```
-python rest_service.py
-```
-
-
+There is a companion project [splash-deploy](https://github.com/als-computing/splash-deploy) which provides an easy-to-use method for running the full splash system in containers. That project for more information on installation. Nothing stops you from installation or running on your own outside of containers, but that is probably your easiest path.
