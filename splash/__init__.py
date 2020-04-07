@@ -45,6 +45,9 @@ def create_app():
     api.add_resource(Users, "/api/users")
     api.add_resource(User,  "/api/users/<uid>")
 
+    from splash.auth.oauth_resources import OAuthResource
+    api.add_resource(OAuthResource, "/api/tokensignin")
+
     # connect-false because frameworks like uwsgi fork after app is obtained, and are not
     # fork-safe.
     app.db = MongoClient(app.config['MONGO_URL'], connect=False)[app.config['MONGO_DB_NAME']]
