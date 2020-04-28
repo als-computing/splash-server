@@ -8,13 +8,7 @@ from flask_restful import Resource
 from google.oauth2 import id_token
 from google.auth.transport import requests
 
-dirname = os.path.dirname(__file__)
-auth_schema_file = open(os.path.join(dirname, "auth_schema.json"))
-AUTH_SCHEMA = json.load(auth_schema_file)
-auth_schema_file.close()
 
-
-CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID") + ".apps.googleusercontent.com" #TODO: Temporary solution, we will need to have a local config file
 #TODO: Create error handling for if the user is not found in the mongo database
 #TODO: integrate this with mongo 
 class OauthVerificationError(ValueError):
@@ -24,6 +18,12 @@ class UserNotFoundError(Exception): #TODO: make the base class more specific
     pass
 
 class OAuthResource(Resource):
+        def __init__(self):
+            self.CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID") + ".apps.googleusercontent.com" #TODO: Temporary solution, we will need to have a local config file
+            dirname = os.path.dirname(__file__)
+            auth_schema_file = open(os.path.join(dirname, "auth_schema.json"))
+            AUTH_SCHEMA = json.load(auth_schema_file)
+            auth_schema_file.close()
         def post(self):
             try: 
                 validator = jsonschema.Draft7Validator(AUTH_SCHEMA)
