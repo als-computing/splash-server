@@ -24,12 +24,12 @@ class OAuthResource(Resource):
             auth_schema_file = open(os.path.join(dirname, "auth_schema.json"))
             AUTH_SCHEMA = json.load(auth_schema_file)
             auth_schema_file.close()
+            self.validator = jsonschema.Draft7Validator(AUTH_SCHEMA)
         def post(self):
             try: 
-                validator = jsonschema.Draft7Validator(AUTH_SCHEMA)
-                json = request.get_json(force=True)
-                validator.validate(json)
-                token = json['token']
+                payload = request.get_json(force=True)
+                self.validator.validate(payload)
+                token = payload['token']
                 # Specify the CLIENT_ID of the app that accesses the backend:
                 idinfo = id_token.verify_oauth2_token(token, requests.Request(), CLIENT_ID)
 
