@@ -101,7 +101,7 @@ def create_app():
     @app.errorhandler(Exception)
     def general_error(error):
         logger.critical(" Houston we have a problem: ", exc_info=1)
-        return make_response(dumps({"error":"server_error", "message": "oops, something went wrong on our end"}, 500))
+        return make_response(dumps({"error":"server_error", "message": "oops, something went wrong on our end"}), 500)
     return app
 
 
