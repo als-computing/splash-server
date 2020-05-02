@@ -1,4 +1,3 @@
-from bson.json_util import dumps
 import jsonschema
 import json
 import os
@@ -17,13 +16,11 @@ class OauthVerificationError(ValueError):
 class UserNotFoundError(Exception): #TODO: make the base class more specific
     pass
 
+
 class OAuthResource(Resource):
         def __init__(self):
             self.CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID") + ".apps.googleusercontent.com" #TODO: Temporary solution, we will need to have a local config file
-            dirname = os.path.dirname(__file__)
-            auth_schema_file = open(os.path.join(dirname, "auth_schema.json"))
-            AUTH_SCHEMA = json.load(auth_schema_file)
-            auth_schema_file.close()
+            AUTH_SCHEMA = open_schema()
             self.validator = jsonschema.Draft7Validator(AUTH_SCHEMA)
         def post(self):
             try: 
@@ -31,12 +28,14 @@ class OAuthResource(Resource):
                 self.validator.validate(payload)
                 token = payload['token']
                 # Specify the CLIENT_ID of the app that accesses the backend:
-                idinfo = id_token.verify_oauth2_token(token, requests.Request(), CLIENT_ID)
+                idinfo = id_token.verify_oauth2_token(token, requests.Request(), self.CLIENT_ID)
 
                 # Or, if multiple clients access the backend server:
                 # idinfo = id_token.verify_oauth2_token(token, requests.Request())
                 # if idinfo['aud'] not in [CLIENT_ID_1, CLIENT_ID_2, CLIENT_ID_3]:
                 #     raise ValueError('Could not verify audience.')
+                
+                print(idinfo['iss'] not in ['accounts.google.com', 'https://accounts.google.com'])
 
                 if idinfo['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
                     raise ValueError('Wrong issuer.')
@@ -47,11 +46,16 @@ class OAuthResource(Resource):
 
                 # ID token is valid. Get the user's Google Account ID from the decoded token.
                 userid = idinfo['sub']
-                return dumps({'message':'LOGIN SUCCESS', 'token': 'SERVER TOKEN GOES HERE'}) #TODO: return an actual token
+                return {'message':'LOGIN SUCCESS', 'token': 'SERVER TOKEN GOES HERE'} #TODO: return an actual token
             except ValueError as e: #This should catch any ValueErrors that come from the the id_token.verify_oauth2_token
                 #However, there are still possible connection errors from that function that may 
                 #go uncaught
                 raise OauthVerificationError(e) from None
 
 
-                
+def open_schema():
+    dirname = os.path.dirname(__file__)
+    auth_schema_file = open(os.path.join(dirname, "auth_schema.json"))
+    AUTH_SCHEMA = json.load(auth_schema_file)
+    auth_schema_file.close()
+    return AUTH_SCHEMA
