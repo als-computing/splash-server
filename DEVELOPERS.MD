@@ -1,0 +1,2 @@
+# How to set up the OAuth functionality
+You must set an environment variable called GOOGLE_CLIENT_ID to the client ID given in the credentials.json file, how to get this file is explained in the DEVELOPERS.MD file in the vue client.
