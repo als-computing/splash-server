@@ -16,7 +16,7 @@ class Service():
         self.dao = dao
 
     def create(self, data):
-        self.dao.create(data)
+        return self.dao.create(data)
 
     def retreive_one(self, uid):
         return self.dao.retrieve(uid)

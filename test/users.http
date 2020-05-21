@@ -1,0 +1,40 @@
+
+GET http://localhost:5000/api/users
+
+
+###
+POST http://localhost:5000/api/users HTTP/1.1
+content-type: application/json
+
+{
+    "name": "DPickle",
+        "authenticators": [
+            {
+                "issuer": "https://accounts.google.com",
+                "subject": "dylan@b-town.net"
+            },
+            {
+                "issuer": "issuer_no_https_prefix",
+                "subject": "dylan@b-town.net"
+            }
+        ]
+}
+
+###
+PUT http://localhost:5000/api/users/a3952bcb-ac60-4ce6-92f6-99059c6c07b3 HTTP/1.1
+content-type: application/json
+
+{
+    "name": "DPickle",
+        "authenticators": [
+            {
+                "issuer": "https://accounts.google.com",
+                "subject": "117826925576405854777"
+            },
+            {
+                "issuer": "accounts.google.com",
+                "subject": "117826925576405854777"
+            }
+        ]
+}
+
