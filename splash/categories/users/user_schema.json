@@ -1,5 +1,20 @@
 {
-    "definitions": {},
+  "definitions": {
+      "authenticator": {
+        "type": "object",
+        "required": ["issuer", "subject"],
+        "properties": { 
+          "issuer":{
+            "type": "string",
+            "description": "name of the issuer"
+          },
+          "subject": {
+            "type": "string",
+            "description": "unique subject id"
+          }
+        }
+      }
+    },
     "$schema": "http://json-schema.org/draft-07/schema#",
     "$id": "splash::schema::user",
     "type": "object",
@@ -7,6 +22,10 @@
     "properties": {
       "uid": {
         "description": "unique identifier",
+        "type": "string"
+      },
+      "name": {
+        "description": "User display name",
         "type": "string"
       },
       "groups": {
@@ -17,7 +36,12 @@
         },
         "minItems": 1,
         "uniqueItems": true
+      },
+      "authenticators":{
+        "type": "array",
+        "items": {"$ref": "#/definitions/authenticators"}
       }
+
     },
-    "required": ["uid", "groups"]
+    "required": ["uid", "name"]
   }

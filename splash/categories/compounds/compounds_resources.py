@@ -4,7 +4,8 @@ from splash.data.base import MongoCollectionDao
 
 COLLECTION_NAME = 'compounds'
 
-class Compundss(MultiObjectResource):
+
+class Compounds(MultiObjectResource):
     def __init__(self):
         dao = MongoCollectionDao(current_app.db, COLLECTION_NAME)
         super().__init__(dao)

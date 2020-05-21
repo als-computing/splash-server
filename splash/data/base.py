@@ -93,7 +93,7 @@ class MongoCollectionDao(Dao):
     def retrieve(self, uid):
         return self._collection.find_one({"uid": uid})
 
-    def retrieve_multiple(self, page, query=None, page_size=10):
+    def retrieve_paged(self, page, query=None, page_size=10):
         if query is None:
             # Calculate number of documents to skip
             skips = page_size * (page - 1)
@@ -106,6 +106,9 @@ class MongoCollectionDao(Dao):
 
         else:
             raise NotImplementedError
+
+    def retreive_many(self, query=None):
+        return self._collection.find(query)
 
     def update(self, doc):
         # update should not be able to change uid

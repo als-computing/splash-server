@@ -17,5 +17,9 @@ def test_flask_crud_user(splash_client, mongodb):
 
 new_user = {
     "uid": "merckx_won_5",
-    "groups": ["legends", "cannibals"]
+    "groups": ["legends", "cannibals"],
+    "authenticators": [
+        {"issuer": "acccounts.google.com",
+         "subject": "dsfsdsdfsdfsdfsdfsdf"}
+    ]
 }
