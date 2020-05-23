@@ -88,7 +88,7 @@ def create_app(db=None):
 
     # @login_manager.request_loader
     # def request_loader(request):
-    #     #this method returns non...it's the flask_login method for searching for a user to register or not
+    #     #this method returns non  
     #     return None
 
 
