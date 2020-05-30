@@ -16,9 +16,14 @@ from flask_login import (
 
 from splash.data.base import ObjectNotFoundError, BadIdError
 from splash.auth.oauth_resources import OauthVerificationError
+<<<<<<< Updated upstream
 from splash.categories.users.users_service import UserService
 from splash.data.base import MongoCollectionDao
 import splash.login
+=======
+from json import dumps
+>>>>>>> Stashed changes
+from splash.helpers.middleware import setup_metrics
 
 
 def create_app(db=None):
@@ -26,7 +31,12 @@ def create_app(db=None):
     login_manager = LoginManager()
     login_manager.init_app(app)
     api = Api(app)
+<<<<<<< Updated upstream
     app.secret_key = os.environ.get('FLASK_SECRET_KEY')
+=======
+>>>>>>> Stashed changes
+    setup_metrics(app)
+
     app.config.from_object('config')
     logger = logging.getLogger('splash-server')
     try:
@@ -39,7 +49,8 @@ def create_app(db=None):
         ch.setLevel(logging_level)
 
         # create formatter
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - \
+                                        %(message)s')
 
         # add formatter to ch
         ch.setFormatter(formatter)
@@ -49,17 +60,8 @@ def create_app(db=None):
     except Exception as e:
         print("cannot setup logging: {}".format(str(e)))
 
-    # connect-false because frameworks like uwsgi fork after app is obtained, and are not
-    # fork-safe.
-    if db is None:
-        app.db = MongoClient(app.config['MONGO_URL'], connect=False)[app.config['MONGO_DB_NAME']]
-    else:
-        app.db = db
-
-    userDAO = MongoCollectionDao(app.db, 'users') # this whole service/dao connection will change soon
-    app.user_service = UserService(userDAO)
-
-    from splash.categories.experiments.experiments_resources import Experiments, Experiment
+    from splash.categories.experiments.experiments_resources import \
+        Experiments, Experiment
     api.add_resource(Experiments, "/api/experiments")
     api.add_resource(Experiment,  "/api/experiments/<uid>")
 
@@ -72,6 +74,7 @@ def create_app(db=None):
     api.add_resource(User,  "/api/users/<uid>")
 
     from splash.auth.oauth_resources import OAuthResource
+<<<<<<< Updated upstream
     api.add_resource(OAuthResource, "/api/tokensignin", resource_class_kwargs={'user_service': app.user_service})
 
     @login_manager.user_loader
@@ -90,22 +93,32 @@ def create_app(db=None):
     # def request_loader(request):
     #     #this method returns non...it's the flask_login method for searching for a user to register or not
     #     return None
+=======
+    api.add_resource(OAuthResource, "/api/tokensignin")
+>>>>>>> Stashed changes
 
+    # connect-false because frameworks like uwsgi fork after app is obtained,
+    # and are not fork-safe.
+    app.db = MongoClient(app.config['MONGO_URL'],
+                         connect=False)[app.config['MONGO_DB_NAME']]
 
     @app.errorhandler(404)
     def resource_not_found(error):
         logger.info("Resource not found: ", exc_info=1)
-        return make_response(dumps({"error": "resource_not_found", "message":"resource not found"}), 404)
+        return make_response(dumps({"error": "resource_not_found",
+                             "message": "resource not found"}), 404)
 
     @app.errorhandler(jsonschema.exceptions.ValidationError)
     def validation_error(error):
-        logger.info(" Validation Error: ", exc_info=1 )
-        return make_response(dumps({"error": "validation_error", "message":str(error)}), 400)
+        logger.info(" Validation Error: ", exc_info=1)
+        return make_response(dumps({"error": "validation_error",
+                             "message": str(error)}), 400)
 
     @app.errorhandler(TypeError)
     def type_error(error):
         logger.info(" TypeError ", exc_info=1)
-        return make_response(dumps({"error":"type_error", "message": "Type Error"}), 400)
+        return make_response(dumps({"error": "type_error",
+                             "message": "Type Error"}), 400)
 
     # This actually might never get called because trailing slashes with
     # no parameters won't get routed to the route that would raise a
@@ -114,32 +127,39 @@ def create_app(db=None):
     @app.errorhandler(NoIdProvidedError)
     def no_id_provided_error(error):
         logger.info("No Id Provided Error: ", exc_info=1)
-        return make_response(dumps({"error":"no_id_provided","message": "no id provided"}), 400)
+        return make_response(dumps({"error": "no_id_provided",
+                             "message": "no id provided"}), 400)
 
     @app.errorhandler(ObjectNotFoundError)
     def object_not_found_error(error):
-        logger.info(" Object Not Found Error: ", exc_info=1 )
-        return make_response(dumps({"error": "object_not_found", "message":"object not found"}), 404)
+        logger.info(" Object Not Found Error: ", exc_info=1)
+        return make_response(dumps({"error": "object_not_found",
+                             "message": "object not found"}), 404)
 
     @app.errorhandler(BadIdError)
     def bad_id_error(error):
         logger.info(" Bad ID error: ", exc_info=1)
-        return make_response(dumps({"error": "bad_id_error", "message": "bad id error"}), 400)
+        return make_response(dumps({"error": "bad_id_error",
+                             "message": "bad id error"}), 400)
 
     @app.errorhandler(ValueError)
     def value_error(error):
         logger.info(" ValueError ", exc_info=1)
-        return make_response(dumps({"error": "value_error", "message": "Value Error"}), 400)
-    
+        return make_response(dumps({"error": "value_error",
+                             "message": "Value Error"}), 400)
+
     @app.errorhandler(OauthVerificationError)
-    def value_error(error):
+    def oaut_verification_error(error):
         logger.info(" OauthVerificationError ", exc_info=1)
-        return make_response(dumps({"error":"oauth_verification_error", "message": "oauth verification error"}), 500)
+        return make_response(dumps({"error": "oauth_verification_error",
+                             "message": "oauth verification error"}), 500)
 
     @app.errorhandler(Exception)
     def general_error(error):
         logger.critical(" Houston we have a problem: ", exc_info=1)
-        return make_response(dumps({"error":"server_error", "message": "oops, something went wrong on our end"}), 500)
+        return make_response(dumps({"error": "server_error",
+                             "message": "oops, something went wrong on our end"
+                                    }), 500)
     return app
 
 
