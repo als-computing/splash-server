@@ -16,13 +16,9 @@ from flask_login import (
 
 from splash.data.base import ObjectNotFoundError, BadIdError
 from splash.auth.oauth_resources import OauthVerificationError
-<<<<<<< Updated upstream
 from splash.categories.users.users_service import UserService
 from splash.data.base import MongoCollectionDao
 import splash.login
-=======
-from json import dumps
->>>>>>> Stashed changes
 from splash.helpers.middleware import setup_metrics
 
 
@@ -31,10 +27,7 @@ def create_app(db=None):
     login_manager = LoginManager()
     login_manager.init_app(app)
     api = Api(app)
-<<<<<<< Updated upstream
     app.secret_key = os.environ.get('FLASK_SECRET_KEY')
-=======
->>>>>>> Stashed changes
     setup_metrics(app)
 
     app.config.from_object('config')
@@ -74,7 +67,6 @@ def create_app(db=None):
     api.add_resource(User,  "/api/users/<uid>")
 
     from splash.auth.oauth_resources import OAuthResource
-<<<<<<< Updated upstream
     api.add_resource(OAuthResource, "/api/tokensignin", resource_class_kwargs={'user_service': app.user_service})
 
     @login_manager.user_loader
@@ -93,9 +85,6 @@ def create_app(db=None):
     # def request_loader(request):
     #     #this method returns non...it's the flask_login method for searching for a user to register or not
     #     return None
-=======
-    api.add_resource(OAuthResource, "/api/tokensignin")
->>>>>>> Stashed changes
 
     # connect-false because frameworks like uwsgi fork after app is obtained,
     # and are not fork-safe.
