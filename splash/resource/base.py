@@ -1,5 +1,5 @@
 from bson.json_util import dumps
-from flask import request
+from flask import request, jsonify
 from flask_login import login_required
 from flask_restful import Resource
 import json
@@ -23,10 +23,9 @@ class MultiObjectResource(DAOResource):
             pageNum = int(request.args.get('page', 1))
             if pageNum is None or pageNum <= 0:
                 raise ValueError("Page parameter must be positive")
-            results = self.dao.retrieve_paged(pageNum)
-            data = {"total_results": results[0], "results": results[1]}
-            json = dumps(data)
-            return json
+            results = self.dao.retrieve_paged(pageNum, page_size=0)
+            data = {"total_results": results[0], "results": list(results[1])}
+            return data
         except ValueError as e:
             if str(e) == "Page parameter must be positive":
                 raise e from None
@@ -44,10 +43,10 @@ class SingleObjectResource(DAOResource):
 
     def get(self, uid):
         results = self.dao.retrieve(uid)
-        return dumps(results)
+        return results
 
     def put(self, uid):
-        data = json.loads(request.data)
+        data = request.data
 
         if 'uid' in data:
             self.dao().update(uid)
