@@ -11,7 +11,6 @@ from flask_restful import Resource
 
 from google.oauth2 import id_token
 from google.auth.transport import requests
-from splash.login import User
 from splash.categories.users.users_service import (
     UserService,
     MultipleUsersAuthenticatorException,
