@@ -78,7 +78,7 @@ dist/
 
 #visual studio code
 .vscode/
-
+*.code-workspace
 __pycache__/
 
 out/

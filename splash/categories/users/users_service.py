@@ -32,7 +32,7 @@ class UserService(Service):
             return_errs.append(ValidationIssue(error.message, str(error.path), error))
         return return_errs
 
-    def get_user_authenticator(self, issuer, subject):
+    def get_user_authenticator(self, email):
         """Fetches a user based on an issuer and subject. Use for example
         after receiving a JWT and validating that the user exists in the system.
 
@@ -44,10 +44,8 @@ class UserService(Service):
             subject id in the authority's system
         """
         users = list(self.dao.retreive_many(query={
-            "authenticators": {
-                "issuer": issuer,
-                "subject": subject
-            }}))
+                "authenticators.email": email
+            }))
 
         if len(users) == 0:
             raise UserNotFoundException()
