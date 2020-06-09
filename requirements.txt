@@ -5,3 +5,4 @@ jsonschema
 uwsgi
 google-auth
 requests
+python-dotenv
