@@ -1,13 +1,13 @@
 from bson.json_util import dumps
 from flask import request, jsonify
-from flask_login import login_required
+from flask_jwt_extended import jwt_required
 from flask_restful import Resource
 import json
 from splash.data.base import BadIdError
 
 
 class DAOResource(Resource):
-    method_decorators = [login_required]
+    method_decorators = [jwt_required]
     
     def __init__(self, dao):
         self.dao = dao

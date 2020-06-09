@@ -91,7 +91,7 @@ class MongoCollectionDao(Dao):
         return doc['uid']
 
     def retrieve(self, uid):
-        return self._collection.find_one({"uid": uid})
+        return self._collection.find_one({"uid": uid}, {'_id': False})
 
     def retrieve_paged(self, page, query=None, page_size=10):
         if query is None:

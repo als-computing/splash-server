@@ -127,8 +127,7 @@ def test_issuer_https_prefix(splash_client, mock_env_client_id, mock_google_id_t
     assert response.status_code == 200
     # response.data is sent in a bytes array, it needs to be decoded into a string
     response_data = json.loads(response.data)
-    assert "message" in response_data
-    assert response_data["message"] == "LOGIN SUCCESS"
+    assert "access_token" in response_data
     assert "user" in response_data
     assert response_data['user']['uid'] == test_user_uid
 
@@ -141,8 +140,7 @@ def test_issuer_no_https_prefix(splash_client, mock_env_client_id, mock_google_i
     assert response.status_code == 200
     # response.data is sent in a bytes array, it needs to be decoded into a string
     response_data = json.loads(response.data)
-    assert "message" in response_data
-    assert response_data["message"] == "LOGIN SUCCESS"
+    assert "access_token" in response_data
     assert "user" in response_data
     assert response_data['user']['uid'] == test_user_uid
 
