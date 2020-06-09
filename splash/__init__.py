@@ -18,13 +18,14 @@ from splash.data.base import ObjectNotFoundError, BadIdError
 from splash.auth.oauth_resources import OauthVerificationError
 from splash.categories.users.users_service import UserService
 from splash.data.base import MongoCollectionDao
-import splash.login
+
 
 class ErrorPropagatingApi(Api):
     """Flask-Restful has its own error handling facilities, this propagates errors to flask"""
 
     def error_router(self, original_handler, e):
         return original_handler(e)
+
 
 def create_app(db=None):
     app = Flask(__name__, instance_relative_config=True)
