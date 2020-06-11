@@ -3,6 +3,8 @@ import json
 from google.oauth2 import id_token
 from google.auth.transport import requests
 
+from splash.auth.oauth_resources import validate_info, OauthVerificationError
+
 no_json = ""
 malformed_json = "{"
 empty_json = "{}"
@@ -25,11 +27,13 @@ test_user = {
         "authenticators": [
             {
                 "issuer": "https://accounts.google.com",
-                "subject": "subject_123456"
+                "subject": "subject_123456",
+                "email": "user@example.com",
             },
             {
                 "issuer": "accounts.google.com",
-                "subject": "subject_123456"
+                "subject": "subject_123456",
+                "email": "user@example.com",
             }
         ]
     }
@@ -48,7 +52,8 @@ def mock_google_id_token_verify(monkeypatch):
             "email": "user@example.com", 
             "sub": "subject_123456",  # matches subject in test_user
             "given_name": "Sean",
-            "family_name": "Kelly"}
+            "family_name": "Kelly", 
+            "email_verified": True}
 
         # The reason for these two lines of code is because the iss field could
         # either contain https://accounts.google.com or accounts.google.com
@@ -121,8 +126,7 @@ def test_issuer_https_prefix(splash_client, mock_env_client_id, mock_google_id_t
     assert response.status_code == 200
     # response.data is sent in a bytes array, it needs to be decoded into a string
     response_data = json.loads(response.data)
-    assert "message" in response_data
-    assert response_data["message"] == "LOGIN SUCCESS"
+    assert "access_token" in response_data
     assert "user" in response_data
     assert response_data['user']['uid'] == test_user_uid
 
@@ -135,8 +139,7 @@ def test_issuer_no_https_prefix(splash_client, mock_env_client_id, mock_google_i
     assert response.status_code == 200
     # response.data is sent in a bytes array, it needs to be decoded into a string
     response_data = json.loads(response.data)
-    assert "message" in response_data
-    assert response_data["message"] == "LOGIN SUCCESS"
+    assert "access_token" in response_data
     assert "user" in response_data
     assert response_data['user']['uid'] == test_user_uid
 
@@ -168,3 +171,14 @@ def test_trigger_other_exception(splash_client, mock_env_client_id, mock_google_
     response_data = json.loads(response.data)
     assert "error" in response_data
     assert response_data["error"] == "server_error"
+
+def test_validate_user_info():
+    info = {"email_verified": True}
+    validate_info(info)
+    with pytest.raises(OauthVerificationError):
+        info = {"foo": "bar"}
+        validate_info(info)
+
+    with pytest.raises(OauthVerificationError):
+        info = {"email_verified": False}
+        validate_info(info)

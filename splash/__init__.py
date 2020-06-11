@@ -1,19 +1,18 @@
-from flask import Flask, make_response, current_app, Response
+from flask import Flask, make_response, current_app, jsonify, Response
 from flask_restful import Api
-from flask_login import LoginManager
+from flask_jwt_extended import (
+    JWTManager,
+    create_access_token,
+    create_refresh_token
+)
+from jwt.exceptions import ExpiredSignatureError, PyJWTError
 from pymongo import MongoClient
 import jsonschema
 from json import dumps
 import logging
 import os
 import sys
-from flask_login import (
-    current_user,
-    login_required,
-    login_user,
-    logout_user,
-)
-import prometheus_client
+from werkzeug.exceptions import BadRequest
 
 from splash.data.base import ObjectNotFoundError, BadIdError
 from splash.auth.oauth_resources import OauthVerificationError
@@ -22,13 +21,17 @@ from splash.data.base import MongoCollectionDao
 import splash.login
 from splash.helpers.middleware import setup_metrics
 
+class ErrorPropagatingApi(Api):
+    """Flask-Restful has its own error handling facilities, this propagates errors to flask"""
+
+    def error_router(self, original_handler, e):
+        return original_handler(e)
 
 def create_app(db=None):
     CONTENT_TYPE_LATEST = str('text/plain; version=0.0.4; charset=utf-8')
     app = Flask(__name__, instance_relative_config=True)
-    login_manager = LoginManager()
-    login_manager.init_app(app)
-    api = Api(app)
+    api = ErrorPropagatingApi(app)
+    jwt = JWTManager(app)
     app.secret_key = os.environ.get('FLASK_SECRET_KEY')
     setup_metrics(app)
 
@@ -80,32 +83,6 @@ def create_app(db=None):
 
     from splash.auth.oauth_resources import OAuthResource
     api.add_resource(OAuthResource, "/api/tokensignin", resource_class_kwargs={'user_service': app.user_service})
- 
-    @login_manager.user_loader
-    def user_loader(uid):
-        user_dict = current_app.user_service.retreive_one(uid)
-        user = login.User(
-                    user_dict['uid'], 
-                    user_dict['authenticators'][0]['email'],
-                    user_dict['given_name'],
-                    user_dict['family_name'],
-                    True)
-        return user
-
-    # @login_manager.request_loader
-    # def request_loader(request):
-    #     #this method returns non...it's the flask_login method for searching for a user to register or not
-    #     return None
-
-    # connect-false because frameworks like uwsgi fork after app is obtained,
-    # and are not fork-safe.
-    app.db = MongoClient(app.config['MONGO_URL'],
-                         connect=False)[app.config['MONGO_DB_NAME']]
-
-    @app.route('/metrics/')
-    def metrics():
-        return Response(prometheus_client.generate_latest(),
-                        mimetype=CONTENT_TYPE_LATEST)
 
     @app.errorhandler(404)
     def resource_not_found(error):
@@ -150,21 +127,22 @@ def create_app(db=None):
     @app.errorhandler(ValueError)
     def value_error(error):
         logger.info(" ValueError ", exc_info=1)
-        return make_response(dumps({"error": "value_error",
-                             "message": "Value Error"}), 400)
+        return make_response(dumps({"error": "value_error", "message": "Value Error"}), 400)
 
     @app.errorhandler(OauthVerificationError)
-    def oaut_verification_error(error):
+    def oauth_error(error):
         logger.info(" OauthVerificationError ", exc_info=1)
-        return make_response(dumps({"error": "oauth_verification_error",
-                             "message": "oauth verification error"}), 500)
+        return make_response(dumps({"error": "oauth_verification_error", "message": "oauth verification error"}), 500)
+
+    @app.errorhandler(BadRequest)
+    def badd_request(error):
+        logger.info(" ValueError ", exc_info=1)
+        return make_response(dumps({"error": "value_error", "message": "Value Error"}), error.code)
 
     @app.errorhandler(Exception)
     def general_error(error):
         logger.critical(" Houston we have a problem: ", exc_info=1)
-        return make_response(dumps({"error": "server_error",
-                             "message": "oops, something went wrong on our end"
-                                    }), 500)
+        return make_response(dumps({"error": "server_error", "message": "oops, something went wrong on our end"}), 500)
     return app
 
 
