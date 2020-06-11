@@ -1,4 +1,4 @@
-from flask import Flask, make_response, current_app
+from flask import Flask, make_response, current_app, Response
 from flask_restful import Api
 from flask_login import LoginManager
 from pymongo import MongoClient
@@ -13,6 +13,7 @@ from flask_login import (
     login_user,
     logout_user,
 )
+import prometheus_client
 
 from splash.data.base import ObjectNotFoundError, BadIdError
 from splash.auth.oauth_resources import OauthVerificationError
@@ -23,6 +24,7 @@ from splash.helpers.middleware import setup_metrics
 
 
 def create_app(db=None):
+    CONTENT_TYPE_LATEST = str('text/plain; version=0.0.4; charset=utf-8')
     app = Flask(__name__, instance_relative_config=True)
     login_manager = LoginManager()
     login_manager.init_app(app)
@@ -53,6 +55,16 @@ def create_app(db=None):
     except Exception as e:
         print("cannot setup logging: {}".format(str(e)))
 
+    
+    # connect-false because frameworks like uwsgi fork after app is obtained, and are not
+    # fork-safe.
+    if db is None:
+        app.db = MongoClient(app.config['MONGO_URL'], connect=False)[app.config['MONGO_DB_NAME']]
+    else:
+        app.db = db
+
+    userDAO = MongoCollectionDao(app.db, 'users') # this whole service/dao connection will change soon
+    app.user_service = UserService(userDAO)
     from splash.categories.experiments.experiments_resources import \
         Experiments, Experiment
     api.add_resource(Experiments, "/api/experiments")
@@ -68,18 +80,17 @@ def create_app(db=None):
 
     from splash.auth.oauth_resources import OAuthResource
     api.add_resource(OAuthResource, "/api/tokensignin", resource_class_kwargs={'user_service': app.user_service})
-
+ 
     @login_manager.user_loader
     def user_loader(uid):
         user_dict = current_app.user_service.retreive_one(uid)
         user = login.User(
                     user_dict['uid'], 
-                    user_dict['authenticators'][0]['email'], 
+                    user_dict['authenticators'][0]['email'],
                     user_dict['given_name'],
                     user_dict['family_name'],
                     True)
         return user
-
 
     # @login_manager.request_loader
     # def request_loader(request):
@@ -90,6 +101,11 @@ def create_app(db=None):
     # and are not fork-safe.
     app.db = MongoClient(app.config['MONGO_URL'],
                          connect=False)[app.config['MONGO_DB_NAME']]
+
+    @app.route('/metrics/')
+    def metrics():
+        return Response(prometheus_client.generate_latest(),
+                        mimetype=CONTENT_TYPE_LATEST)
 
     @app.errorhandler(404)
     def resource_not_found(error):

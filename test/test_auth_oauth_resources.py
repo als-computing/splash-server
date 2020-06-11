@@ -18,7 +18,7 @@ bad_value = json.dumps({"token": "bad_value"})
 # Of course no token value will actually trigger a random exception
 # This is just to simulate types of errors thrown other than
 # a value error (e.g. httperror)
-trigger_other_exception = json.dumps({"token":"trigger_other_exception"})
+trigger_other_exception = json.dumps({"token": "trigger_other_exception"})
 
 test_user = {
         "name": "google_user",
@@ -36,8 +36,6 @@ test_user = {
 
 
 @pytest.mark.usefixtures("splash_client", "mongodb")
-
-
 @pytest.fixture
 def mock_env_client_id(monkeypatch):
     monkeypatch.setenv("GOOGLE_CLIENT_ID", "correct_id")
@@ -66,7 +64,8 @@ def mock_google_id_token_verify(monkeypatch):
             return {"iss": "wrong_issuer", "sub": "user@example.com"}
         elif token == "bad_value":
             raise ValueError("Bad Value")
-        # Of course no token value will actually trigger a random exception (I hope)
+        # Of course no token value will
+        # actually trigger a random exception (I hope)
         # This is just to account for other types of errors thrown other than
         # a value error (e.g. httperror)
         elif token == "trigger_other_exception":
@@ -76,7 +75,7 @@ def mock_google_id_token_verify(monkeypatch):
 
 @pytest.fixture
 def mock_google_request(monkeypatch):
-    # This is a function in the requests object 
+    # This is a function in the requests object
     def mock_request():
         return
     monkeypatch.setattr(requests, "Request", mock_request)
