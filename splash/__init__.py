@@ -5,6 +5,7 @@ from flask_jwt_extended import (
     create_access_token,
     create_refresh_token
 )
+import prometheus_client
 from jwt.exceptions import ExpiredSignatureError, PyJWTError
 from pymongo import MongoClient
 import jsonschema
@@ -18,7 +19,6 @@ from splash.data.base import ObjectNotFoundError, BadIdError
 from splash.auth.oauth_resources import OauthVerificationError
 from splash.categories.users.users_service import UserService
 from splash.data.base import MongoCollectionDao
-import splash.login
 from splash.helpers.middleware import setup_metrics
 
 class ErrorPropagatingApi(Api):
@@ -83,6 +83,11 @@ def create_app(db=None):
 
     from splash.auth.oauth_resources import OAuthResource
     api.add_resource(OAuthResource, "/api/tokensignin", resource_class_kwargs={'user_service': app.user_service})
+
+    @app.route('/metrics/')
+    def metrics():
+        return Response(prometheus_client.generate_latest(),
+                        mimetype=CONTENT_TYPE_LATEST)
 
     @app.errorhandler(404)
     def resource_not_found(error):
