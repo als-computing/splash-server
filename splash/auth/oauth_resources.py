@@ -86,7 +86,7 @@ class OAuthResource(Resource):
             raise OauthVerificationError(e) from None
 
         except MultipleUsersAuthenticatorException as e:
-            raise OauthVerificationError(e) from None
+            raise OauthVerificationError(e) from e
 
 
 def validate_info(token):
