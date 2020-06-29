@@ -7,3 +7,4 @@ requests
 prometheus_client
 uwsgi
 
+python-dotenv

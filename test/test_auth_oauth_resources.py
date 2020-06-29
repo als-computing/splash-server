@@ -2,7 +2,11 @@ import pytest
 import json
 from google.oauth2 import id_token
 from google.auth.transport import requests
-
+from splash.categories.users.users_service import (
+    UserService,
+    MultipleUsersAuthenticatorException,
+    UserNotFoundException)
+import os
 from splash.auth.oauth_resources import validate_info, OauthVerificationError
 
 no_json = ""
@@ -22,26 +26,32 @@ bad_value = json.dumps({"token": "bad_value"})
 # a value error (e.g. httperror)
 trigger_other_exception = json.dumps({"token": "trigger_other_exception"})
 
-test_user = {
-        "name": "google_user",
-        "authenticators": [
-            {
-                "issuer": "https://accounts.google.com",
-                "subject": "subject_123456",
-                "email": "user@example.com",
-            },
-            {
-                "issuer": "accounts.google.com",
-                "subject": "subject_123456",
-                "email": "user@example.com",
-            }
-        ]
-    }
+# This needs to be a fixture because splash_client.application.user_service.create()
+# will modify this dict
+
+
+@pytest.fixture
+def test_user():
+    return {
+            "name": "google_user",
+            "authenticators": [
+                {
+                    "issuer": "https://accounts.google.com",
+                    "subject": "subject_123456",
+                    "email": "user@example.com",
+                },
+                {
+                    "issuer": "accounts.google.com",
+                    "subject": "subject_123456",
+                    "email": "user@example.com",
+                }
+            ]
+        }
 
 
 @pytest.mark.usefixtures("splash_client", "mongodb")
 @pytest.fixture
-def mock_env_client_id(monkeypatch):
+def mock_env_variables(monkeypatch):
     monkeypatch.setenv("GOOGLE_CLIENT_ID", "correct_id")
 
 
@@ -86,19 +96,19 @@ def mock_google_request(monkeypatch):
     monkeypatch.setattr(requests, "Request", mock_request)
 
 
-def test_no_json(splash_client, mock_env_client_id, ):
+def test_no_json(splash_client, mock_env_variables, ):
     response = splash_client.post("/api/tokensignin", data=no_json, )
     assert hasattr(response, "status_code")
     assert response.status_code == 400
 
 
-def test_malformed_json(splash_client, mock_env_client_id,):
+def test_malformed_json(splash_client, mock_env_variables,):
     response = splash_client.post("/api/tokensignin", data=malformed_json, )
     assert hasattr(response, "status_code")
     assert response.status_code == 400
 
 
-def test_empty_json(splash_client, mock_env_client_id, ):
+def test_empty_json(splash_client, mock_env_variables, ):
     response = splash_client.post("/api/tokensignin", data=empty_json, )
     assert hasattr(response, "status_code")
     assert response.status_code == 400
@@ -108,17 +118,18 @@ def test_empty_json(splash_client, mock_env_client_id, ):
     assert response_data["error"] == "validation_error"
 
 
-def test_wrong_type_token(splash_client, mock_env_client_id,):
+def test_wrong_type_token(splash_client, mock_env_variables,):
     response = splash_client.post("/api/tokensignin", data=wrong_type_token)
     assert hasattr(response, "status_code")
-    assert response.status_code == 400 
+    assert response.status_code == 400
     # response.data is sent in a bytes array, it needs to be decoded into a string
     response_data = json.loads(response.data)
     assert "error" in response_data
     assert response_data["error"] == "validation_error"
 
 
-def test_issuer_https_prefix(splash_client, mock_env_client_id, mock_google_id_token_verify, mock_google_request):
+def test_registered_user_with_issuer_https_prefix(splash_client, mock_env_variables, mock_google_id_token_verify,
+                                                  test_user, mock_google_request):
     user_service = splash_client.application.user_service
     test_user_uid = user_service.create(test_user)
     response = splash_client.post("/api/tokensignin", data=issuer_https_prefix)
@@ -131,7 +142,38 @@ def test_issuer_https_prefix(splash_client, mock_env_client_id, mock_google_id_t
     assert response_data['user']['uid'] == test_user_uid
 
 
-def test_issuer_no_https_prefix(splash_client, mock_env_client_id, mock_google_id_token_verify, mock_google_request):
+def test_unregistered_user_with_issuer_https_prefix(splash_client, mock_env_variables, mock_google_id_token_verify, 
+                                                    mock_google_request):
+    response = splash_client.post("/api/tokensignin", data=issuer_https_prefix)
+    assert hasattr(response, "status_code")
+    assert response.status_code == 401
+    # response.data is sent in a bytes array, it needs to be decoded into a string
+    response_data = json.loads(response.data)
+    assert "error" in response_data
+    assert response_data["error"] == "user_not_found"
+
+
+def test_multiple_users_with_issuer_https_prefix(splash_client, mock_env_variables, mock_google_id_token_verify, 
+                                                 test_user, mock_google_request):
+    user_service = splash_client.application.user_service
+    # create two users with the same email
+    user_service.create(test_user)
+    # user_service.create modifies the dict, remove these modifications
+    test_user.pop("_id")
+    test_user.pop("uid")
+    user_service.create(test_user)
+
+    response = splash_client.post("/api/tokensignin", data=issuer_https_prefix)
+    assert hasattr(response, "status_code")
+    assert response.status_code == 403
+    # response.data is sent in a bytes array, it needs to be decoded into a string
+    response_data = json.loads(response.data)
+    assert "error" in response_data
+    assert response_data["error"] == "multiple_users"
+
+
+def test_registered_user_with_issuer_no_https_prefix(splash_client, mock_env_variables, mock_google_id_token_verify, 
+                                                     test_user, mock_google_request):
     user_service = splash_client.application.user_service
     test_user_uid = user_service.create(test_user)
     response = splash_client.post("/api/tokensignin", data=issuer_no_https_prefix)
@@ -144,7 +186,35 @@ def test_issuer_no_https_prefix(splash_client, mock_env_client_id, mock_google_i
     assert response_data['user']['uid'] == test_user_uid
 
 
-def test_wrong_issuer(splash_client, mock_env_client_id, mock_google_id_token_verify, mock_google_request):
+def test_unregistered_user_with_issuer_no_https_prefix(splash_client, mock_env_variables, mock_google_id_token_verify, 
+                                                       mock_google_request):
+    response = splash_client.post("/api/tokensignin", data=issuer_no_https_prefix)
+    assert hasattr(response, "status_code")
+    assert response.status_code == 401
+    # response.data is sent in a bytes array, it needs to be decoded into a string
+    response_data = json.loads(response.data)
+    assert "error" in response_data
+    assert response_data["error"] == "user_not_found"
+
+
+def test_multiple_users_with_issuer_no_https_prefix(splash_client, mock_env_variables, mock_google_id_token_verify, 
+                                                    test_user, mock_google_request):
+    user_service = splash_client.application.user_service
+    user_service.create(test_user)
+    # user_service.create modifies the dict, remove these modifications
+    test_user.pop("_id")
+    test_user.pop("uid")
+    user_service.create(test_user)
+    response = splash_client.post("/api/tokensignin", data=issuer_no_https_prefix)
+    assert hasattr(response, "status_code")
+    assert response.status_code == 403
+    # response.data is sent in a bytes array, it needs to be decoded into a string
+    response_data = json.loads(response.data)
+    assert "error" in response_data
+    assert response_data["error"] == "multiple_users"
+
+
+def test_wrong_issuer(splash_client, mock_env_variables, mock_google_id_token_verify, mock_google_request):
     response = splash_client.post("/api/tokensignin", data=wrong_issuer)
     assert hasattr(response, "status_code")
     assert response.status_code == 500
@@ -153,7 +223,7 @@ def test_wrong_issuer(splash_client, mock_env_client_id, mock_google_id_token_ve
     assert "error" in response_data
     assert response_data["error"] == "oauth_verification_error"
 
-def test_bad_value(splash_client, mock_env_client_id,mock_google_id_token_verify, mock_google_request):
+def test_bad_value(splash_client, mock_env_variables, mock_google_id_token_verify, mock_google_request):
     response = splash_client.post("/api/tokensignin", data=bad_value)
     assert hasattr(response, "status_code")
     assert response.status_code == 500
@@ -163,7 +233,7 @@ def test_bad_value(splash_client, mock_env_client_id,mock_google_id_token_verify
     assert response_data["error"] == "oauth_verification_error"
 
 
-def test_trigger_other_exception(splash_client, mock_env_client_id, mock_google_id_token_verify, mock_google_request):
+def test_trigger_other_exception(splash_client, mock_env_variables, mock_google_id_token_verify, mock_google_request):
     response = splash_client.post("/api/tokensignin", data=trigger_other_exception)
     assert hasattr(response, "status_code")
     assert response.status_code == 500
