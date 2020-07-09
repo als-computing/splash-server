@@ -5,6 +5,7 @@ FROM python:3.7
 
 
 COPY ./requirements.txt /tmp/
+COPY ./datahandler_fits/ /datahandler_fits
 
 RUN pip install uwsgi
 

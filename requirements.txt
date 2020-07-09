@@ -6,3 +6,5 @@ uwsgi
 google-auth
 requests
 python-dotenv
+databroker
+./datahandler_fits/

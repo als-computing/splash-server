@@ -17,6 +17,7 @@ from werkzeug.exceptions import BadRequest
 from splash.data.base import ObjectNotFoundError, BadIdError
 from splash.auth.oauth_resources import OauthVerificationError
 from splash.categories.users.users_service import UserService
+from splash.categories.runs.runs_service import RunDoesNotExist, CatalogDoesNotExist, RunService
 from splash.data.base import MongoCollectionDao
 
 
@@ -64,6 +65,7 @@ def create_app(db=None):
 
     userDAO = MongoCollectionDao(app.db, 'users') # this whole service/dao connection will change soon
     app.user_service = UserService(userDAO)
+    app.run_service = RunService()
 
     from splash.categories.experiments.experiments_resources import Experiments, Experiment
     api.add_resource(Experiments, "/api/experiments")
@@ -79,6 +81,19 @@ def create_app(db=None):
 
     from splash.auth.oauth_resources import OAuthResource
     api.add_resource(OAuthResource, "/api/tokensignin", resource_class_kwargs={'user_service': app.user_service})
+
+    from splash.categories.runs.runs_resource import RunResource
+    api.add_resource(RunResource, "/api/runs", resource_class_kwargs={"run_service": app.run_service})
+
+    @app.errorhandler(RunDoesNotExist)
+    def run_not_found(error):
+        logger.info("Run not found: ", exc_info=1)
+        return make_response(dumps({"error": "run_not_found", "message": str(error)}), 404)
+
+    @app.errorhandler(CatalogDoesNotExist)
+    def catalog_not_found(error):
+        logger.info("Catalog not found: ", exc_info=1)
+        return make_response(dumps({"error": "catalog_not_found", "message": str(error)}), 404)
 
     @app.errorhandler(404)
     def resource_not_found(error):
