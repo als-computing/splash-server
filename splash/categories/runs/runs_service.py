@@ -30,7 +30,7 @@ class RunService():
         data = getattr(run, stream).to_dask()[field].squeeze()
         for i in range(len(data.shape) - 2):
             data = data[0]
-        return data.compute()
+        return data
 
     def guess_stream_field(self, catalog: BlueskyRun):
         # TODO: use some metadata (techniques?) for guidance about how to get a preview
