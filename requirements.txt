@@ -7,4 +7,6 @@ google-auth
 requests
 python-dotenv
 databroker
+Pillow
+numpy
 ./datahandler_fits/

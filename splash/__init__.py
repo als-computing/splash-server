@@ -82,9 +82,10 @@ def create_app(db=None):
     from splash.auth.oauth_resources import OAuthResource
     api.add_resource(OAuthResource, "/api/tokensignin", resource_class_kwargs={'user_service': app.user_service})
 
-    from splash.categories.runs.runs_resource import Run  # , #Runs
-    # api.add_resource(Runs, '/api/runs', resource_class_kwargs={"run_service": app.run_service})
-    api.add_resource(Run, "/api/runs", resource_class_kwargs={"run_service": app.run_service})
+    from splash.categories.runs.runs_resource import Run, Runs, Catalogs
+    api.add_resource(Catalogs, '/api/runs', resource_class_kwargs={"run_service": app.run_service})
+    api.add_resource(Runs, '/api/runs/<catalog>', resource_class_kwargs={"run_service": app.run_service})
+    api.add_resource(Run, "/api/runs/<catalog>/<uid>", resource_class_kwargs={"run_service": app.run_service})
 
 
     @app.errorhandler(RunDoesNotExist)
