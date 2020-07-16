@@ -15,17 +15,33 @@ class RunDoesNotExist(Exception):
     pass
 
 
+class BadFrameArgument(Exception):
+    pass
+
+
+class FrameDoesNotExist(Exception):
+    pass
+
+
 class RunService():
     def __init__(self):
         return
 
-    def get_image(self, catalog_name, uid,  raw_bytes=False):
+    def get_image(self, catalog_name, uid, frame, raw_bytes=False):
         """Retrieves image preview of run specified by `catalog_name` and `uid`.
         Returns a file object representing a compressed jpeg image by default.
         If `raw_bytes` is set to `True`, then it returns a generator
         for streaming the entire image as bytes"""
         if catalog_name not in catalog:
             raise CatalogDoesNotExist(f'Catalog name: {catalog_name} is not a catalog')
+
+        if not is_integer(frame):
+            raise BadFrameArgument('Frame number must be an integer, \
+                 represented as an integer, string, or float.')
+        frame_number = int(frame)
+        
+        if frame_number < 0:
+            raise BadFrameArgument('Frame number must be a positive integer')
 
         runs = catalog[catalog_name]
 
@@ -35,8 +51,12 @@ class RunService():
         run = runs[uid]
         stream, field = guess_stream_field(run)
         data = getattr(run, stream).to_dask()[field].squeeze()
-        for i in range(len(data.shape) - 2):
+        for i in range(len(data.shape) - 3):
             data = data[0]
+        try:
+            data = data[frame_number]
+        except(IndexError):
+            raise FrameDoesNotExist(f'Frame number: {frame_number}, does not exist.')
 
         if raw_bytes:
             return stream_image_as_bytes(data)
@@ -46,11 +66,18 @@ class RunService():
     def list_catalogs(self):
         return list(catalog)
 
-    def list_runs(self, catalog_name):
+    def get_runs(self, catalog_name):
         if catalog_name not in catalog:
             raise CatalogDoesNotExist(f'Catalog name: {catalog_name} is not a catalog')
+        runs = catalog[catalog_name]
+        runsDict = {
+            uid: {
+                    'num_images': runs[uid].metadata['stop']['num_events']['primary'],
+                    'sample': runs[uid].metadata['start']['sample'],
+                    'data_file': runs[uid].metadata['start']['data_file']
 
-        return list(catalog[catalog_name])
+                } for uid in list(runs)}
+        return runsDict
 
 
 def guess_stream_field(catalog: BlueskyRun):
@@ -108,3 +135,12 @@ def convert_raw(data):
     file_object.seek(0)
 
     return file_object
+
+
+def is_integer(n):
+    try:
+        float(n)
+    except ValueError:
+        return False
+    else:
+        return float(n).is_integer()

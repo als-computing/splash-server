@@ -17,7 +17,8 @@ from werkzeug.exceptions import BadRequest
 from splash.data.base import ObjectNotFoundError, BadIdError
 from splash.auth.oauth_resources import OauthVerificationError
 from splash.categories.users.users_service import UserService
-from splash.categories.runs.runs_service import RunDoesNotExist, CatalogDoesNotExist, RunService
+from splash.categories.runs.runs_service import RunDoesNotExist,\
+     CatalogDoesNotExist, BadFrameArgument, FrameDoesNotExist, RunService
 from splash.data.base import MongoCollectionDao
 
 
@@ -87,6 +88,15 @@ def create_app(db=None):
     api.add_resource(Runs, '/api/runs/<catalog>', resource_class_kwargs={"run_service": app.run_service})
     api.add_resource(Run, "/api/runs/<catalog>/<uid>", resource_class_kwargs={"run_service": app.run_service})
 
+    @app.errorhandler(FrameDoesNotExist)
+    def frame_does_not_exist(error):
+        logger.info("Bad frame argument: ", exc_info=1)
+        return make_response(dumps({"error": "frame_does_not_exist", "message": str(error)}), 404)
+
+    @app.errorhandler(BadFrameArgument)
+    def bad_frame_argument(error):
+        logger.info("Bad frame argument: ", exc_info=1)
+        return make_response(dumps({"error": "bad_frame_argument", "message": str(error)}), 400)
 
     @app.errorhandler(RunDoesNotExist)
     def run_not_found(error):

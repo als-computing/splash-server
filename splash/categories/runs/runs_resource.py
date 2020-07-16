@@ -1,7 +1,6 @@
-import os
-import json
+
 from flask_restful import Resource
-from flask import Response, send_file
+from flask import Response, send_file, request
 from splash.categories.runs.runs_service import RunService
 
 
@@ -19,7 +18,8 @@ class Runs(Resource):
         self.run_service = run_service
 
     def get(self, catalog):
-        return {'runs': self.run_service.list_runs(catalog)}
+
+        return self.run_service.get_runs(catalog)
 
 
 class Run(Resource):
@@ -27,7 +27,9 @@ class Run(Resource):
         self.run_service = run_service
 
     def get(self, catalog, uid,):
-        jpeg_file_object = self.run_service.get_image(catalog_name=catalog, uid=uid)
+        frame_number = request.args.get('frame', 0)
+
+        jpeg_file_object = self.run_service.get_image(catalog_name=catalog, uid=uid, frame=frame_number)
         return send_file(jpeg_file_object, mimetype='image/JPEG')
 
         #response = Response(generator)
