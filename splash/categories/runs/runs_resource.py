@@ -28,7 +28,12 @@ class Run(Resource):
 
     def get(self, catalog, uid,):
         frame_number = request.args.get('frame', 0)
-
+        retrieve_metadata = request.args.get('metadata', 'false')
+        retrieve_metadata = retrieve_metadata == 'true'
+        if retrieve_metadata is True:
+            metadata = self.run_service.get_metadata(catalog_name=catalog, uid=uid, frame=frame_number)
+            return metadata
+        
         jpeg_file_object = self.run_service.get_image(catalog_name=catalog, uid=uid, frame=frame_number)
         return send_file(jpeg_file_object, mimetype='image/JPEG')
 

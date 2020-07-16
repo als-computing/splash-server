@@ -36,10 +36,10 @@ class RunService():
             raise CatalogDoesNotExist(f'Catalog name: {catalog_name} is not a catalog')
 
         if not is_integer(frame):
-            raise BadFrameArgument('Frame number must be an integer, \
-                 represented as an integer, string, or float.')
+            raise BadFrameArgument('Frame number must be an integer,\
+                                represented as an integer, string, or float.')
         frame_number = int(frame)
-        
+
         if frame_number < 0:
             raise BadFrameArgument('Frame number must be a positive integer')
 
@@ -50,18 +50,47 @@ class RunService():
 
         run = runs[uid]
         stream, field = guess_stream_field(run)
-        data = getattr(run, stream).to_dask()[field].squeeze()
-        for i in range(len(data.shape) - 3):
-            data = data[0]
+        rundata = getattr(run, stream).to_dask()
+        image_data = rundata[field].squeeze()
+        for i in range(len(image_data.shape) - 3):
+            image_data = image_data[0]
         try:
-            data = data[frame_number]
+            image_data = image_data[frame_number]
         except(IndexError):
             raise FrameDoesNotExist(f'Frame number: {frame_number}, does not exist.')
 
         if raw_bytes:
-            return stream_image_as_bytes(data)
+            return stream_image_as_bytes(image_data)
         else:
-            return convert_raw(data)
+            file_object = convert_raw(image_data)
+            return file_object
+
+    def get_metadata(self, catalog_name, uid, frame,):
+        if catalog_name not in catalog:
+            raise CatalogDoesNotExist(f'Catalog name: {catalog_name} is not a catalog')
+
+        if not is_integer(frame):
+            raise BadFrameArgument('Frame number must be an integer,\
+                                represented as an integer, string, or float.')
+        frame_number = int(frame)
+
+        if frame_number < 0:
+            raise BadFrameArgument('Frame number must be a positive integer')
+
+        runs = catalog[catalog_name]
+
+        if uid not in runs:
+            raise RunDoesNotExist(f'Run uid: {uid} does not exist')
+
+        run = runs[uid]
+        stream, field = guess_stream_field(run)
+        rundata = getattr(run, stream).to_dask()
+        try:
+            i_zero = rundata['i_zero'][frame_number].compute().item()
+            beamline_energy = rundata['beamline_energy'][frame_number].compute().item()
+        except(IndexError):
+            raise FrameDoesNotExist(f'Frame number: {frame_number}, does not exist.')
+        return {'i_zero': i_zero, 'beamline_energy': beamline_energy}
 
     def list_catalogs(self):
         return list(catalog)
