@@ -1,16 +1,11 @@
-from flask import current_app
 from splash.resource.base import SingleObjectResource, MultiObjectResource
-from splash.data.base import MongoCollectionDao
 
-BASE_URL_SEGMENT = 'experiments'
 
 class Experiments(MultiObjectResource):
-    def __init__(self):
-        dao = MongoCollectionDao(current_app.db, 'experiments')
-        super().__init__(dao)
+    def __init__(self, service):
+        super().__init__(service)
 
 
 class Experiment(SingleObjectResource):
-    def __init__(self):
-        dao = MongoCollectionDao(current_app.db, 'experiments')
-        super().__init__(dao)
+    def __init__(self, service):
+        super().__init__(service)

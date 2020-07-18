@@ -10,9 +10,8 @@ from flask_login import (
 )
 from splash.data.base import MongoCollectionDao
 from splash.categories.users.users_service import UserService
-from splash.login import User
 from .testing_utils import generic_test_flask_crud
-import splash.login
+
 
 
 def execute(splash_client, method, url, expected_response_code: int):

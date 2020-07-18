@@ -1,7 +1,6 @@
 import json
 from flask import current_app
 from flask_jwt_extended import create_access_token
-from splash.login import User
 from werkzeug.datastructures import Headers
 
 def generic_test_flask_crud(sample_new_object, url_path, client, mongodb):
