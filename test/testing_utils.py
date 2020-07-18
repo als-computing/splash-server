@@ -12,29 +12,38 @@ def generic_test_flask_crud(sample_new_object, url_path, client, mongodb):
         # headers.add_header("Authorization", "Bearer " + access_token)  
         
         with client.application.test_request_context(url_path) as request_context:
-                client.environ_base['HTTP_AUTHORIZATION'] = 'Bearer ' + access_token
-                response = client.post(url_path,
-                                data=json.dumps(sample_new_object),
-                                content_type='application/json')
-                request = request_context.request
-                print("!!!!!!!!!" + repr(response))
-                assert response.status_code == 200
+            client.environ_base['HTTP_AUTHORIZATION'] = 'Bearer ' + access_token
+            sample_new_object['uid'] = 'test'
+            response = client.post(url_path,
+                                   data=json.dumps(sample_new_object),
+                                   content_type='application/json')
+            assert response.status_code == 400
+            response_dict = json.loads(response.data)
+            assert 'error' in response_dict
+            assert response_dict['error'] == 'uid_field_not_allowed'
 
-    
-                response_dict = json.loads(response.get_json())
-                new_uid = response_dict['uid']
-                assert new_uid
+            sample_new_object.pop('uid')
+            response = client.post(url_path,
+                                   data=json.dumps(sample_new_object),
+                                   content_type='application/json')
+            request = request_context.request
+            print("!!!!!!!!!" + repr(response))
+            assert response.status_code == 200
 
-                # retreive all
-                response = client.get(url_path)
-                assert response.status_code == 200
-                response_dict = response.get_json()
-                assert response_dict['total_results'] == 1
+            response_dict = json.loads(response.get_json())
+            new_uid = response_dict['uid']
+            assert new_uid
 
-                # retrive one
-                response = client.get(url_path + '/' + new_uid)
-                assert response.status_code == 200
-                sample_new_object_returned = response.get_json()
-                sample_new_object_returned.pop('_id', None)  # comparing dicts will fail with mongo's _id
-                sample_new_object['uid'] = sample_new_object_returned['uid']  # now let's give the generated uid so we can compare
-                assert sample_new_object_returned == sample_new_object
+            # retreive all
+            response = client.get(url_path)
+            assert response.status_code == 200
+            response_dict = response.get_json()
+            assert response_dict['total_results'] == 1
+
+            # retrive one
+            response = client.get(url_path + '/' + new_uid)
+            assert response.status_code == 200
+            sample_new_object_returned = response.get_json()
+            sample_new_object_returned.pop('_id', None)  # comparing dicts will fail with mongo's _id
+            sample_new_object['uid'] = sample_new_object_returned['uid']  # now let's give the generated uid so we can compare
+            assert sample_new_object_returned == sample_new_object

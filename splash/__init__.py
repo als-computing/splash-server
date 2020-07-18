@@ -14,7 +14,7 @@ from pymongo import MongoClient
 from werkzeug.exceptions import BadRequest
 
 from splash.data.base import ObjectNotFoundError, UidInDictError, MongoCollectionDao, BadIdError
-from splash.auth.oauth_resources import OauthVerificationError
+from splash.auth.oauth_resources import OauthVerificationError, UserNotFoundError, MultipleUsersError
 from splash.service.base import BadPageArgument, Service
 from splash.resource.base import MalformedJsonError
 from splash.categories.users.users_service import UserService
@@ -102,16 +102,25 @@ def create_app(db=None):
     def bad_page_arg(error):
         logger.info("Bad Page argument: ", exc_info=1)
         return make_response(dumps({"error": "bad_page_argument", "message": str(error)}), 400)
+    @app.errorhandler(UserNotFoundError)
+    def user_not_found(error):
+        logger.info(" User Not Found: ", exc_info=1)
+        return make_response(dumps({"error": "user_not_found", "message": "user not found"}), 401)
+
+    @app.errorhandler(MultipleUsersError)
+    def multiple_users(error):
+        logger.info(" Multiple Users: ", exc_info=1)
+        return make_response(dumps({"error": "multiple_users", "message": "Multiple Users"}), 403)
 
     @app.errorhandler(404)
     def resource_not_found(error):
         logger.info("Resource not found: ", exc_info=1)
-        return make_response(dumps({"error": "resource_not_found", "message":"resource not found"}), 404)
+        return make_response(dumps({"error": "resource_not_found", "message": "resource not found"}), 404)
 
     @app.errorhandler(jsonschema.exceptions.ValidationError)
     def validation_error(error):
         logger.info(" Validation Error: ", exc_info=1 )
-        return make_response(dumps({"error": "validation_error", "message":str(error)}), 400)
+        return make_response(dumps({"error": "validation_error", "message": str(error)}), 400)
 
     @app.errorhandler(TypeError)
     def type_error(error):

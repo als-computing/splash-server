@@ -76,18 +76,24 @@ class Dao(object):
 #         if status.deleted_count == 0:
 #             raise ObjectNotFoundError
 
+class UidInDictError(KeyError):
+    pass
+
+
 class MongoCollectionDao(Dao):
     ''' Mongo data service for mapping CRUD and search
     operations to a MongoDB. '''
     def __init__(self, db, collection_name):
         self._db = db
         self._collection = db[collection_name]
-        
+       
     def create(self, doc):
         logging.debug(f"create doc in collection {0}, doc: {1}", self._collection, doc)
         if 'uid' in doc:
             raise UidInDictError('Document should not have uid field')
         uid = uuid.uuid4()
+        if 'uid' in doc:
+            raise UidInDictError('Document should not have uid field')
         doc['uid'] = str(uid)
         self._collection.insert_one(doc)
         return doc['uid']
