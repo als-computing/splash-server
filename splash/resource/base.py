@@ -1,55 +1,72 @@
+import json
+
 from bson.json_util import dumps
-from flask import request, jsonify
+from flask import jsonify, request
 from flask_jwt_extended import jwt_required
 from flask_restful import Resource
-import json
-from splash.data.base import BadIdError
+from splash.service.base import Service
 
 
-class DAOResource(Resource):
-    method_decorators = [jwt_required]
-    
-    def __init__(self, dao):
-        self.dao = dao
+class MalformedJsonError(json.JSONDecodeError):
+    def __init__(self, error: json.JSONDecodeError):
+        super().__init__(error.msg, error.doc, error.pos)
+
+
+class AuthenticatedResource(Resource):
+    def __init__(self):
+        self.method_decorators = [jwt_required]
         super().__init__()
 
 
-class MultiObjectResource(DAOResource):
-    def __init__(self, dao):
-        super().__init__(dao)
+class MultiObjectResource(AuthenticatedResource):
+
+    def __init__(self, service: Service):
+        super().__init__()
+        self.service = service
 
     def get(self):
-        try:
-            pageNum = int(request.args.get('page', 1))
-            if pageNum is None or pageNum <= 0:
-                raise ValueError("Page parameter must be positive")
-            results = self.dao.retrieve_paged(pageNum, page_size=0)
-            data = {"total_results": results[0], "results": list(results[1])}
-            return data
-        except ValueError as e:
-            if str(e) == "Page parameter must be positive":
-                raise e from None
-            raise TypeError("page parameter must be a positive integer") from None
-        
+        page_number = request.args.get('frame', 1)
+        results = self.service.retrieve_multiple(page_number)
+        data = {"total_results": results[0], "results": list(results[1])}
+        return data
+
     def post(self):
-        data = json.loads(request.data)
-        self.dao.create(data)
-        return dumps({'message': 'CREATE SUCCESS', 'uid': str(data['uid'])})
+        try:
+            data = json.loads(request.data)
+        except json.JSONDecodeError as e:
+            raise MalformedJsonError(e) from None
 
+        issues = self.service.validate(data)
 
-class SingleObjectResource(DAOResource):
-    def __init__(self, dao):
-        super().__init__(dao)
+        if len(issues) == 0:
+            self.service.create(data)
+            return {'message': 'CREATE SUCCESS', 'uid': str(data['uid'])}
+        errors = []
+        for issue in issues:
+            errors.append({'description': issue.description, 'location': issue.location})
+        return {'error': 'validation_error', 'errors': errors}, 400
+
+class SingleObjectResource(AuthenticatedResource):
+    def __init__(self, service: Service):
+        super().__init__()
+        self.service = service
 
     def get(self, uid):
-        results = self.dao.retrieve(uid)
+        results = self.service.retrieve_one(uid)
         return results
 
     def put(self, uid):
-        data = request.data
+        try:
+            data = json.loads(request.data)
+        except json.JSONDecodeError as e:
+            raise MalformedJsonError(e) from None
 
-        if 'uid' in data:
-            self.dao().update(uid)
-        else:
-            raise BadIdError()
-        return dumps({'message': 'SUCCESS'})
+        issues = self.service.validate(data)
+
+        if len(issues) == 0:
+            self.service.update(data)
+            return {'message': 'UPDATE SUCCESS', 'uid': str(data['uid'])}
+        errors = []
+        for issue in issues:
+            errors.append({'description': issue.description, 'location': issue.location})
+        return {'error': 'validation_error', 'errors': errors}, 400

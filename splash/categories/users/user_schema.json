@@ -39,7 +39,7 @@
       },
       "authenticators":{
         "type": "array",
-        "items": {"$ref": "#/definitions/authenticators"}
+        "items": {"$ref": "#/definitions/authenticator"}
       }
 
     },
