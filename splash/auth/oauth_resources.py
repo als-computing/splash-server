@@ -15,6 +15,7 @@ from splash.categories.users.users_service import (
     UserService,
     MultipleUsersAuthenticatorException,
     UserNotFoundException)
+from splash.resource.base import MalformedJsonError
 
 LOG_VALIDATING_TOKEN_MSG = "Validating user with token {}"
 
@@ -29,6 +30,10 @@ class UserNotFoundError(Exception):  # TODO: make the base class more specific
     pass
 
 
+class MultipleUsersError(Exception):
+    pass
+
+
 class OAuthResource(Resource):
 
     def __init__(self, user_service: UserService):
@@ -39,7 +44,10 @@ class OAuthResource(Resource):
 
     def post(self):
         try:
-            payload = request.get_json(force=True)
+            payload = json.loads(request.data)
+        except json.JSONDecodeError as e:
+            raise MalformedJsonError(e) from None
+        try:
             self.validator.validate(payload)
             token = payload['token']
             # Specify the CLIENT_ID of the app that accesses the backend:
@@ -77,16 +85,15 @@ class OAuthResource(Resource):
             except UserNotFoundException:
                 # it's possible that we want to not throw anpi error,
                 # so that the client has a chance to le the user register
-                raise UserNotFoundError('User not registered')
+                raise UserNotFoundError('User not registered') from None
 
         except ValueError as e:
             # This should catch any ValueErrors that come from the the id_token.verify_oauth2_token
             # However, there are still possible connection errors from that function that may
             # go uncaught
             raise OauthVerificationError(e) from None
-
-        except MultipleUsersAuthenticatorException as e:
-            raise OauthVerificationError(e) from e
+        except MultipleUsersAuthenticatorException:
+            raise MultipleUsersError from None
 
 
 def validate_info(token):
