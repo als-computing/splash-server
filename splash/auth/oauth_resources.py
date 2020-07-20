@@ -15,6 +15,7 @@ from splash.categories.users.users_service import (
     UserService,
     MultipleUsersAuthenticatorException,
     UserNotFoundException)
+from splash.resource.base import MalformedJsonError
 
 LOG_VALIDATING_TOKEN_MSG = "Validating user with token {}"
 
@@ -43,7 +44,10 @@ class OAuthResource(Resource):
 
     def post(self):
         try:
-            payload = request.get_json(force=True)
+            payload = json.loads(request.data)
+        except json.JSONDecodeError as e:
+            raise MalformedJsonError(e) from None
+        try:
             self.validator.validate(payload)
             token = payload['token']
             # Specify the CLIENT_ID of the app that accesses the backend:

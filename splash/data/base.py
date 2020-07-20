@@ -89,9 +89,9 @@ class MongoCollectionDao(Dao):
        
     def create(self, doc):
         logging.debug(f"create doc in collection {0}, doc: {1}", self._collection, doc)
-        uid = uuid.uuid4()
         if 'uid' in doc:
             raise UidInDictError('Document should not have uid field')
+        uid = uuid.uuid4()
         doc['uid'] = str(uid)
         self._collection.insert_one(doc)
         return doc['uid']
@@ -117,9 +117,8 @@ class MongoCollectionDao(Dao):
         return self._collection.find(query)
 
     def update(self, doc):
-        # update should not be able to change uid
         if 'uid' not in doc:
-            raise BadIdError('Cannot change object uid')
+            raise BadIdError('No uid provided')
         # update_one might be more efficient, but kinda tricky
         status = self._collection.replace_one({"uid": doc['uid']}, doc)
         if status.modified_count == 0:
@@ -133,7 +132,12 @@ class MongoCollectionDao(Dao):
 class ObjectNotFoundError(Exception):
     pass
 
+class UidInDictError(KeyError):
+    pass
 
 class BadIdError(Exception):
     pass
+
+
+
 

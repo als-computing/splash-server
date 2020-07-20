@@ -13,6 +13,15 @@ def generic_test_flask_crud(sample_new_object, url_path, client, mongodb):
         
         with client.application.test_request_context(url_path) as request_context:
             client.environ_base['HTTP_AUTHORIZATION'] = 'Bearer ' + access_token
+            response = client.post(url_path,
+                                   data='{',
+                                   content_type='application/json')
+            assert response.status_code == 400
+            response_dict = json.loads(response.data)
+            assert response_dict['error'] == 'malformed_json'
+            assert 'message' in response_dict
+            assert 'position' in response_dict
+
             sample_new_object['uid'] = 'test'
             response = client.post(url_path,
                                    data=json.dumps(sample_new_object),
@@ -30,7 +39,7 @@ def generic_test_flask_crud(sample_new_object, url_path, client, mongodb):
             print("!!!!!!!!!" + repr(response))
             assert response.status_code == 200
 
-            response_dict = json.loads(response.get_json())
+            response_dict = response.get_json()
             new_uid = response_dict['uid']
             assert new_uid
 

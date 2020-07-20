@@ -1,26 +1,29 @@
-from flask import Flask, make_response, current_app, jsonify, Response
-from flask_restful import Api
-from flask_jwt_extended import (
-    JWTManager,
-    create_access_token,
-    create_refresh_token
-)
-import prometheus_client
-from jwt.exceptions import ExpiredSignatureError, PyJWTError
-from pymongo import MongoClient
-import jsonschema
-from json import dumps
 import logging
 import os
 import sys
+import json
+from json import dumps
+
+import jsonschema
+from flask import Flask, current_app, jsonify, make_response
+from flask_jwt_extended import (JWTManager, create_access_token,
+                                create_refresh_token)
+import prometheus_client
+from flask_restful import Api
+from jwt.exceptions import ExpiredSignatureError, PyJWTError
+from pymongo import MongoClient
 from werkzeug.exceptions import BadRequest
 
-from splash.data.base import ObjectNotFoundError, BadIdError, UidInDictError
-from splash.auth.oauth_resources import OauthVerificationError
+from splash.data.base import ObjectNotFoundError, UidInDictError, MongoCollectionDao, BadIdError
+from splash.auth.oauth_resources import OauthVerificationError, UserNotFoundError, MultipleUsersError
+from splash.service.base import BadPageArgument, Service
+from splash.resource.base import MalformedJsonError
 from splash.categories.users.users_service import UserService
-from splash.data.base import MongoCollectionDao
-from splash.helpers.middleware import setup_metrics
-from splash.auth.oauth_resources import UserNotFoundError, MultipleUsersError
+from splash.categories.compounds.compounds_service import CompoundsService
+from splash.categories.experiments.experiments_service import ExperimentService
+from splash.categories.experiments.experiments_resources import Experiment, Experiments
+from splash.categories.compounds.compounds_resources import Compound, Compounds
+from splash.categories.users.users_resources import User, Users
 
 
 class ErrorPropagatingApi(Api):
@@ -71,18 +74,21 @@ def create_app(db=None):
 
     userDAO = MongoCollectionDao(app.db, 'users') # this whole service/dao connection will change soon
     app.user_service = UserService(userDAO)
-    from splash.categories.experiments.experiments_resources import \
-        Experiments, Experiment
-    api.add_resource(Experiments, "/api/experiments")
-    api.add_resource(Experiment,  "/api/experiments/<uid>")
 
-    from splash.categories.compounds.compounds_resources import Compound, Compounds
-    api.add_resource(Compounds, "/api/compounds")
-    api.add_resource(Compound,  "/api/compounds/<uid>")
+    experimentsDAO = MongoCollectionDao(app.db, 'experiments')
+    app.experiments_service = ExperimentService(experimentsDAO)
 
-    from splash.categories.users.users_resources import Users, User
-    api.add_resource(Users, "/api/users")
-    api.add_resource(User,  "/api/users/<uid>")
+    compoundsDAO = MongoCollectionDao(app.db, 'compounds')
+    app.compounds_service = CompoundsService(compoundsDAO)
+
+    api.add_resource(Compounds, "/api/compounds", resource_class_kwargs={"service": app.compounds_service})
+    api.add_resource(Compound,  "/api/compounds/<uid>", resource_class_kwargs={"service": app.compounds_service})
+
+    api.add_resource(Experiments, "/api/experiments", resource_class_kwargs={"service": app.experiments_service})
+    api.add_resource(Experiment,  "/api/experiments/<uid>", resource_class_kwargs={"service": app.experiments_service})
+
+    api.add_resource(Users, "/api/users", resource_class_kwargs={"service": app.user_service})
+    api.add_resource(User,  "/api/users/<uid>", resource_class_kwargs={"service": app.user_service})
 
     from splash.auth.oauth_resources import OAuthResource
     api.add_resource(OAuthResource, "/api/tokensignin", resource_class_kwargs={'user_service': app.user_service})
@@ -96,6 +102,15 @@ def create_app(db=None):
         logger.info(" UidError: ")
         return make_response(dumps({"error": "uid_field_not_allowed", "message": "uid field not allowed"}), 400)
 
+    @app.errorhandler(MalformedJsonError)
+    def malformed_json(error: MalformedJsonError):
+        logger.info("Malformed JSON: ", exc_info=1)
+        return make_response(dumps({"error": "malformed_json", "message": error.msg, "position": error.pos, }), 400)
+
+    @app.errorhandler(BadPageArgument)
+    def bad_page_arg(error):
+        logger.info("Bad Page argument: ", exc_info=1)
+        return make_response(dumps({"error": "bad_page_argument", "message": str(error)}), 400)
     @app.errorhandler(UserNotFoundError)
     def user_not_found(error):
         logger.info(" User Not Found: ", exc_info=1)
@@ -141,8 +156,7 @@ def create_app(db=None):
     @app.errorhandler(BadIdError)
     def bad_id_error(error):
         logger.info(" Bad ID error: ", exc_info=1)
-        return make_response(dumps({"error": "bad_id_error",
-                             "message": "bad id error"}), 400)
+        return make_response(dumps({"error": "bad_id_error", "message": str(error)}), 400)
 
     @app.errorhandler(ValueError)
     def value_error(error):
@@ -169,4 +183,3 @@ def create_app(db=None):
 # define custom exceptions
 class NoIdProvidedError(Exception):
     pass
-

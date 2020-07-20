@@ -100,12 +100,20 @@ def test_no_json(splash_client, mock_env_variables, ):
     response = splash_client.post("/api/tokensignin", data=no_json, )
     assert hasattr(response, "status_code")
     assert response.status_code == 400
+    response_dict = json.loads(response.data)
+    assert response_dict['error'] == 'malformed_json'
+    assert 'message' in response_dict
+    assert 'position' in response_dict
 
 
 def test_malformed_json(splash_client, mock_env_variables,):
     response = splash_client.post("/api/tokensignin", data=malformed_json, )
     assert hasattr(response, "status_code")
     assert response.status_code == 400
+    response_dict = json.loads(response.data)
+    assert response_dict['error'] == 'malformed_json'
+    assert 'message' in response_dict
+    assert 'position' in response_dict
 
 
 def test_empty_json(splash_client, mock_env_variables, ):
