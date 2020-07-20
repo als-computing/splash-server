@@ -92,8 +92,6 @@ class MongoCollectionDao(Dao):
         if 'uid' in doc:
             raise UidInDictError('Document should not have uid field')
         uid = uuid.uuid4()
-        if 'uid' in doc:
-            raise UidInDictError('Document should not have uid field')
         doc['uid'] = str(uid)
         self._collection.insert_one(doc)
         return doc['uid']

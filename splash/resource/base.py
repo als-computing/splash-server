@@ -12,17 +12,16 @@ class MalformedJsonError(json.JSONDecodeError):
         super().__init__(error.msg, error.doc, error.pos)
 
 
-class DAOResource(Resource):
-    method_decorators = [jwt_required]
-
-    def __init__(self, dao):
-        self.dao = dao
+class AuthenticatedResource(Resource):
+    def __init__(self):
+        self.method_decorators = [jwt_required]
         super().__init__()
 
 
-class MultiObjectResource(Resource):
+class MultiObjectResource(AuthenticatedResource):
 
     def __init__(self, service: Service):
+        super().__init__()
         self.service = service
 
     def get(self):
@@ -35,7 +34,7 @@ class MultiObjectResource(Resource):
         try:
             data = json.loads(request.data)
         except json.JSONDecodeError as e:
-            raise MalformedJsonError(e)
+            raise MalformedJsonError(e) from None
 
         issues = self.service.validate(data)
 
@@ -47,8 +46,9 @@ class MultiObjectResource(Resource):
             errors.append({'description': issue.description, 'location': issue.location})
         return {'error': 'validation_error', 'errors': errors}, 400
 
-class SingleObjectResource(Resource):
+class SingleObjectResource(AuthenticatedResource):
     def __init__(self, service: Service):
+        super().__init__()
         self.service = service
 
     def get(self, uid):
@@ -59,7 +59,7 @@ class SingleObjectResource(Resource):
         try:
             data = json.loads(request.data)
         except json.JSONDecodeError as e:
-            raise MalformedJsonError(e)
+            raise MalformedJsonError(e) from None
 
         issues = self.service.validate(data)
 
