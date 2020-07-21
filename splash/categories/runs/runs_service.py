@@ -36,8 +36,7 @@ class RunService():
             raise CatalogDoesNotExist(f'Catalog name: {catalog_name} is not a catalog')
 
         if not is_integer(frame):
-            raise BadFrameArgument('Frame number must be an integer,\
-                                represented as an integer, string, or float.')
+            raise BadFrameArgument('Frame number must be an integer, represented as an integer, string, or float.')
         frame_number = int(frame)
 
         if frame_number < 0:
@@ -70,8 +69,7 @@ class RunService():
             raise CatalogDoesNotExist(f'Catalog name: {catalog_name} is not a catalog')
 
         if not is_integer(frame):
-            raise BadFrameArgument('Frame number must be an integer,\
-                                represented as an integer, string, or float.')
+            raise BadFrameArgument('Frame number must be an integer, represented as an integer, string, or float.')
         frame_number = int(frame)
 
         if frame_number < 0:

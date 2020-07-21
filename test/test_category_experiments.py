@@ -15,7 +15,7 @@ def test_experiment_service_validate():
     assert issues
 
 
-@pytest.mark.usefixtures("splash_client", "mongodb")
+@pytest.mark.usefixtures("splash_client", "mongodb", "catalog")
 def test_flask_crud_experiments(splash_client, mongodb):
     generic_test_flask_crud(new_experiment, '/api/experiments', splash_client, mongodb)
 

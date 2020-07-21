@@ -10,3 +10,4 @@ databroker
 Pillow
 numpy
 ./datahandler_fits/
+prometheus_client
