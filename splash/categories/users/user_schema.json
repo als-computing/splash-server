@@ -20,10 +20,6 @@
     "type": "object",
     "title": "User Schema",
     "properties": {
-      "uid": {
-        "description": "unique identifier",
-        "type": "string"
-      },
       "name": {
         "description": "User display name",
         "type": "string"
@@ -43,5 +39,5 @@
       }
 
     },
-    "required": ["uid", "name"]
+    "required": ["name"]
   }

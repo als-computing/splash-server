@@ -15,7 +15,7 @@ from werkzeug.exceptions import BadRequest
 
 from splash.data.base import ObjectNotFoundError, UidInDictError, MongoCollectionDao, BadIdError
 from splash.auth.oauth_resources import OauthVerificationError, UserNotFoundError, MultipleUsersError
-from splash.service.base import BadPageArgument, Service
+from splash.service.base import BadPageArgument
 from splash.resource.base import MalformedJsonError
 from splash.categories.users.users_service import UserService
 from splash.categories.runs.runs_service import RunDoesNotExist,\

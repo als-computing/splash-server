@@ -1,19 +1,34 @@
 import xarray
+SAMPLE_DESCRIPTOR = {'data_keys': {
+    'beamline_energy': {'dtype': 'number',
+                        'shape': [],
+                        'source': 'ai file',
+                        'units': 'epu'},
+    'ccd': {'dtype': 'array',
+            'external': 'FILESTORE:',
+            'shape': [1024, 1024],
+            'source': 'ai file'},
 
+    'i_zero': {'dtype': 'number', 'shape': [], 'source': 'ai file'},
+}}
+
+MOCK_IMAGE = xarray.DataArray([[1, 2], [3, 4]])
+BEAMLINE_ENERGY_VALS = [1, 2, 3, 4, 5]
+I_ZERO_VALS = [-1, -2, -3, -4, -5]
+CCD = [MOCK_IMAGE+1, MOCK_IMAGE+2, MOCK_IMAGE+3, MOCK_IMAGE+4, MOCK_IMAGE+5]
 
 class MockStream():
     def __init__(self, metadata):
         self.metadata = metadata
-        mock_image = [[1, 2], [3, 4]]
         data_vars = {
-            'beamline_energy': ('time', [1, 2, 3, 4, 5]),
-            'i_zero': ('time', [-1, -2, -3, -4, -5]),
-            'ccd': (('time', 'dim_0', 'dim_1'), [mock_image, mock_image, mock_image, mock_image, mock_image])
+            'beamline_energy': ('time', BEAMLINE_ENERGY_VALS),
+            'i_zero': ('time', I_ZERO_VALS),
+            'ccd': (('time', 'dim_0', 'dim_1'), CCD)
         }
         self.dataset = xarray.Dataset(data_vars)
 
     def to_dask(self):
-        return self.dataset.to_dask_dataframe()
+        return self.dataset
 
 
 class MockRun():
@@ -45,73 +60,17 @@ class MockRun():
         yield 'primary'
 
 
-SAMPLE_DESCRIPTOR = {'data_keys': {'ai_0': {'dtype': 'number', 'shape': [], 'source': 'ai file'},
-                                   'ai_3_izero': {'dtype': 'number',
-                                                  'shape': [],
-                                                  'source': 'ai file'},
-                                   'ai_5': {'dtype': 'number', 'shape': [], 'source': 'ai file'},
-                                   'ai_6_beamstop': {'dtype': 'number',
-                                                     'shape': [],
-                                                     'source': 'ai file'},
-                                   'ai_7': {'dtype': 'number', 'shape': [], 'source': 'ai file'},
-                                   'background': {'dtype': 'number',
-                                                  'shape': [],
-                                                  'source': 'ai file'},
-                                   'beam_current': {'dtype': 'number',
-                                                    'shape': [],
-                                                    'source': 'ai file',
-                                                    'units': 'kev'},
-                                   'beamline_energy': {'dtype': 'number',
-                                                       'shape': [],
-                                                       'source': 'ai file',
-                                                       'units': 'epu'},
-                                   'ccd': {'dtype': 'array',
-                                           'external': 'FILESTORE:',
-                                           'shape': [1024, 1024],
-                                           'source': 'ai file'},
-                                   'ccd_temp': {'dtype': 'number',
-                                                'shape': [],
-                                                'source': 'ai file',
-                                                'units': 'c'},
-                                   'coolstage_temp': {'dtype': 'number',
-                                                      'shape': [],
-                                                      'source': 'ai file',
-                                                      'units': 'c'},
-                                   'counts': {'dtype': 'number', 'shape': [], 'source': 'ai file'},
-                                   'epu_polarization': {'dtype': 'number',
-                                                        'shape': [],
-                                                        'source': 'ai file'},
-                                   'frame_num': {'dtype': 'number',
-                                                 'shape': [],
-                                                 'source': 'ai file'},
-                                   'i_zero': {'dtype': 'number', 'shape': [], 'source': 'ai file'},
-                                   'lv_memory': {'dtype': 'number',
-                                                 'shape': [],
-                                                 'source': 'ai file'},
-                                   'pause_trigger': {'dtype': 'number',
-                                                     'shape': [],
-                                                     'source': 'ai file'},
-                                   'photodiode': {'dtype': 'number',
-                                                  'shape': [],
-                                                  'source': 'ai file'},
-                                   'pzt_shutter': {'dtype': 'number',
-                                                   'shape': [],
-                                                   'source': 'ai file'},
-                                   'temperature_controller': {'dtype': 'number',
-                                                              'shape': [],
-                                                              'source': 'ai file'},
-                                   'tey_signal': {'dtype': 'number',
-                                                  'shape': [],
-                                                  'source': 'ai file'},
-                                   'timestamp_error': {'dtype': 'number',
-                                                       'shape': [],
-                                                       'source': 'ai file'},
-                                   'timestamp_server_time': {'dtype': 'number',
-                                                             'shape': [],
-                                                             'source': 'ai file'},
-                                   'timestamp_transmit_time': {'dtype': 'number',
-                                                               'shape': [],
-                                                               'source': 'ai file'},
-                                   'total_flux': {'dtype': 'number',
-                                                  'shape': [],
-                                                  'source': 'ai file'}}}
+def make_mock_run(sample, datafile):
+    return MockRun(sample, datafile)
+
+
+root_catalog = {
+    'one_ring_research': {
+
+    },
+    'mordor_research': {
+        'orc-mark-3-uid': make_mock_run('orc', '/home/sauron/orc'),
+        'nazgul-mark-4-uid': make_mock_run('nazgul', '/home/sauron/nazgul'),
+        'balrog-mark-9-uid': make_mock_run('balrog', '/home/sauron/balrog')
+    }
+}

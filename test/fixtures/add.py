@@ -1,9 +1,6 @@
 import pytest
 import mongomock
-
-
-class PrimaryStream():
-    metadata = {'descriptors': []}
+from test.category_runs_definitions import root_catalog
 
 @pytest.fixture
 def mongodb():
@@ -12,6 +9,7 @@ def mongodb():
 
 @pytest.fixture
 def splash_client(mongodb, monkeypatch, ):
+    monkeypatch.setattr('splash.categories.runs.runs_service.catalog', root_catalog,)
     monkeypatch.setenv('FLASK_SECRET_KEY', "the_question_to_the_life_the_universe_and_everything")
     # This ensures that we can appropriately mock
     import splash
