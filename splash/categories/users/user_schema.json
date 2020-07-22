@@ -16,7 +16,7 @@
       }
     },
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "splash::schema::user",
+    "$id": "splash_schema_user",
     "type": "object",
     "title": "User Schema",
     "properties": {
