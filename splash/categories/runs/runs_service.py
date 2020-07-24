@@ -1,11 +1,15 @@
 from databroker import catalog
 from databroker.core import BlueskyRun
 from splash.categories.runs import bluesky_utils
+from splash.projector.projector import project
 import sys
 import numpy as np
 from PIL import Image, ImageOps
 import io
 
+NEX_IMAGE_FIELD = '/entry/instrument/detector/data'
+NEX_ENERGY_FIELD = '/entry/instrument/monochromator/energy'
+NEX_SAMPLE_NAME_FIELD = '/entry/sample/name'
 
 class CatalogDoesNotExist(Exception):
     pass
@@ -32,27 +36,10 @@ class RunService():
         Returns a file object representing a compressed jpeg image by default.
         If `raw_bytes` is set to `True`, then it returns a generator
         for streaming the entire image as bytes"""
-        if catalog_name not in catalog:
-            raise CatalogDoesNotExist(f'Catalog name: {catalog_name} is not a catalog')
+        frame_number = validate_frame_num(frame)
+        dataset = return_dask_dataset(catalog_name, uid)
+        image_data = dataset[NEX_IMAGE_FIELD].squeeze()
 
-        if not is_integer(frame):
-            raise BadFrameArgument('Frame number must be an integer, represented as an integer, string, or float.')
-        frame_number = int(frame)
-
-        if frame_number < 0:
-            raise BadFrameArgument('Frame number must be a positive integer')
-
-        runs = catalog[catalog_name]
-
-        if uid not in runs:
-            raise RunDoesNotExist(f'Run uid: {uid} does not exist')
-
-        run = runs[uid]
-        stream, field = guess_stream_field(run)
-        rundata = getattr(run, stream).to_dask()
-        image_data = rundata[field].squeeze()
-        for i in range(len(image_data.shape) - 3):
-            image_data = image_data[0]
         try:
             image_data = image_data[frame_number]
         except(IndexError):
@@ -65,30 +52,13 @@ class RunService():
             return file_object
 
     def get_metadata(self, catalog_name, uid, frame,):
-        if catalog_name not in catalog:
-            raise CatalogDoesNotExist(f'Catalog name: {catalog_name} is not a catalog')
-
-        if not is_integer(frame):
-            raise BadFrameArgument('Frame number must be an integer, represented as an integer, string, or float.')
-        frame_number = int(frame)
-
-        if frame_number < 0:
-            raise BadFrameArgument('Frame number must be a positive integer')
-
-        runs = catalog[catalog_name]
-
-        if uid not in runs:
-            raise RunDoesNotExist(f'Run uid: {uid} does not exist')
-
-        run = runs[uid]
-        stream, field = guess_stream_field(run)
-        rundata = getattr(run, stream).to_dask()
+        frame_number = validate_frame_num(frame)
+        dataset = return_dask_dataset(catalog_name, uid)
         try:
-            i_zero = rundata['i_zero'][frame_number].compute().item()
-            beamline_energy = rundata['beamline_energy'][frame_number].compute().item()
+            beamline_energy = dataset[NEX_ENERGY_FIELD][frame_number].compute().item()
         except(IndexError):
             raise FrameDoesNotExist(f'Frame number: {frame_number}, does not exist.')
-        return {'i_zero': i_zero, 'beamline_energy': beamline_energy}
+        return { NEX_ENERGY_FIELD: beamline_energy}
 
     def list_catalogs(self):
         return list(catalog)
@@ -97,14 +67,37 @@ class RunService():
         if catalog_name not in catalog:
             raise CatalogDoesNotExist(f'Catalog name: {catalog_name} is not a catalog')
         runs = catalog[catalog_name]
-        runsDict = {
-            uid: {
-                    'num_images': runs[uid].metadata['stop']['num_events']['primary'],
-                    'sample': runs[uid].metadata['start']['sample'],
-                    'data_file': runs[uid].metadata['start']['data_file']
-
-                } for uid in list(runs)}
+        runsDict = {}
+        for uid in runs:
+            dataset = project(runs[uid])
+            runsDict[uid] = {
+                'num_images': dataset[NEX_ENERGY_FIELD].shape[0],
+                NEX_SAMPLE_NAME_FIELD: dataset.attrs[NEX_SAMPLE_NAME_FIELD]
+                }
         return runsDict
+
+
+def return_dask_dataset(catalog_name, uid):
+    if catalog_name not in catalog:
+        raise CatalogDoesNotExist(f'Catalog name: {catalog_name} is not a catalog')
+
+    runs = catalog[catalog_name]
+
+    if uid not in runs:
+        raise RunDoesNotExist(f'Run uid: {uid} does not exist')
+
+    return project(runs[uid])
+
+
+def validate_frame_num(frame):
+    frame_number = frame
+    if not is_integer(frame_number):
+        raise BadFrameArgument('Frame number must be an integer, represented as an integer, string, or float.')
+    frame_number = int(frame)
+
+    if frame_number < 0:
+        raise BadFrameArgument('Frame number must be a positive integer')
+    return frame_number
 
 
 def guess_stream_field(catalog: BlueskyRun):
@@ -152,8 +145,7 @@ def convert_raw(data):
     auto_contrast_image = ImageOps.autocontrast(
                             auto_contrast_image, cutoff=0.1)
     # auto_contrast_image = resize(np.array(auto_contrast_image),
-                                            # (size, size))
-                        
+                                            # (size, size))                   
     file_object = io.BytesIO()
 
     auto_contrast_image.save(file_object, format='JPEG')

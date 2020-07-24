@@ -18,7 +18,6 @@ class Runs(Resource):
         self.run_service = run_service
 
     def get(self, catalog):
-
         return self.run_service.get_runs(catalog)
 
 

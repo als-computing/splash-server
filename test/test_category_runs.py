@@ -1,6 +1,6 @@
 import pytest
 import json
-from .category_runs_definitions import BEAMLINE_ENERGY_VALS, CCD, I_ZERO_VALS
+from .category_runs_definitions import mock_project, root_catalog, NEX_SAMPLE_NAME_FIELD, NEX_ENERGY_FIELD
 from test.category_runs_definitions import root_catalog
 import numpy as np
 from PIL import Image, ImageOps
@@ -31,8 +31,13 @@ def convert_raw(data):
 
 @pytest.mark.usefixtures("splash_client")
 
+@pytest.fixture
+def mock_data(monkeypatch):
+    monkeypatch.setattr('splash.categories.runs.runs_service.project', mock_project)
+    monkeypatch.setattr('splash.categories.runs.runs_service.catalog', root_catalog,)
 
-def test_list_catalogs(splash_client,):
+
+def test_list_catalogs(splash_client, mock_data):
     response = splash_client.get("/api/runs",)
     assert response.status_code == 200
     response_data = json.loads(response.data)
@@ -44,7 +49,7 @@ def test_list_catalogs(splash_client,):
     assert len(catalog_list) == len(root_catalog)
 
 
-def test_list_runs(splash_client):
+def test_list_runs(splash_client, mock_data):
     response = splash_client.get("/api/runs/mordor_research")
     assert response.status_code == 200
     response_data = json.loads(response.data)
@@ -52,12 +57,11 @@ def test_list_runs(splash_client):
     assert len(response_data) == len(catalog)
     for run in catalog:
         assert run in response_data
-        assert response_data[run]['num_images'] == catalog[run].metadata['stop']['num_events']['primary']
-        assert response_data[run]['sample'] == catalog[run].metadata['start']['sample']
-        assert response_data[run]['data_file'] == catalog[run].metadata['start']['data_file']
+        assert response_data[run]['num_images'] == catalog[run].dataset['beamline_energy'].shape[0]
+        assert response_data[run][NEX_SAMPLE_NAME_FIELD] == catalog[run].metadata['sample']
 
 
-def test_list_runs_catalog_doesnt_exist(splash_client):
+def test_list_runs_catalog_doesnt_exist(splash_client, mock_data):
     response = splash_client.get("/api/runs/gondor_research")
     assert response.status_code == 404
     response_data = json.loads(response.data)
@@ -65,7 +69,7 @@ def test_list_runs_catalog_doesnt_exist(splash_client):
     assert response_data['message'] == 'Catalog name: gondor_research is not a catalog'
 
 
-def test_get_image_bad_frame(splash_client):
+def test_get_image_bad_frame(splash_client,mock_data):
     response = splash_client.get("/api/runs/mordor_research/orc-mark-3-uid?frame=blah")
     assert response.status_code == 400
     response_data = json.loads(response.data)
@@ -85,7 +89,7 @@ def test_get_image_bad_frame(splash_client):
     assert response_data['message'] == 'Frame number must be a positive integer'
 
 
-def test_get_image_metadata_bad_frame(splash_client):
+def test_get_image_metadata_bad_frame(splash_client, mock_data):
     response = splash_client.get("/api/runs/mordor_research/orc-mark-3-uid?frame=blah&metadata=true")
     assert response.status_code == 400
     response_data = json.loads(response.data)
@@ -106,22 +110,23 @@ def test_get_image_metadata_bad_frame(splash_client):
 
 
 
-def test_get_image(splash_client):
+def test_get_image(splash_client, mock_data):
+    image_data = root_catalog['mordor_research']['orc-mark-3-uid'].dataset['ccd']
+
     for num in range(5):
         response = splash_client.get(f"/api/runs/mordor_research/orc-mark-3-uid?frame={num}")
         assert response.status_code == 200
         assert response.headers['content-type'] == 'image/JPEG'
-        assert response.data == convert_raw(CCD[num]).read()
+        assert response.data == convert_raw(image_data[num]).read()
 
 
-
-def test_get_image_metadata(splash_client):
+def test_get_image_metadata(splash_client, mock_data):
+    energy_data = root_catalog['mordor_research']['orc-mark-3-uid'].dataset['beamline_energy']
     for num in range(5):
         response = splash_client.get(f"/api/runs/mordor_research/orc-mark-3-uid?frame={num}&metadata=true")
         assert response.status_code == 200
         response_data = json.loads(response.data)
-        assert response_data['i_zero'] == I_ZERO_VALS[num]
-        assert response_data['beamline_energy'] == BEAMLINE_ENERGY_VALS[num]
+        assert response_data[NEX_ENERGY_FIELD] == energy_data[num]
 
     response = splash_client.get("/api/runs/mordor_research/orc-mark-3-uid?frame=0&metadata=blahblah")
     assert response.status_code == 200
@@ -132,7 +137,7 @@ def test_get_image_metadata(splash_client):
     assert response.headers['content-type'] == 'image/JPEG'
 
 
-def test_get_image_metadata_doesnt_exist(splash_client):
+def test_get_image_metadata_doesnt_exist(splash_client, mock_data):
     
     response = splash_client.get("/api/runs/mordor_research/orc-mark-3-uid?frame=50&metadata=true")
     assert response.status_code == 404
@@ -141,7 +146,7 @@ def test_get_image_metadata_doesnt_exist(splash_client):
     assert 'frame_does_not_exist' == response_data['error']
 
 
-def test_get_image_doesnt_exist(splash_client):
+def test_get_image_doesnt_exist(splash_client, mock_data):
     response = splash_client.get("/api/runs/mordor_research/orc-mark-3-uid?frame=50")
     assert response.status_code == 404
     response_data = json.loads(response.data)
