@@ -69,7 +69,7 @@ def test_list_runs_catalog_doesnt_exist(splash_client, mock_data):
     assert response_data['message'] == 'Catalog name: gondor_research is not a catalog'
 
 
-def test_get_image_bad_frame(splash_client,mock_data):
+def test_get_image_bad_frame(splash_client, mock_data):
     response = splash_client.get("/api/runs/mordor_research/orc-mark-3-uid?frame=blah")
     assert response.status_code == 400
     response_data = json.loads(response.data)
@@ -113,20 +113,20 @@ def test_get_image_metadata_bad_frame(splash_client, mock_data):
 def test_get_image(splash_client, mock_data):
     image_data = root_catalog['mordor_research']['orc-mark-3-uid'].dataset['ccd']
 
-    for num in range(5):
-        response = splash_client.get(f"/api/runs/mordor_research/orc-mark-3-uid?frame={num}")
+    for idx, image in enumerate(image_data):
+        response = splash_client.get(f"/api/runs/mordor_research/orc-mark-3-uid?frame={idx}")
         assert response.status_code == 200
         assert response.headers['content-type'] == 'image/JPEG'
-        assert response.data == convert_raw(image_data[num]).read()
+        assert response.data == convert_raw(image).read()
 
 
 def test_get_image_metadata(splash_client, mock_data):
     energy_data = root_catalog['mordor_research']['orc-mark-3-uid'].dataset['beamline_energy']
-    for num in range(5):
-        response = splash_client.get(f"/api/runs/mordor_research/orc-mark-3-uid?frame={num}&metadata=true")
+    for idx, energy in enumerate(energy_data):
+        response = splash_client.get(f"/api/runs/mordor_research/orc-mark-3-uid?frame={idx}&metadata=true")
         assert response.status_code == 200
         response_data = json.loads(response.data)
-        assert response_data[NEX_ENERGY_FIELD] == energy_data[num]
+        assert response_data[NEX_ENERGY_FIELD] == energy
 
     response = splash_client.get("/api/runs/mordor_research/orc-mark-3-uid?frame=0&metadata=blahblah")
     assert response.status_code == 200
