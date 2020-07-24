@@ -2,28 +2,32 @@
 from flask_restful import Resource
 from flask import Response, send_file, request
 from splash.categories.runs.runs_service import RunService
+from splash.resource.base import AuthenticatedResource
 
 
-class Catalogs(Resource):
+class Catalogs(AuthenticatedResource):
 
     def __init__(self, run_service: RunService):
         self.run_service = run_service
+        super().__init__()
 
     def get(self):
         return {'catalogs': self.run_service.list_catalogs()}
 
 
-class Runs(Resource):
+class Runs(AuthenticatedResource):
     def __init__(self, run_service: RunService):
         self.run_service = run_service
+        super().__init__()
 
     def get(self, catalog):
         return self.run_service.get_runs(catalog)
 
 
-class Run(Resource):
+class Run(AuthenticatedResource):
     def __init__(self, run_service: RunService):
         self.run_service = run_service
+        super().__init__()
 
     def get(self, catalog, uid,):
         frame_number = request.args.get('frame', 0)
