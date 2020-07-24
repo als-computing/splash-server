@@ -5,7 +5,7 @@ import json
 from json import dumps
 
 import jsonschema
-from flask import Flask, current_app, jsonify, make_response
+from flask import Flask, current_app, jsonify, make_response, Response
 from flask_jwt_extended import (JWTManager, create_access_token,
                                 create_refresh_token)
 import prometheus_client
@@ -24,7 +24,7 @@ from splash.categories.experiments.experiments_service import ExperimentService
 from splash.categories.experiments.experiments_resources import Experiment, Experiments
 from splash.categories.compounds.compounds_resources import Compound, Compounds
 from splash.categories.users.users_resources import User, Users
-
+from splash.helpers.middleware import setup_metrics
 
 class ErrorPropagatingApi(Api):
     """Flask-Restful has its own error handling facilities, this propagates errors to flask"""
