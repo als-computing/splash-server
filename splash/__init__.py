@@ -5,9 +5,10 @@ import json
 from json import dumps
 
 import jsonschema
-from flask import Flask, current_app, jsonify, make_response
+from flask import Flask, current_app, jsonify, make_response, Response
 from flask_jwt_extended import (JWTManager, create_access_token,
                                 create_refresh_token)
+import prometheus_client
 from flask_restful import Api
 from jwt.exceptions import ExpiredSignatureError, PyJWTError
 from pymongo import MongoClient
@@ -23,7 +24,7 @@ from splash.categories.experiments.experiments_service import ExperimentService
 from splash.categories.experiments.experiments_resources import Experiment, Experiments
 from splash.categories.compounds.compounds_resources import Compound, Compounds
 from splash.categories.users.users_resources import User, Users
-
+from splash.helpers.middleware import setup_metrics
 
 class ErrorPropagatingApi(Api):
     """Flask-Restful has its own error handling facilities, this propagates errors to flask"""
@@ -33,10 +34,13 @@ class ErrorPropagatingApi(Api):
 
 
 def create_app(db=None):
+    CONTENT_TYPE_LATEST = str('text/plain; version=0.0.4; charset=utf-8')
     app = Flask(__name__, instance_relative_config=True)
     api = ErrorPropagatingApi(app)
     jwt = JWTManager(app)
     app.secret_key = os.environ.get('FLASK_SECRET_KEY')
+    setup_metrics(app)
+
     app.config.from_object('config')
     logger = logging.getLogger('splash-server')
     try:
@@ -49,7 +53,8 @@ def create_app(db=None):
         ch.setLevel(logging_level)
 
         # create formatter
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - \
+                                        %(message)s')
 
         # add formatter to ch
         ch.setFormatter(formatter)
@@ -88,6 +93,10 @@ def create_app(db=None):
     from splash.auth.oauth_resources import OAuthResource
     api.add_resource(OAuthResource, "/api/tokensignin", resource_class_kwargs={'user_service': app.user_service})
 
+    @app.route('/metrics/')
+    def metrics():
+        return Response(prometheus_client.generate_latest(),
+                        mimetype=CONTENT_TYPE_LATEST)
     @app.errorhandler(UidInDictError)
     def uid_error(error):
         logger.info(" UidError: ")
@@ -125,7 +134,8 @@ def create_app(db=None):
     @app.errorhandler(TypeError)
     def type_error(error):
         logger.info(" TypeError ", exc_info=1)
-        return make_response(dumps({"error":"type_error", "message": "Type Error"}), 400)
+        return make_response(dumps({"error": "type_error",
+                             "message": "Type Error"}), 400)
 
     # This actually might never get called because trailing slashes with
     # no parameters won't get routed to the route that would raise a
@@ -134,12 +144,14 @@ def create_app(db=None):
     @app.errorhandler(NoIdProvidedError)
     def no_id_provided_error(error):
         logger.info("No Id Provided Error: ", exc_info=1)
-        return make_response(dumps({"error":"no_id_provided","message": "no id provided"}), 400)
+        return make_response(dumps({"error": "no_id_provided",
+                             "message": "no id provided"}), 400)
 
     @app.errorhandler(ObjectNotFoundError)
     def object_not_found_error(error):
-        logger.info(" Object Not Found Error: ", exc_info=1 )
-        return make_response(dumps({"error": "object_not_found", "message":"object not found"}), 404)
+        logger.info(" Object Not Found Error: ", exc_info=1)
+        return make_response(dumps({"error": "object_not_found",
+                             "message": "object not found"}), 404)
 
     @app.errorhandler(BadIdError)
     def bad_id_error(error):
