@@ -1,14 +1,19 @@
 from flask import request
+from datadog import DogStatsd
 import time
-from prometheus_client import Counter, Histogram
+# from prometheus_client import Counter, Histogram
 
-REQUEST_COUNT = Counter(
-    'request_count', 'App Request Count',
-    ['app_name', 'method', 'endpoint', 'http_status']
-)
-REQUEST_LATENCY = Histogram('request_latency_seconds', 'Request latency',
-                            ['app_name', 'endpoint'], 
-                            buckets=(0.001, 0.002, 0.004, 0.005, float("inf")))
+statsd = DogStatsd(host="statsd", port=9125)
+
+REQUEST_LATENCY_METRIC_NAME = 'request_latency_seconds'
+REQUEST_COUNT_METRIC_NAME = 'request_count'
+
+# REQUEST_COUNT = Counter(
+#    'request_count', 'App Request Count',
+#    ['app_name', 'method', 'endpoint', 'http_status']
+# )
+# REQUEST_LATENCY = Histogram('request_latency_seconds', 'Request latency',
+#                            ['app_name', 'endpoint'],)
 
 
 def start_timer():
@@ -17,13 +22,24 @@ def start_timer():
 
 def stop_timer(response):
     resp_time = time.time() - request.start_time
-    REQUEST_LATENCY.labels('splash', request.path).observe(resp_time)
+    statsd.histogram(REQUEST_LATENCY_METRIC_NAME,
+                     resp_time,
+                     tags=[
+                        'service:splash_web_app',
+                        'endpoint: %s' % request.path,
+                        ])
     return response
 
 
 def record_request_data(response):
-    REQUEST_COUNT.labels('splash', request.method, request.path,
-                         response.status_code).inc()
+    print('how you doing')
+    statsd.increment(REQUEST_COUNT_METRIC_NAME,
+                     tags=[
+                        'service: webapp',
+                        'method: %s' % request.method,
+                        'endpoint: %s' % request.path,
+                        'status: %s' % str(response.status_code)
+                        ])
     return response
 
 

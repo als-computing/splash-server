@@ -8,7 +8,6 @@ import jsonschema
 from flask import Flask, current_app, jsonify, make_response, Response
 from flask_jwt_extended import (JWTManager, create_access_token,
                                 create_refresh_token)
-import prometheus_client
 from flask_restful import Api
 from jwt.exceptions import ExpiredSignatureError, PyJWTError
 from pymongo import MongoClient
@@ -93,10 +92,6 @@ def create_app(db=None):
     from splash.auth.oauth_resources import OAuthResource
     api.add_resource(OAuthResource, "/api/tokensignin", resource_class_kwargs={'user_service': app.user_service})
 
-    @app.route('/metrics/')
-    def metrics():
-        return Response(prometheus_client.generate_latest(),
-                        mimetype=CONTENT_TYPE_LATEST)
     @app.errorhandler(UidInDictError)
     def uid_error(error):
         logger.info(" UidError: ")
