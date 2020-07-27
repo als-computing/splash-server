@@ -6,4 +6,9 @@ google-auth
 requests
 uwsgi
 python-dotenv
+databroker
+Pillow
+numpy
+./datahandler_fits/
 datadog
+

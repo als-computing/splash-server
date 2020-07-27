@@ -1,7 +1,6 @@
-import splash
 import pytest
 import mongomock
-
+import splash
 
 @pytest.fixture
 def mongodb():
@@ -9,8 +8,10 @@ def mongodb():
 
 
 @pytest.fixture
-def splash_client(mongodb, monkeypatch):
+def splash_client(mongodb, monkeypatch, ):
+    
     monkeypatch.setenv('FLASK_SECRET_KEY', "the_question_to_the_life_the_universe_and_everything")
+    # This ensures that we can appropriately mock
     app = splash.create_app(db=mongodb)
     app.config['TESTING'] = True
     return app.test_client()

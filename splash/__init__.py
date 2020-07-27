@@ -15,9 +15,11 @@ from werkzeug.exceptions import BadRequest
 
 from splash.data.base import ObjectNotFoundError, UidInDictError, MongoCollectionDao, BadIdError
 from splash.auth.oauth_resources import OauthVerificationError, UserNotFoundError, MultipleUsersError
-from splash.service.base import BadPageArgument, Service
+from splash.service.base import BadPageArgument
 from splash.resource.base import MalformedJsonError
 from splash.categories.users.users_service import UserService
+from splash.categories.runs.runs_service import RunDoesNotExist,\
+     CatalogDoesNotExist, BadFrameArgument, FrameDoesNotExist, RunService
 from splash.categories.compounds.compounds_service import CompoundsService
 from splash.categories.experiments.experiments_service import ExperimentService
 from splash.categories.experiments.experiments_resources import Experiment, Experiments
@@ -73,6 +75,7 @@ def create_app(db=None):
 
     userDAO = MongoCollectionDao(app.db, 'users') # this whole service/dao connection will change soon
     app.user_service = UserService(userDAO)
+    app.run_service = RunService()
 
     experimentsDAO = MongoCollectionDao(app.db, 'experiments')
     app.experiments_service = ExperimentService(experimentsDAO)
@@ -92,6 +95,30 @@ def create_app(db=None):
     from splash.auth.oauth_resources import OAuthResource
     api.add_resource(OAuthResource, "/api/tokensignin", resource_class_kwargs={'user_service': app.user_service})
 
+    from splash.categories.runs.runs_resource import Run, Runs, Catalogs
+    api.add_resource(Catalogs, '/api/runs', resource_class_kwargs={"run_service": app.run_service})
+    api.add_resource(Runs, '/api/runs/<catalog>', resource_class_kwargs={"run_service": app.run_service})
+    api.add_resource(Run, "/api/runs/<catalog>/<uid>", resource_class_kwargs={"run_service": app.run_service})
+
+    @app.errorhandler(FrameDoesNotExist)
+    def frame_does_not_exist(error):
+        logger.info("Bad frame argument: ", exc_info=1)
+        return make_response(dumps({"error": "frame_does_not_exist", "message": str(error)}), 404)
+
+    @app.errorhandler(BadFrameArgument)
+    def bad_frame_argument(error):
+        logger.info("Bad frame argument: ", exc_info=1)
+        return make_response(dumps({"error": "bad_frame_argument", "message": str(error)}), 400)
+
+    @app.errorhandler(RunDoesNotExist)
+    def run_not_found(error):
+        logger.info("Run not found: ", exc_info=1)
+        return make_response(dumps({"error": "run_not_found", "message": str(error)}), 404)
+
+    @app.errorhandler(CatalogDoesNotExist)
+    def catalog_not_found(error):
+        logger.info("Catalog not found: ", exc_info=1)
+        return make_response(dumps({"error": "catalog_not_found", "message": str(error)}), 404)
     @app.errorhandler(UidInDictError)
     def uid_error(error):
         logger.info(" UidError: ")
