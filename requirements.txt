@@ -2,11 +2,13 @@ pymongo==3.7.2
 flask_jwt_extended
 flask_restful
 jsonschema
-uwsgi
 google-auth
 requests
+uwsgi
 python-dotenv
 databroker
 Pillow
 numpy
 ./datahandler_fits/
+datadog
+
