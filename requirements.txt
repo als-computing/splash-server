@@ -4,7 +4,6 @@ flask_restful
 jsonschema
 google-auth
 requests
-prometheus_client
 uwsgi
-
 python-dotenv
+datadog
