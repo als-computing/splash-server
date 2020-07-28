@@ -9,6 +9,6 @@ python-dotenv
 databroker
 Pillow
 numpy
-./datahandler_fits/
+git+git://github.com/als-computing/datahandler_fits@master#egg=databroker-fitshandler
 datadog
 
