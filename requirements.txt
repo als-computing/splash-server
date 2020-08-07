@@ -9,6 +9,5 @@ python-dotenv
 databroker
 Pillow
 numpy
-./datahandler_fits/
 datadog
 
