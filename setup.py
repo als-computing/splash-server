@@ -1,13 +1,16 @@
 # Always prefer setuptools over distutils
 from setuptools import setup, find_packages
 from os import path
-
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the README file
 with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
+with open(path.join(here, 'requirements.txt')) as requirements_file:
+    # Parse requirements.txt, ignoring any commented-out lines.
+    requirements = [line for line in requirements_file.read().splitlines()
+                    if not line.startswith('#')]
 setup(
 
     name='splash-server',  
@@ -29,8 +32,7 @@ setup(
 
     packages=find_packages(exclude=['contrib', 'docs', 'tests']), 
     python_requires='>=3.5',
-    install_requires=['flask', 'flask_cors', 'pymongo', 'bokeh'], 
-
+    install_requires=requirements,
     entry_points={
         'console_scripts': [
             'splash=server:main',
