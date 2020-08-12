@@ -32,7 +32,7 @@ def project(run: BlueskyRun):
     except Exception as e:
         if isinstance(e, UnkownLocation):
             raise
-        raise ProjectionError('Error with projecting run')
+        raise ProjectionError(f'Error with projecting run: {e}')
     return xarray.Dataset(data_vars, attrs=attrs)
 
 

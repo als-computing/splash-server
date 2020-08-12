@@ -1,3 +1,4 @@
+from typing import List
 from databroker import catalog
 from databroker.core import BlueskyRun
 from splash.categories.runs import bluesky_utils
@@ -58,23 +59,24 @@ class RunService():
             beamline_energy = dataset[NEX_ENERGY_FIELD][frame_number].compute().item()
         except(IndexError):
             raise FrameDoesNotExist(f'Frame number: {frame_number}, does not exist.')
-        return { NEX_ENERGY_FIELD: beamline_energy}
+        return {NEX_ENERGY_FIELD: beamline_energy}
 
     def list_catalogs(self):
         return list(catalog)
 
-    def get_runs(self, catalog_name):
+    def get_runs(self, catalog_name) -> List:
         if catalog_name not in catalog:
             raise CatalogDoesNotExist(f'Catalog name: {catalog_name} is not a catalog')
         runs = catalog[catalog_name]
-        runsDict = {}
+        return_runs = []
         for uid in runs:
+            run = {}
+            run['uid'] = uid
             dataset = project(runs[uid])
-            runsDict[uid] = {
-                'num_images': dataset[NEX_ENERGY_FIELD].shape[0],
-                NEX_SAMPLE_NAME_FIELD: dataset.attrs[NEX_SAMPLE_NAME_FIELD]
-                }
-        return runsDict
+            run['num_images'] = dataset[NEX_ENERGY_FIELD].shape[0]
+            run[NEX_SAMPLE_NAME_FIELD] = dataset.attrs[NEX_SAMPLE_NAME_FIELD]
+            return_runs.append(run)
+        return return_runs
 
 
 def return_dask_dataset(catalog_name, uid):
@@ -136,6 +138,12 @@ def stream_image_as_bytes(dataarray):
         yield bytes(chunk.data)
 
 
+def generate_buffer(buffer: io.BytesIO, chunk_size: int):
+    reader = io.BufferedReader(buffer, chunk_size)
+    for chunk in reader:
+        yield chunk
+
+
 def convert_raw(data):
     log_image = np.array(data.compute())
     log_image = log_image - np.min(log_image) + 1.001
@@ -146,14 +154,13 @@ def convert_raw(data):
                             auto_contrast_image, cutoff=0.1)
     # auto_contrast_image = resize(np.array(auto_contrast_image),
                                             # (size, size))                   
-    file_object = io.BytesIO()
+    file_buffer = io.BytesIO()
 
-    auto_contrast_image.save(file_object, format='JPEG')
+    auto_contrast_image.save(file_buffer, format='JPEG')
 
     # move to beginning of file so `send_file()` will read from start    
-    file_object.seek(0)
-
-    return file_object
+    file_buffer.seek(0)
+    return generate_buffer(file_buffer, 2048)
 
 
 def is_integer(n):

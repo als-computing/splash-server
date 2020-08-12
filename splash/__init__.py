@@ -65,7 +65,7 @@ def create_app(db=None):
     except Exception as e:
         print("cannot setup logging: {}".format(str(e)))
 
-    
+
     # connect-false because frameworks like uwsgi fork after app is obtained, and are not
     # fork-safe.
     if db is None:

@@ -7,6 +7,7 @@ import os
 
 COMPOUND_SCHEMA = openSchema('compounds_schema.json', __file__)
 
+
 class CompoundsService(Service):
 
     def __init__(self, dao: MongoCollectionDao):
