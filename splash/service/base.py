@@ -1,8 +1,9 @@
 import json
 import os
 from collections import namedtuple
+from splash.models.users import UserModel
 
-from pydantic import BaseModel
+# from pydantic import BaseModel
 
 from splash.data.base import MongoCollectionDao
 
@@ -15,9 +16,8 @@ class BadPageArgument(Exception):
 
 class Service():
 
-    def __init__(self, dao: MongoCollectionDao, model: BaseModel):
+    def __init__(self, dao: MongoCollectionDao):
         self.dao = dao
-        self._model = model
 
     # def validate(self, data):
     #     errors = self.validator.iter_errors(data)
@@ -26,13 +26,17 @@ class Service():
     #         return_errs.append(ValidationIssue(error.message, str(error.path), error))
     #     return return_errs
 
-    def create(self, data):
+    def create(self, current_user: UserModel, data):
         return self.dao.create(data)
 
-    def retrieve_one(self, uid):
+    def retrieve_one(self, current_user: UserModel, uid):
         return self.dao.retrieve(uid)
 
-    def retrieve_multiple(self, page: int, query=None, page_size=10):
+    def retrieve_multiple(self,
+                          current_user: UserModel,
+                          page: int,
+                          query=None,
+                          page_size=10):
         if not is_integer(page):
             raise BadPageArgument('Page number must be an integer,\
                             represented as an integer, string, or float.')
@@ -43,11 +47,12 @@ class Service():
         return list(cursor)
         # return 
 
-    def update(self, data):
+    def update(self, current_user: UserModel, data):
         return self.dao.update(data)
 
-    def delete(self, uid):
+    def delete(self, current_user: UserModel, uid):
         raise self.dao.delete(uid)
+
 
 def is_integer(n):
     try:

@@ -5,6 +5,8 @@ jsonschema
 google-auth
 requests
 python-dotenv
+python-jose[cryptography]
+python-multipart
 databroker
 Pillow
 numpy
