@@ -30,12 +30,7 @@ logger = logging.getLogger('splash-server')
 router = APIRouter()
 
 LOG_VALIDATING_TOKEN_MSG = "Validating user with token {}"
-
-
-
 ALGORITHM = "HS256"
-
-
 
 router = APIRouter()
 
@@ -44,6 +39,7 @@ router = APIRouter()
 
 class TokenRequestModel(BaseModel):
     token: str
+
 
 class Token(BaseModel):
     access_token: str
