@@ -1,8 +1,0 @@
-
-db.compounds.createIndex(
-    {"name": "text"},
-    {"unique": true}
-)
-
-
-db.users.find({"authenticators.email": "dylan@b-town.net"})

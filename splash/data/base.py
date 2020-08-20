@@ -103,12 +103,11 @@ class MongoCollectionDao(Dao):
         if query is None:
             # Calculate number of documents to skip
             skips = page_size * (page - 1)
-            num_results = self._collection.find().count()
             # Skip and limit
             cursor = self._collection.find({}, {'_id': False}).skip(skips).limit(page_size)
 
             # Return documents
-            return num_results, cursor
+            return cursor
 
         else:
             raise NotImplementedError

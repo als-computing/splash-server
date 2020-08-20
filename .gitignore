@@ -90,3 +90,5 @@ ui/public/static
 instance/
 
 datahandler_fits/
+
+.scratch/
