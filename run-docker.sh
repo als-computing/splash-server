@@ -1,0 +1,1 @@
+docker run -d -e APP_MODULE="splash.api.main:app" -p 82:80  splash-fastapi 

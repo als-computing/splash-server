@@ -1,1 +1,0 @@
-uwsgi --socket 0.0.0.0:3031 --uid uwsgi --master --processes 8 --protocol uwsgi --wsgi server:app --stats 127.0.0.1:1717 --stats-http  --http 0.0.0.0:8080
