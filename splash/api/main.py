@@ -20,7 +20,13 @@ def setup_services():
 if get_service_provider() is None:
     set_service_provider(setup_services())
 
-app = FastAPI()
+app = FastAPI(
+    # openapi_prefix="/api/v1sdf",
+    openapi_url="/api/v1/openapi.json",
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    swagger_ui_oauth2_redirect_url="/api/docs/oauth2-redirect"
+)
 
 app.include_router(
     auth.router,
@@ -39,7 +45,7 @@ app.include_router(
 
 app.include_router(
     compounds.router,
-    prefix="/api/v1/compounds",
+    prefix="/api/v1/compounds", 
     tags=["compounds"],
     responses={404: {"description": "Not found"}}
 )
