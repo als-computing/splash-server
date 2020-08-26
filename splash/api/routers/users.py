@@ -27,6 +27,14 @@ def read_user(
     user_json = services().users.retrieve_one(current_user, uid)
     return (UserModel(**user_json))
 
+@router.put("/{uid}", tags=['users'], response_model=CreateUserResponse)
+def replace_user(
+        uid: str,
+        user: NewUserModel,
+        current_user: UserModel = Security(get_current_user)):
+    uid = services().users.update(current_user, user.dict(), uid)
+    return CreateUserResponse(uid=uid)
+
 
 @router.post("/", tags=['users'], response_model=CreateUserResponse)
 def create_user(

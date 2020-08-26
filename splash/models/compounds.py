@@ -1,21 +1,28 @@
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, Extra
+from typing import List
+
+
+class Metadata(BaseModel):
+    name: str
+    value: str
+
+
+class Section(BaseModel):
+    title: str
+    text: str
+
+
+class Documentation(BaseModel):
+    sections: List[Section] = []
 
 
 class NewCompound(BaseModel):
-    species: Optional[str]
-    produced_water_relevance: Optional[str]
-    origin: Optional[str]
-    fundamental_relevance: Optional[str]
-    researchers: Optional[str]
-    molecular_weight: Optional[str]
-    aqueous_species: Optional[str]
-    water_solubility: Optional[str]
-    adsorption: Optional[str]
-    analytical: Optional[str]
-    chem_reference: Optional[str]
-    purchase_options: Optional[str]
-    contributors: Optional[str]
+    species: str
+    metadata: List[Metadata]
+    documentation: Documentation
+
+    class Config:
+        extra = Extra.forbid
 
 
 class Compound(NewCompound):

@@ -47,8 +47,8 @@ class Service():
         return list(cursor)
         # return 
 
-    def update(self, current_user: UserModel, data):
-        return self.dao.update(data)
+    def update(self, current_user: UserModel, data, uid: str):
+        return self.dao.update(data, uid)
 
     def delete(self, current_user: UserModel, uid):
         raise self.dao.delete(uid)
