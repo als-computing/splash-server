@@ -15,7 +15,7 @@ def generic_test_api_crud(sample_new_object, url_path, splash_client, token_head
                                   headers=token_header)
     assert response.status_code == 422, f"{response.status_code}: response is {response.content}"
 
-    response = splash_client.put(url_path + "sample_uid",
+    response = splash_client.put(url_path + "/sample_uid",
                                  data=json.dumps(sample_new_object),
                                  headers=token_header)
     assert response.status_code == 422, f"{response.status_code}: response is {response.content}"
@@ -37,10 +37,10 @@ def generic_test_api_crud(sample_new_object, url_path, splash_client, token_head
     assert len(response_dict) > 0
 
     # retrive one
-    response = splash_client.get(url_path + new_uid, headers=token_header)
+    response = splash_client.get(url_path + '/' + new_uid, headers=token_header)
     assert response.status_code == 200, f"{response.status_code}: response is {response.content}"
 
-    response = splash_client.put(url_path + new_uid, data=json.dumps(sample_new_object), headers=token_header)
+    response = splash_client.put(url_path + '/' + new_uid, data=json.dumps(sample_new_object), headers=token_header)
     assert response.status_code == 200, f"{response.status_code}: response is {response.content}"
 
     # we used to validate more, but with the switch tn FastAPI, new object models aren't the same

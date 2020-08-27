@@ -14,7 +14,7 @@ class CreateCompoundResponse(BaseModel):
     uid: str
 
 
-@router.get("/", tags=["compounds"], response_model=List[Compound])
+@router.get("", tags=["compounds"], response_model=List[Compound])
 def read_compounds(current_user: UserModel = Security(get_current_user)):
     compounds = services().compounds.retrieve_multiple(current_user, 1)
     results = parse_obj_as(List[Compound], compounds)
@@ -38,7 +38,7 @@ def replace_compound(
     return CreateCompoundResponse(uid=uid)
 
 
-@router.post("/", tags=['compounds'], response_model=CreateCompoundResponse)
+@router.post("", tags=['compounds'], response_model=CreateCompoundResponse)
 def create_compound(
         new_compound: NewCompound,
         current_user: UserModel = Security(get_current_user)):

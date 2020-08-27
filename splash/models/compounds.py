@@ -1,15 +1,15 @@
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel, Extra, constr
 from typing import List
 
 
 class Metadata(BaseModel):
-    name: str
-    value: str
+    name: constr(min_length=1)
+    value: constr(min_length=1)
 
 
 class Section(BaseModel):
-    title: str
-    text: str
+    title: constr(min_length=1)
+    text: constr(min_length=1)
 
 
 class Documentation(BaseModel):
@@ -17,7 +17,7 @@ class Documentation(BaseModel):
 
 
 class NewCompound(BaseModel):
-    species: str
+    species: constr(min_length=1)
     metadata: List[Metadata]
     documentation: Documentation
 

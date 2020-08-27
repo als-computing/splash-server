@@ -1,12 +1,35 @@
 import pytest
-
+import json
 from .testing_utils import generic_test_api_crud
 
 
 @pytest.mark.usefixtures("splash_client", "token_header")
 def test_flask_crud_user(api_url_root, splash_client, token_header):
-    generic_test_api_crud(new_compound, api_url_root + "/compounds/", splash_client, token_header)
+    generic_test_api_crud(new_compound, api_url_root + "/compounds", splash_client, token_header)
 
+
+def test_no_empty_strings(api_url_root, splash_client, token_header):
+    url = api_url_root + "/compounds"
+    response = splash_client.post(url,
+                                  data=json.dumps(empty_string_name),
+                                  headers=token_header)
+    assert response.status_code == 422, f"{response.status_code}: response is {response.content}"
+    response = splash_client.post(url,
+                                  data=json.dumps(empty_string_value),
+                                  headers=token_header)
+    assert response.status_code == 422, f"{response.status_code}: response is {response.content}"
+    response = splash_client.post(url,
+                                  data=json.dumps(empty_string_title),
+                                  headers=token_header)
+    assert response.status_code == 422, f"{response.status_code}: response is {response.content}"
+    response = splash_client.post(url,
+                                  data=json.dumps(empty_string_text),
+                                  headers=token_header)
+    assert response.status_code == 422, f"{response.status_code}: response is {response.content}"
+    response = splash_client.post(url,
+                                  data=json.dumps(empty_string_species),
+                                  headers=token_header)
+    assert response.status_code == 422, f"{response.status_code}: response is {response.content}"
 
 
 new_compound = {
@@ -81,4 +104,98 @@ new_compound = {
             }
         ]
     }
+}
+
+empty_string_species = {
+    "species": "",
+    "metadata": [
+        {
+            "name": "contributors",
+            "value": "Matt Landsman, Lauren Nalley"
+        }
+    ],
+    "documentation": {
+        "sections": [
+            {
+                "title": "Internal publications",
+                "text": " - Landsman, Lawler, Katz (2020). Application of electrodialysis pretreatment to enhance boron removal and reduce fouling during nanofiltration/reverse osmosis"
+            }
+        ]
+    }
+}
+
+empty_string_name = {
+    "species": "Boron",
+    "metadata": [
+        {
+            "name": "",
+            "value": "Matt Landsman, Lauren Nalley"
+        }
+    ],
+    "documentation": {
+        "sections": [
+            {
+                "title": "Internal publications",
+                "text": " - Landsman, Lawler, Katz (2020). Application of electrodialysis pretreatment to enhance boron removal and reduce fouling during nanofiltration/reverse osmosis"
+            }
+        ]
+    }
+
+}
+
+empty_string_value = {
+
+        "species": "Boron",
+        "metadata": [
+            {
+                "name": "contributors",
+                "value": ""
+            }
+        ],
+        "documentation": {
+            "sections": [
+                {
+                    "title": "Internal publications",
+                    "text": " - Landsman, Lawler, Katz (2020). Application of electrodialysis pretreatment to enhance boron removal and reduce fouling during nanofiltration/reverse osmosis"
+                }
+            ]
+        }
+}
+
+empty_string_title = {
+
+        "species": "Boron",
+        "metadata": [
+            {
+                "name": "contributors",
+                "value": "Matt Landsman, Lauren Nalley"
+            }
+        ],
+        "documentation": {
+            "sections": [
+                {
+                    "title": "",
+                    "text": " - Landsman, Lawler, Katz (2020). Application of electrodialysis pretreatment to enhance boron removal and reduce fouling during nanofiltration/reverse osmosis"
+                }
+            ]
+        }
+}
+
+empty_string_text = {
+
+        "species": "Boron",
+        "metadata": [
+            {
+                "name": "contributors",
+                "value": "Matt Landsman, Lauren Nalley"
+            }
+        ],
+        "documentation": {
+            "sections": [
+                {
+                    "title": "Internal publications",
+                    "text": ""
+                }
+            ]
+        }
 }
