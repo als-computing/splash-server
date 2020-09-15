@@ -1,3 +1,9 @@
+import os
+
+os.environ['TOKEN_SECRET_KEY'] = "the_question_to_the_life_the_universe_and_everything"
+os.environ['GOOGLE_CLIENT_ID'] = "Gollum"
+os.environ['GOOGLE_CLIENT_SECRET'] = "the_one_ring"
+
 import pytest
 import mongomock
 from splash.api.main import app
@@ -25,7 +31,6 @@ def mongodb():
 
 @pytest.fixture
 def splash_client(mongodb, monkeypatch):
-    monkeypatch.setenv('TOKEN_SECRET_KEY', "the_question_to_the_life_the_universe_and_everything")
     uid = services().users.create(test_user, dict(test_user))
     token_info['sub'] = uid
     client = TestClient(app)

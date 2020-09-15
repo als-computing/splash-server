@@ -115,13 +115,13 @@ class MongoCollectionDao(Dao):
     def retreive_many(self, query=None):
         return self._collection.find(query)
 
-    def update(self, doc):
-        if 'uid' not in doc:
-            raise BadIdError('No uid provided')
+    def update(self, doc, uid: str):
         # update_one might be more efficient, but kinda tricky
-        status = self._collection.replace_one({"uid": doc['uid']}, doc)
-        if status.modified_count == 0:
+        doc['uid'] = uid
+        status = self._collection.replace_one({"uid": uid}, doc)
+        if status.matched_count == 0:
             raise ObjectNotFoundError
+        return uid
 
     def delete(self, uid):
         status = self._collection.delete_one({"uid": uid})
