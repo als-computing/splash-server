@@ -11,19 +11,19 @@ def test_flask_crud_user(api_url_root, splash_client, token_header):
 def test_no_empty_strings(api_url_root, splash_client, token_header):
     url = api_url_root + "/compounds"
     response = splash_client.post(url,
-                                  data=json.dumps(empty_string_name),
+                                  data=json.dumps(empty_string_metadata_title),
                                   headers=token_header)
     assert response.status_code == 422, f"{response.status_code}: response is {response.content}"
     response = splash_client.post(url,
-                                  data=json.dumps(empty_string_value),
+                                  data=json.dumps(empty_string_metadata_text),
                                   headers=token_header)
     assert response.status_code == 422, f"{response.status_code}: response is {response.content}"
     response = splash_client.post(url,
-                                  data=json.dumps(empty_string_title),
+                                  data=json.dumps(empty_string_section_title),
                                   headers=token_header)
     assert response.status_code == 422, f"{response.status_code}: response is {response.content}"
     response = splash_client.post(url,
-                                  data=json.dumps(empty_string_text),
+                                  data=json.dumps(empty_string_section_text),
                                   headers=token_header)
     assert response.status_code == 422, f"{response.status_code}: response is {response.content}"
     response = splash_client.post(url,
@@ -36,8 +36,8 @@ new_compound = {
     "species": "Boron",
     "metadata": [
         {
-            "name": "contributors",
-            "value": "Matt Landsman, Lauren Nalley"
+            "title": "contributors",
+            "text": "Matt Landsman, Lauren Nalley"
         }
     ],
     "documentation": {
@@ -54,8 +54,8 @@ empty_string_species = {
     "species": "",
     "metadata": [
         {
-            "name": "contributors",
-            "value": "Matt Landsman, Lauren Nalley"
+            "title": "contributors",
+            "text": "Matt Landsman, Lauren Nalley"
         }
     ],
     "documentation": {
@@ -68,12 +68,12 @@ empty_string_species = {
     }
 }
 
-empty_string_name = {
+empty_string_metadata_title = {
     "species": "Boron",
     "metadata": [
         {
-            "name": "",
-            "value": "Matt Landsman, Lauren Nalley"
+            "title": "",
+            "text": "Matt Landsman, Lauren Nalley"
         }
     ],
     "documentation": {
@@ -87,13 +87,13 @@ empty_string_name = {
 
 }
 
-empty_string_value = {
+empty_string_metadata_text = {
 
         "species": "Boron",
         "metadata": [
             {
-                "name": "contributors",
-                "value": ""
+                "title": "contributors",
+                "text": ""
             }
         ],
         "documentation": {
@@ -106,13 +106,13 @@ empty_string_value = {
         }
 }
 
-empty_string_title = {
+empty_string_section_title = {
 
         "species": "Boron",
         "metadata": [
             {
-                "name": "contributors",
-                "value": "Matt Landsman, Lauren Nalley"
+                "title": "contributors",
+                "text": "Matt Landsman, Lauren Nalley"
             }
         ],
         "documentation": {
@@ -125,13 +125,13 @@ empty_string_title = {
         }
 }
 
-empty_string_text = {
+empty_string_section_text = {
 
         "species": "Boron",
         "metadata": [
             {
-                "name": "contributors",
-                "value": "Matt Landsman, Lauren Nalley"
+                "title": "contributors",
+                "text": "Matt Landsman, Lauren Nalley"
             }
         ],
         "documentation": {
