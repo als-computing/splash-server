@@ -6,7 +6,7 @@ os.environ['GOOGLE_CLIENT_SECRET'] = "the_one_ring"
 
 import pytest
 import mongomock
-from splash.api.main import app
+
 from splash.api import set_service_provider, get_service_provider as services
 from splash.service import ServiceProvider
 from splash.api.routers import auth
@@ -22,7 +22,7 @@ token_info = {"sub": None, "scopes": ['splash']}
 
 db = mongomock.MongoClient().db
 set_service_provider(ServiceProvider(db))
-
+from splash.api.main import app
 
 @pytest.fixture
 def mongodb():
