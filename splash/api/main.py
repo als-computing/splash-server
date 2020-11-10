@@ -21,12 +21,16 @@ if get_service_provider() is None:
     set_service_provider(setup_services())
 
 app = FastAPI(
-    # openapi_prefix="/api/v1sdf",
     openapi_url="/api/v1/openapi.json",
     docs_url="/api/docs",
     redoc_url="/api/redoc",
     swagger_ui_oauth2_redirect_url="/api/docs/oauth2-redirect"
 )
+
+
+@app.get("/settings")
+async def get_settings():
+    return {"google_client_id": ConfigStore.GOOGLE_CLIENT_ID}
 
 app.include_router(
     auth.router,
