@@ -28,7 +28,7 @@ app = FastAPI(
 )
 
 
-@app.get("/settings")
+@app.get("/api/v1/settings")
 async def get_settings():
     return {"google_client_id": ConfigStore.GOOGLE_CLIENT_ID}
 
