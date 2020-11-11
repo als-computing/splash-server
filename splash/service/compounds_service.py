@@ -1,9 +1,7 @@
-from splash.data.base import MongoCollectionDao
-from splash.service.base import Service, ValidationIssue
-import os
+from .base import MongoService
 
 
-class CompoundsService(Service):
+class CompoundsService(MongoService):
 
-    def __init__(self, dao: MongoCollectionDao):
-        super().__init__(dao)
+    def __init__(self, db, collection_name):
+        super().__init__( db, collection_name)

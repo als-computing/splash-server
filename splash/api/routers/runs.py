@@ -1,13 +1,26 @@
+from attr import dataclass
+
 from fastapi import APIRouter, Path, Security, HTTPException
 from fastapi.responses import StreamingResponse
-from typing import Dict, List, Optional
+from typing import List, Optional
 from pydantic import BaseModel
 from splash.models.users import UserModel
-from splash.service.runs_service import CatalogDoesNotExist, FrameDoesNotExist, BadFrameArgument
-from splash.api import get_service_provider as services
+from splash.service.runs_service import CatalogDoesNotExist, FrameDoesNotExist, BadFrameArgument, RunsService
 from .auth import get_current_user
 
 router = APIRouter()
+
+
+@dataclass
+class Services():
+    runs: RunsService
+
+
+services = Services(None)
+
+
+def set_services(runs_svc: RunsService):
+    services.runs = runs_svc
 
 
 class RunModel(BaseModel):
@@ -24,7 +37,7 @@ class RunMetadataModel(BaseModel):
 def read_catalogs(
         current_user: UserModel = Security(get_current_user)):
 
-    catalog_names = services().runs.list_root_catalogs()
+    catalog_names = services.runs.list_root_catalogs()
     return catalog_names
 
 
@@ -33,7 +46,7 @@ def read_catalog(
             catalog_name: str = Path(..., title="name of catalog"),
             current_user: UserModel = Security(get_current_user)):
     try:
-        runs = services().runs.get_runs(catalog_name)
+        runs = services.runs.get_runs(catalog_name)
     except CatalogDoesNotExist as e:
         raise HTTPException(404, detail=e.args[0])
 
@@ -54,7 +67,7 @@ def read_frame(
         frame: Optional[int] = 0,
         current_user: UserModel = Security(get_current_user)):
     try:
-        jpeg_generator = services().runs.get_image(catalog_name=catalog_name, uid=run_uid, frame=frame)
+        jpeg_generator = services.runs.get_image(catalog_name=catalog_name, uid=run_uid, frame=frame)
     except FrameDoesNotExist as e:
         raise HTTPException(400, detail=e.args[0])
     except BadFrameArgument as e:
@@ -69,7 +82,7 @@ def read_frame_metadata(
         run_uid: str = Path(..., title="run uid"),
         frame: Optional[int] = 0):
     try:
-        return_metadata = services().runs.get_metadata(catalog_name=catalog_name, uid=run_uid, frame=frame)
+        return_metadata = services.runs.get_metadata(catalog_name=catalog_name, uid=run_uid, frame=frame)
     except FrameDoesNotExist as e:
         raise HTTPException(400, detail=e.args[0])
     except BadFrameArgument as e:

@@ -4,14 +4,16 @@ os.environ['TOKEN_SECRET_KEY'] = "the_question_to_the_life_the_universe_and_ever
 os.environ['GOOGLE_CLIENT_ID'] = "Gollum"
 os.environ['GOOGLE_CLIENT_SECRET'] = "the_one_ring"
 
+from fastapi.testclient import TestClient
 import pytest
 import mongomock
 
-from splash.api import set_service_provider, get_service_provider as services
-from splash.service import ServiceProvider
-from splash.api.routers import auth
+from splash.api.routers import users, auth, compounds, runs
 from splash.models.users import NewUserModel
-from fastapi.testclient import TestClient
+from splash.service.users_service import UsersService
+from splash.service.runs_service import RunsService
+from splash.service.compounds_service import CompoundsService
+from splash.api.main import app
 
 test_user = NewUserModel(
     given_name="ford",
@@ -21,8 +23,14 @@ test_user = NewUserModel(
 token_info = {"sub": None, "scopes": ['splash']}
 
 db = mongomock.MongoClient().db
-set_service_provider(ServiceProvider(db))
-from splash.api.main import app
+users_svc = UsersService(db, 'users')
+compounds_svc = CompoundsService(db, 'compounds')
+runs_svc = RunsService()
+users.set_services(users_svc)
+compounds.set_services(compounds_svc)
+runs.set_services(runs_svc)
+auth.set_services(users_svc)
+
 
 @pytest.fixture
 def mongodb():
@@ -31,7 +39,7 @@ def mongodb():
 
 @pytest.fixture
 def splash_client(mongodb, monkeypatch):
-    uid = services().users.create(test_user, dict(test_user))
+    uid = users_svc.create(test_user, dict(test_user))
     token_info['sub'] = uid
     client = TestClient(app)
 

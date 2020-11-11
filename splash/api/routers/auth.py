@@ -1,3 +1,4 @@
+from attr import dataclass
 from datetime import datetime, timedelta
 import logging
 from typing import Optional, List
@@ -23,7 +24,6 @@ from splash.service.users_service import (
     MultipleUsersAuthenticatorException,
     UserNotFoundException)
 from splash.models.users import UserModel
-from splash.api import get_service_provider as services
 
 logger = logging.getLogger('splash-server')
 
@@ -54,6 +54,18 @@ class TokenData(BaseModel):
 class TokenResponseModel(BaseModel):
     access_token: str
     user: UserModel
+
+
+@dataclass
+class Services():
+    users: UsersService
+
+
+services = Services(None)
+
+
+def set_services(users_service: UsersService):
+    services.users = users_service
 
 
 # oauth2_scheme dependency alllows fastapi to interrogate the Authorization: Beaarer <token>
@@ -120,8 +132,7 @@ def id_token_verify(
 
         validate_info(idinfo)
         try:
-            user_dict = services().users.get_user_authenticator(idinfo['email'])
-            user_dict.pop('_id')
+            user_dict = services.users.get_user_authenticator(idinfo['email'])
             # when authenticated, return a fresh access token and a refresh token
             # https://blog.tecladocode.com/jwt-authentication-and-token-refreshing-in-rest-apis/
             access_token_expires = timedelta(minutes=ConfigStore.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -195,7 +206,7 @@ async def get_current_user(
     except JWTError as e:
         logger.error("exception loggine in", exc_info=e)
         raise credentials_exception
-    user_dict = services().users.insecure_get_user(user_uid)
+    user_dict = services.users.insecure_get_user(user_uid)
 
     if user_dict is None:
         raise credentials_exception
