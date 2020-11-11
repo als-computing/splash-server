@@ -8,11 +8,16 @@ from fastapi.testclient import TestClient
 import pytest
 import mongomock
 
-from splash.api.routers import users, auth, compounds, runs
+
 from splash.models.users import NewUserModel
-from splash.service.users_service import UsersService
-from splash.service.runs_service import RunsService
-from splash.service.compounds_service import CompoundsService
+from splash.api.config import ConfigStore
+from splash.compounds.compounds_routes import set_compounds_service
+from splash.compounds.compounds_service import CompoundsService
+from splash.users.users_routes import set_users_service
+from splash.users.users_service import UsersService
+from splash.runs.runs_routes import set_runs_service
+from splash.runs.runs_service import RunsService
+from splash.api.auth import  create_access_token, set_services as set_auth_services
 from splash.api.main import app
 
 test_user = NewUserModel(
@@ -26,10 +31,10 @@ db = mongomock.MongoClient().db
 users_svc = UsersService(db, 'users')
 compounds_svc = CompoundsService(db, 'compounds')
 runs_svc = RunsService()
-users.set_services(users_svc)
-compounds.set_services(compounds_svc)
-runs.set_services(runs_svc)
-auth.set_services(users_svc)
+set_users_service(users_svc)
+set_compounds_service(compounds_svc)
+set_runs_service(runs_svc)
+set_auth_services(users_svc)
 
 
 @pytest.fixture
@@ -48,7 +53,7 @@ def splash_client(mongodb, monkeypatch):
 
 @pytest.fixture
 def token_header():
-    token = auth.create_access_token(token_info)
+    token = create_access_token(token_info)
     return {"Authorization": f"Bearer {token}"}
 
 @pytest.fixture

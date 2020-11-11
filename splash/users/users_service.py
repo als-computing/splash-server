@@ -1,4 +1,4 @@
-from .base import MongoService
+from ..service.base import MongoService
 
 class MultipleUsersAuthenticatorException(Exception):
     pass

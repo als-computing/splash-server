@@ -14,12 +14,11 @@ from fastapi.security import OAuth2AuthorizationCodeBearer, SecurityScopes
 from google.oauth2 import id_token
 from google.auth.transport import requests
 from jose import JWTError, jwt
-import requests as py_requests
 from pydantic import BaseModel
-from ..config import ConfigStore
+from .config import ConfigStore
 
 
-from splash.service.users_service import (
+from splash.users.users_service import (
     UsersService,
     MultipleUsersAuthenticatorException,
     UserNotFoundException)
@@ -27,12 +26,10 @@ from splash.models.users import UserModel
 
 logger = logging.getLogger('splash-server')
 
-router = APIRouter()
+auth_router = APIRouter()
 
 LOG_VALIDATING_TOKEN_MSG = "Validating user with token {}"
 ALGORITHM = "HS256"
-
-router = APIRouter()
 
 # Modification of https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt/
 
@@ -104,7 +101,7 @@ class RedirctVerifierModel(BaseModel):
 #     return {"success": "yep"}
 
 
-@router.post("", tags=["tokens"], response_model=TokenResponseModel)
+@auth_router.post("", tags=["tokens"], response_model=TokenResponseModel)
 def id_token_verify(
         g_token_request: TokenRequestModel,
         auth_provider: Optional[str] = None):

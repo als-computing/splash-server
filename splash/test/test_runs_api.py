@@ -36,8 +36,8 @@ def convert_raw(data):
 
 @pytest.fixture
 def mock_data(monkeypatch):
-    monkeypatch.setattr('splash.service.runs_service.project', mock_project)
-    monkeypatch.setattr('splash.service.runs_service.catalog', root_catalog,)
+    monkeypatch.setattr('splash.runs.runs_service.project', mock_project)
+    monkeypatch.setattr('splash.runs.runs_service.catalog', root_catalog,)
 
 
 def test_list_catalogs(api_url_root, splash_client: TestClient, token_header, mock_data):

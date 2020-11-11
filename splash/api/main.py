@@ -1,9 +1,14 @@
-from splash.service.users_service import UsersService
-from splash.service.runs_service import RunsService
-from splash.service.compounds_service import CompoundsService
 from fastapi import FastAPI
+
 from .config import ConfigStore
-from .routers import users, auth, compounds, runs
+from splash.api.auth import auth_router, set_services as set_auth_services
+from splash.compounds.compounds_routes import set_compounds_service, compounds_router
+from splash.compounds.compounds_service import CompoundsService
+from splash.users.users_routes import set_users_service, users_router
+from splash.users.users_service import UsersService
+from splash.runs.runs_routes import set_runs_service, runs_router
+from splash.runs.runs_service import RunsService
+from splash.runs.runs_service import RunsService
 
 
 app = FastAPI(
@@ -25,17 +30,17 @@ def setup_services():
     users_svc = UsersService(db, 'users')
     compounds_svc = CompoundsService(db, 'compounds')
     runs_svc = RunsService()
-    users.set_services(users_svc)
-    compounds.set_services(compounds_svc)
-    runs.set_services(runs_svc)
-    auth.set_services(users_svc)
+    set_users_service(users_svc)
+    set_compounds_service(compounds_svc)
+    set_runs_service(runs_svc)
+    set_auth_services(users_svc)
 
 @app.get("/api/v1/settings")
 async def get_settings():
     return {"google_client_id": ConfigStore.GOOGLE_CLIENT_ID}
 
 app.include_router(
-    auth.router,
+    auth_router,
     prefix="/api/v1/idtokensignin",
     tags=["tokens"],
     responses={404: {"description": "Not found"}},
@@ -43,21 +48,21 @@ app.include_router(
 )
 
 app.include_router(
-    users.router,
+    users_router,
     prefix="/api/v1/users",
     tags=["users"],
     responses={404: {"description": "Not found"}}
 )
 
 app.include_router(
-    compounds.router,
+    compounds_router,
     prefix="/api/v1/compounds", 
     tags=["compounds"],
     responses={404: {"description": "Not found"}}
 )
 
 app.include_router(
-    runs.router,
+    runs_router,
     prefix="/api/v1/runs",
     tags=["runs"],
     responses={404: {"description": "Not found"}}

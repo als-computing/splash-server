@@ -5,10 +5,10 @@ from fastapi.responses import StreamingResponse
 from typing import List, Optional
 from pydantic import BaseModel
 from splash.models.users import UserModel
-from splash.service.runs_service import CatalogDoesNotExist, FrameDoesNotExist, BadFrameArgument, RunsService
-from .auth import get_current_user
+from .runs_service import CatalogDoesNotExist, FrameDoesNotExist, BadFrameArgument, RunsService
+from splash.api.auth import get_current_user
 
-router = APIRouter()
+runs_router = APIRouter()
 
 
 @dataclass
@@ -19,7 +19,7 @@ class Services():
 services = Services(None)
 
 
-def set_services(runs_svc: RunsService):
+def set_runs_service(runs_svc: RunsService):
     services.runs = runs_svc
 
 
@@ -33,7 +33,7 @@ class RunMetadataModel(BaseModel):
     energy: float
 
 
-@router.get("", tags=["runs"], response_model=List[str])
+@runs_router.get("", tags=["runs"], response_model=List[str])
 def read_catalogs(
         current_user: UserModel = Security(get_current_user)):
 
@@ -41,7 +41,7 @@ def read_catalogs(
     return catalog_names
 
 
-@router.get("/{catalog_name}", tags=['runs'], response_model=List[RunModel])
+@runs_router.get("/{catalog_name}", tags=['runs'], response_model=List[RunModel])
 def read_catalog(
             catalog_name: str = Path(..., title="name of catalog"),
             current_user: UserModel = Security(get_current_user)):
@@ -60,7 +60,7 @@ def read_catalog(
     return return_runs
 
 
-@router.get("/{catalog_name}/{run_uid}/image", tags=['runs'], response_model=RunModel)
+@runs_router.get("/{catalog_name}/{run_uid}/image", tags=['runs'], response_model=RunModel)
 def read_frame(
         catalog_name: str = Path(..., title="catalog name"),
         run_uid: str = Path(..., title="run uid"),
@@ -76,7 +76,7 @@ def read_frame(
     return StreamingResponse(jpeg_generator, media_type="image/JPEG")
 
 
-@router.get("/{catalog_name}/{run_uid}/metadata", tags=['runs'], response_model=RunMetadataModel)
+@runs_router.get("/{catalog_name}/{run_uid}/metadata", tags=['runs'], response_model=RunMetadataModel)
 def read_frame_metadata(
         catalog_name: str = Path(..., title="catalog name"),
         run_uid: str = Path(..., title="run uid"),
