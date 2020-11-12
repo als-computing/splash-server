@@ -1,6 +1,4 @@
-from splash.data.base import MongoCollectionDao
-from splash.service.base import Service
-
+from ..service.base import MongoService
 
 class MultipleUsersAuthenticatorException(Exception):
     pass
@@ -10,13 +8,12 @@ class UserNotFoundException(Exception):
     pass
 
 
-class UsersService(Service):
+class UsersService(MongoService):
 
-    def __init__(self, dao: MongoCollectionDao):
-        super().__init__(dao)
-        self.dao = dao
+    def __init__(self, db, collection_name):
+        super().__init__(db, collection_name)
 
-    def get_user_authenticator(self, email):
+    def get_user_authenticator(self, email):  # TODO Needs test
         """Fetches a user based on an issuer and subject. Use for example
         after receiving a JWT and validating that the user exists in the system.
 
@@ -27,7 +24,7 @@ class UsersService(Service):
         subject : str
             subject id in the authority's system
         """
-        users = list(self.dao.retreive_many(query={
+        users = list(self.retrieve_multiple(None, 1, query={
                 "authenticators.email": email
             }))
 
@@ -51,4 +48,4 @@ class UsersService(Service):
         dict
             user info
         """
-        return self.dao.retrieve(uid)
+        return self.retrieve_one(None, uid)
