@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import xarray
 
 MOCK_IMAGE = xarray.DataArray([[1, 2], [3, 4]])
@@ -13,17 +15,24 @@ NEX_SAMPLE_NAME_FIELD = '/entry/sample/name'
 def mock_project(run):
     dataset = run.dataset
     data_vars = { 
-        NEX_ENERGY_FIELD: dataset['beamline_energy'],
+
         NEX_IMAGE_FIELD: dataset['ccd'],
     }
-    attrs = {NEX_SAMPLE_NAME_FIELD: run.metadata['sample']}
+    attrs = {
+        "collector_name": run.metadata["collector_name"], 
+        "collection_date": run.metadata["collection_date"],
+        "sample_name": run.metadata["sample_name"],
+        "num_data_images": run.metadata["num_data_images"]}
     return xarray.Dataset(data_vars, attrs=attrs)
 
 
 class MockRun():
-    def __init__(self, sample=''):
+    def __init__(self, sample, collector_name):
         self.metadata = {
-            'sample': ''
+            "collector_name": collector_name,
+            "collection_date": datetime.utcnow(),
+            "sample_name": "earth",
+            "num_data_images": 5
         }
         data_vars = {
             'beamline_energy': ('time', BEAMLINE_ENERGY_VALS),
@@ -34,8 +43,8 @@ class MockRun():
         self.metadata[NEX_SAMPLE_NAME_FIELD] = sample
 
 
-def make_mock_run(sample):
-    return MockRun(sample)
+def make_mock_run(sample, collector_name):
+    return MockRun(sample, collector_name)
 
 
 root_catalog = {
@@ -43,8 +52,8 @@ root_catalog = {
 
     },
     'mordor_research': {
-        'orc-mark-3-uid': make_mock_run('orc'),
-        'nazgul-mark-4-uid': make_mock_run('nazgul'),
-        'balrog-mark-9-uid': make_mock_run('balrog')
+        'orc-mark-3-uid': make_mock_run('orc', 'gandolf'),
+        'nazgul-mark-4-uid': make_mock_run('nazgul', 'slartibartfast'),
+        'balrog-mark-9-uid': make_mock_run('balrog', 'gandolf')
     }
 }

@@ -1,6 +1,7 @@
-import logging
-import uuid
 from collections import namedtuple
+import logging
+from typing import Dict
+import uuid
 
 from pymongo import MongoClient
 
@@ -43,7 +44,7 @@ class MongoService():
         self._db = db
         self._collection = db[collection_name]
 
-    def create(self, current_user: UserModel, data: dict):
+    def create(self, current_user: UserModel, data: Dict):
         logger.debug(f"create doc in collection {0}, doc: {1}", self._collection, data)
         if 'uid' in data:
             raise UidInDictError('Document should not have uid field')
@@ -56,8 +57,8 @@ class MongoService():
         return self._collection.find_one({"uid": uid}, {'_id': False})
 
     def retrieve_multiple(self,
-                          current_user: UserModel,
-                          page: int,
+                          user: UserModel,
+                          page: int = 1,
                           query=None,
                           page_size=10):
 

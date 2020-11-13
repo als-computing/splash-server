@@ -1,21 +1,23 @@
 from typing import List
 from pydantic import parse_obj_as
 
-from ..data.base import MongoCollectionDao
 from ..models.users import UserModel
-from ..service.base import Service
-from ..models.teams import Team
+from ..service.base import MongoService
+from .models import NewTeam, Team
 
 
-class TeamsService(Service):
+class TeamsService(MongoService):
 
-    def __init__(self, dao: MongoCollectionDao):
-        super().__init__(dao)
+    def __init__(self, db, collection_name):
+        super().__init__(db, collection_name)
 
-    def get_user_teams(self, user: UserModel, uid: str) -> List[Team]:
+    def create(self, current_user: UserModel, team: NewTeam):
+        super().create(current_user, team.dict())
+
+    def get_user_teams(self, request_user: UserModel, uid: str) -> List[Team]:
         # find teams that contain the member by uid
         query = {
             "members." + uid: {"$exists": True}
         }
-        teams_dicts = list(self.dao.retrieve_paged(query=query))
+        teams_dicts = list(self.retrieve_multiple(request_user, page=1, query=query))
         return parse_obj_as(List[Team], teams_dicts)

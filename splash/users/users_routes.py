@@ -28,7 +28,7 @@ class CreateUserResponse(BaseModel):
 @users_router.get("", tags=["users"], response_model=List[UserModel])
 def read_users(
             current_user: UserModel = Security(get_current_user)):
-    results = services.users.retrieve_multiple(current_user, 1)
+    results = services.users.retrieve_multiple(current_user)
     return list(results)
 
 

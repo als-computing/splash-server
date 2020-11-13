@@ -1,6 +1,5 @@
 import pytest
-from splash.data.base import MongoCollectionDao
-from splash.service.teams_service import TeamsService
+from splash.teams.service import TeamsService
 from splash.models.users import UserModel
 
 
@@ -14,7 +13,7 @@ def request_user():
 
 @pytest.fixture
 def teams_service(mongodb, request_user):
-    teams_service = TeamsService(MongoCollectionDao(mongodb, "teams"))
+    teams_service = TeamsService(mongodb, "teams")
     teams_service.create(request_user, {"name": "banesto",
                                         "members": {"indurain": ['legend'],
                                                     "delgado": ['domestique'],

@@ -24,7 +24,7 @@ class UsersService(MongoService):
         subject : str
             subject id in the authority's system
         """
-        users = list(self.retrieve_multiple(None, 1, query={
+        users = list(self.retrieve_multiple(query={
                 "authenticators.email": email
             }))
 

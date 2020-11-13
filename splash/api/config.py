@@ -24,3 +24,5 @@ class ConfigStore():
 
     # EXPERIMENTAL auth token redirect url for verifiying token
     OAUTH_TOKEN_URL = config("OAUTH_TOKEN_URL", cast=str, default="http://localhost:8080/api/idtokensignin/verifier")
+
+    SPLASH_LOG_LEVEL = config("SPLASH_LOG_LEVEL", cast=str, default="INFO")

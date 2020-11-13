@@ -36,8 +36,8 @@ def convert_raw(data):
 
 @pytest.fixture
 def mock_data(monkeypatch):
-    monkeypatch.setattr('splash.runs.runs_service.project', mock_project)
-    monkeypatch.setattr('splash.runs.runs_service.catalog', root_catalog,)
+    monkeypatch.setattr('splash.runs.runs_service.project_xarray', mock_project)
+    monkeypatch.setattr('splash.runs.runs_service.catalog', root_catalog)
 
 
 def test_list_catalogs(api_url_root, splash_client: TestClient, token_header, mock_data):
@@ -62,7 +62,6 @@ def test_list_runs(api_url_root, splash_client: TestClient, token_header, mock_d
     for response_run in response_data:
         response_run_uid = response_run.get('uid')
         assert response_run_uid in catalog
-        assert response_run['num_images'] == catalog[response_run_uid].dataset['beamline_energy'].shape[0]
         assert response_run['sample_name'] == catalog[response_run_uid].metadata['sample']
 
 

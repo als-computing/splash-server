@@ -1,47 +1,66 @@
+from pydantic.tools import parse_obj_as
+from splash.service.base import ObjectNotFoundError
+from attr import dataclass
 from fastapi import APIRouter, Security
-# from fastapi.security import OpenIdConnect
+from fastapi.exceptions import HTTPException
 from pydantic import BaseModel
 from typing import List
 from splash.models.users import UserModel
-from splash.models.teams import Team, NewTeam
-from splash.api import get_service_provider as services
-from .auth import get_current_user
+from splash.api.auth import get_current_user
 
-router = APIRouter()
+from .models import Team, NewTeam
+from .service import TeamsService
+
+teams_router = APIRouter()
+
+
+@dataclass
+class Services():
+    teams: TeamsService
+
+
+services = Services(None)
+
+
+def set_teams_service(svc: TeamsService):
+    services.teams = svc
 
 
 class CreateTeamResponse(BaseModel):
     uid: str
 
 
-@router.get("", tags=["teams"], response_model=List[Team])
+@teams_router.get("", tags=["teams"], response_model=List[Team])
 def read_teams(
-            skip: int = 0,
-            limit: int = 100,
+            page: int = 1,
+            page_size: int = 100,
             current_user: UserModel = Security(get_current_user)):
-    results = services().teams.retrieve_multiple(current_user, skip=skip, limit=limit)
-    return results
+    results = services.teams.retrieve_multiple(current_user, page=page, page_size=page_size)
+    return parse_obj_as(List[Team], list(results))
 
 
-@router.get("/{uid}", tags=['teams'], response_model=Team)
+@teams_router.get("/{uid}", tags=['teams'], response_model=Team)
 def read_team(
             uid: str,
             current_user: UserModel = Security(get_current_user)):
-    user_json = services().teams.retrieve_one(current_user, uid)
+    user_json = services.teams.retrieve_one(current_user, uid)
     return (Team(**user_json))
 
 
-@router.post("", tags=['teams'], response_model=CreateTeamResponse)
+@teams_router.post("", tags=['teams'], response_model=CreateTeamResponse)
 def create_team(
                 team: NewTeam,
                 current_user: UserModel = Security(get_current_user)):
-    uid = services().teams.create(current_user, team.dict())
+    uid = services.teams.create(current_user, team.dict())
     return CreateTeamResponse(uid=uid)
 
 
-@router.put("", tags=['teams'])
-def update_team(
+@teams_router.put("/{uid}", tags=['teams'])
+def update_team(uid: str,
                 team: Team,
                 current_user: UserModel = Security(get_current_user)):
-    services().teams.update(current_user, team.dict())
+    try:
+        services.teams.update(current_user, team.dict(), uid)
+    except ObjectNotFoundError:
+        raise HTTPException(404)
     return True
