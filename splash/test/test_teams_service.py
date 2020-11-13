@@ -1,5 +1,6 @@
 import pytest
 from splash.teams.service import TeamsService
+from splash.teams.models import NewTeam
 from splash.models.users import UserModel
 
 
@@ -14,14 +15,14 @@ def request_user():
 @pytest.fixture
 def teams_service(mongodb, request_user):
     teams_service = TeamsService(mongodb, "teams")
-    teams_service.create(request_user, {"name": "banesto",
-                                        "members": {"indurain": ['legend'],
-                                                    "delgado": ['domestique'],
-                                                    "shared_user": ['domestique']}})
-    teams_service.create(request_user, {"name": "motorola",
-                                        "members": {"armstrong": ['doper'],
-                                                    "landis": ['domestique'],
-                                                    "shared_user": ['domestique']}})
+    teams_service.create(request_user, NewTeam(**{"name": "banesto",
+                                                  "members": {"indurain": ['legend'],
+                                                              "delgado": ['domestique'],
+                                                              "shared_user": ['domestique']}}))
+    teams_service.create(request_user, NewTeam(**{"name": "motorola",
+                                                  "members": {"armstrong": ['doper'],
+                                                              "landis": ['domestique'],
+                                                              "shared_user": ['domestique']}}))
     return teams_service
 
 
