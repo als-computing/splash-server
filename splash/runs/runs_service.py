@@ -108,7 +108,7 @@ class RunsService():
             file_object = convert_raw(image_data)
             return file_object
 
-    def get_slice_metadata(self, user: UserModel, catalog_name, uid, field, slice) -> List:
+    def get_slice_metadata(self, user: UserModel, catalog_name, uid, field, slice) -> Dict:
         user_teams = self.teams_service.get_user_teams(user, user.uid)
         if not user_teams:
             if logger.isEnabledFor(logging.INFO):
@@ -118,8 +118,8 @@ class RunsService():
             raise CatalogDoesNotExist(f'Catalog name: {catalog_name} is not a catalog')
         slice = validate_frame_num(slice)
         dataset = project_xarray(catalog[catalog_name][uid])
-       
-        if field not in dataset:
+        slice_config_data = dataset[field].attrs['configuration'][slice]
+        if not slice_config_data:
             raise FieldDoesNotExist(f'Field {field} not created after projecting {catalog_name}: {uid}')
 
         # can this user see it?
@@ -127,9 +127,9 @@ class RunsService():
         if not self.checker.can_do(user, run_summary, Action.RETRIEVE, teams=user_teams):
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f"User {user.name} can't retrieve {catalog_name}: {uid}")
-            return []
+            return {}
         try:
-            return dataset[field].attrs['configuration'][slice]
+            return slice_config_data
         except(IndexError):
             raise FrameDoesNotExist(f'Slice number: {slice}, does not exist.')
 

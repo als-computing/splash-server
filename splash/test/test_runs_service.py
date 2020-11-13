@@ -63,11 +63,12 @@ def test_get_run_auth(monkeypatch, teams_service):
     runs_service = RunsService(teams_service, checker)
     # patch the catalog into the service to override stock intake catalog
     monkeypatch.setattr('splash.runs.runs_service.catalog', catalog)
-    run = runs_service.get_slice_metadata(user_leader_lemond, "tour_winners", '85', 'primay_config_field', 0)
-    assert run is not None
-
-    run = runs_service.get_slice_metadata(user_leader_lemond, "tour_winners", '87', 'primay_config_field', 0)
-    assert run is not None
+    config_data = runs_service.get_slice_metadata(user_leader_lemond, "tour_winners", '85', 'image_data', 0)
+    assert config_data is not None, 'retrieved slice metadata for run user has access to'
+    assert config_data['camera_device']['camera_config_field'] == 'config_value', 'configuration data present'
+    
+    config_data = runs_service.get_slice_metadata(user_leader_lemond, "tour_winners", '87', 'image_data', 0)
+    assert len(config_data) == 0, 'no slice metadata for run user does not have access to'
 
 
 class MockRun(dict):
@@ -93,7 +94,7 @@ class MockRun(dict):
                                 'stream': 'primary',
                                 'field': 'image'
                             },
-                            'primay_config_field': {
+                            'primary_config_field': {
                                 'type': 'linked',
                                 'location': 'configuration',
                                 'stream': 'primary',
