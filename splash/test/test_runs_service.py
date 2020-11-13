@@ -1,8 +1,8 @@
 
 from typing import List
-
 from pydantic import parse_obj_as
 import pytest
+from xarray import DataArray
 
 from splash.runs.runs_service import RunsService, TeamRunChecker
 from splash.teams.service import TeamsService
@@ -32,22 +32,49 @@ def teams_service(mongodb, ):
     return teams_service
 
 
-def test_get_runs_auth(monkeypatch, mongodb, teams_service):
+def test_get_runs_auth(monkeypatch, teams_service):
+    catalog = {
+        "tour_winners": {
+                '85': MockRun('la_vie_claire'),
+                '86': MockRun('la_vie_claire'),
+                '87': MockRun('carrera'),
+                '88': MockRun('cafe_de_columbia'),
+        }
+    }
     checker = TeamRunChecker()
     runs_service = RunsService(teams_service, checker)
     # patch the catalog into the service to override stock intake catalog
     monkeypatch.setattr('splash.runs.runs_service.catalog', catalog)
-    runs = runs_service.get_runs(user_leader, list(catalog.keys())[0])
-    assert runs is not None and len(runs) == 2
-    runs = runs_service.get_runs(user_other_team, list(catalog.keys())[0])
-    assert len(runs) == 0
+    runs = runs_service.get_runs(user_leader_lemond, "tour_winners")
+    # lemond is a member of la_vie_claire, which created two run
+    assert runs is not None and len(runs) == 2, '2 available runs match those submitted by team'
+    runs = runs_service.get_runs(user_other_team, "tour_winners")
+    assert len(runs) == 0, 'no runs available to use who is not member of a team that created one'
 
 
-class MockRun():
-    def __init__(self, run_user_id, team):
+def test_get_run_auth(monkeypatch, teams_service):
+    catalog = {
+        "tour_winners": {
+                '85': MockRun('la_vie_claire'),
+                '87': MockRun('carrera')
+        }
+    }
+    checker = TeamRunChecker()
+    runs_service = RunsService(teams_service, checker)
+    # patch the catalog into the service to override stock intake catalog
+    monkeypatch.setattr('splash.runs.runs_service.catalog', catalog)
+    run = runs_service.get_slice_metadata(user_leader_lemond, "tour_winners", '85', 'primay_config_field', 0)
+    assert run is not None
+
+    run = runs_service.get_slice_metadata(user_leader_lemond, "tour_winners", '87', 'primay_config_field', 0)
+    assert run is not None
+
+
+class MockRun(dict):
+    def __init__(self, team):
         self.metadata = {
             'start': {
-                'user_id': run_user_id,
+                'user_id': 'runner_id',
                 'team': team,
                 'projections': [
                     {
@@ -59,25 +86,44 @@ class MockRun():
                                 'type': 'linked',
                                 'location': 'start',
                                 'field': 'team'
+                            },
+                            'image_data': {
+                                'type': 'linked',
+                                'location': 'event',
+                                'stream': 'primary',
+                                'field': 'image'
+                            },
+                            'primay_config_field': {
+                                'type': 'linked',
+                                'location': 'configuration',
+                                'stream': 'primary',
+                                'config_device': 'camera_device',
+                                'config_index': 0,
+                                'field': 'camera_config_field'
                             }
                         }
                     }
                 ]
-            }
+            },
         }
+        self.primary = Stream()
+        # self.primary = type('MockStream', (dict,), {})()
+        self['primary'] = self.primary
+        
+        self.primary['image'] = DataArray([[1.0, 1.0], [0.0, 1.0]])
+        self.primary.metadata = {}
+        self.primary.metadata['descriptors'] = []
+        self.primary.metadata['descriptors'].append({})
+        self.primary.metadata['descriptors'][0]['configuration'] = {}
+        self.primary.metadata['descriptors'][0]['configuration']['camera_device'] = {}
+        self.primary.metadata['descriptors'][0]['configuration']['camera_device']['data'] = {}
+        self.primary.metadata['descriptors'][0]['configuration']['camera_device']['data']['camera_config_field'] = 'config_value'
 
 
-catalog = {
-    "tour_winners": {
-            '85': MockRun('bernard_hinault', 'la_vie_claire'),
-            # same team as hinault...for now
-            '86': MockRun('greg_lemond', 'la_vie_claire'),
-            '87': MockRun('stephen_roche', 'carrera'),
-            '88': MockRun('pedro_delgado', 'cafe_de_columbia'),
-            # lemond came back with different team, like a grad student in a different lab
-            '89': MockRun('greg_lemond', 'ADR')
-    }
-}
+class Stream(dict):
+    def to_dask(self):
+        return self
+
 
 lemond = {
         'uid': 'lemond',
@@ -133,7 +179,7 @@ fignon = {
         ]
     }
 
-user_leader = parse_obj_as(UserModel, lemond)
+user_leader_lemond = parse_obj_as(UserModel, lemond)
 user_owner = parse_obj_as(UserModel, hinault)
 user_team = parse_obj_as(UserModel, hampsten)
 user_other_team = parse_obj_as(UserModel, fignon)

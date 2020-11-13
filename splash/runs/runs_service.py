@@ -1,11 +1,12 @@
 from datetime import datetime
 import logging
 from os import name
-from typing import List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 from databroker import catalog
 from databroker.projector import project_xarray
 from pydantic import BaseModel, Field
+from xarray import Dataset
 
 from splash.models.users import UserModel
 from splash.service.authorization import TeamBasedChecker, Action
@@ -57,7 +58,7 @@ class TeamRunChecker(TeamBasedChecker):
             # This rule is simple...check if the user
             # is a member the team that matches the run
             for team in teams:
-                if team.name == run.get('collection_team'):
+                if team.name == run.collection_team:
                     return True
         return False
 
@@ -71,6 +72,10 @@ class RunDoesNotExist(Exception):
 
 
 class BadFrameArgument(Exception):
+    pass
+
+
+class FieldDoesNotExist(Exception):
     pass
 
 
@@ -103,17 +108,35 @@ class RunsService():
             file_object = convert_raw(image_data)
             return file_object
 
-    def get_metadata(self, catalog_name, uid, frame,):
-        frame_number = validate_frame_num(frame)
-        dataset = return_dask_dataset(catalog_name, uid)
+    def get_slice_metadata(self, user: UserModel, catalog_name, uid, field, slice) -> List:
+        user_teams = self.teams_service.get_user_teams(user, user.uid)
+        if not user_teams:
+            if logger.isEnabledFor(logging.INFO):
+                logger.info(f"User {user.name} not a member of any team, can't view runs")
+            return []
+        if catalog_name not in catalog:
+            raise CatalogDoesNotExist(f'Catalog name: {catalog_name} is not a catalog')
+        slice = validate_frame_num(slice)
+        dataset = project_xarray(catalog[catalog_name][uid])
+       
+        if field not in dataset:
+            raise FieldDoesNotExist(f'Field {field} not created after projecting {catalog_name}: {uid}')
+
+        # can this user see it?
+        run_summary = run_summary_from_dataset(uid, dataset)
+        if not self.checker.can_do(user, run_summary, Action.RETRIEVE, teams=user_teams):
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"User {user.name} can't retrieve {catalog_name}: {uid}")
+            return []
         try:
-            beamline_energy = dataset[SPLASH_ENERGY_FIELD][frame_number].compute().item()
+            return dataset[field].attrs['configuration'][slice]
         except(IndexError):
-            raise FrameDoesNotExist(f'Frame number: {frame_number}, does not exist.')
-        return {SPLASH_ENERGY_FIELD: beamline_energy}
+            raise FrameDoesNotExist(f'Slice number: {slice}, does not exist.')
+
 
     def list_root_catalogs(self):
         return list(catalog)
+
 
     def get_runs(self, user: UserModel, catalog_name) -> List[RunSummary]:
         if catalog_name not in catalog:
@@ -129,23 +152,14 @@ class RunsService():
             return []
         return_runs = []
         for uid in runs:
-            run = {}
-            run['uid'] = uid
             dataset = project_xarray(runs[uid])
-            run['collector_name'] = dataset.attrs.get('collector_name')
-            run['collection_team'] = dataset.attrs.get('collection_team')
-            run['collection_date'] = dataset.attrs.get('collection_date')
-            run['instrument_name'] = dataset.attrs.get('instrument_name')
-            run['sample_name'] = dataset.attrs.get('sample_name')
-            run['station'] = dataset.attrs.get('station')
-            run['num_data_images'] = dataset.attrs.get('num_data_images')
-            run['num_data_images'] = dataset.attrs.get('num_data_images')
+            run_summary = run_summary_from_dataset(uid, dataset)
             # can this user see this run?
-            if not self.checker.can_do(user, run, Action.RETRIEVE, teams=user_teams):
+            if not self.checker.can_do(user, run_summary, Action.RETRIEVE, teams=user_teams):
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f"User {user.name} can't retrieve {catalog_name}: {uid}")
                 continue
-            return_runs.append(RunSummary(**run))
+            return_runs.append(run_summary)
         return return_runs
 
 
@@ -159,6 +173,20 @@ def return_dask_dataset(catalog_name, uid):
         raise RunDoesNotExist(f'Run uid: {uid} does not exist')
 
     return project_xarray(runs[uid])
+
+
+def run_summary_from_dataset(uid: str, dataset: Dataset):
+    run = {}
+    run['uid'] = uid
+    run['collector_name'] = dataset.attrs.get('collector_name')
+    run['collection_team'] = dataset.attrs.get('collection_team')
+    run['collection_date'] = dataset.attrs.get('collection_date')
+    run['instrument_name'] = dataset.attrs.get('instrument_name')
+    run['sample_name'] = dataset.attrs.get('sample_name')
+    run['station'] = dataset.attrs.get('station')
+    run['num_data_images'] = dataset.attrs.get('num_data_images')
+    run['num_data_images'] = dataset.attrs.get('num_data_images')
+    return RunSummary(**run)
 
 
 def validate_frame_num(frame):
