@@ -51,7 +51,7 @@ def read_team(
 def create_team(
                 team: NewTeam,
                 current_user: UserModel = Security(get_current_user)):
-    uid = services.teams.create(current_user, team.dict())
+    uid = services.teams.create(current_user, team)
     return CreateTeamResponse(uid=uid)
 
 

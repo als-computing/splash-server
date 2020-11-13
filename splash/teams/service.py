@@ -12,7 +12,8 @@ class TeamsService(MongoService):
         super().__init__(db, collection_name)
 
     def create(self, current_user: UserModel, team: NewTeam):
-        super().create(current_user, team.dict())
+        return super().create(current_user, team.dict())
+        
 
     def get_user_teams(self, request_user: UserModel, uid: str) -> List[Team]:
         # find teams that contain the member by uid
