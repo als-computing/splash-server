@@ -52,7 +52,7 @@ def test_get_runs_auth(monkeypatch, teams_service):
     assert len(runs) == 0, 'no runs available to use who is not member of a team that created one'
 
 
-def test_get_run_auth(monkeypatch, teams_service):
+def test_get_slice_metadata_auth(monkeypatch, teams_service):
     catalog = {
         "tour_winners": {
                 '85': MockRun('la_vie_claire'),
@@ -70,6 +70,23 @@ def test_get_run_auth(monkeypatch, teams_service):
     config_data = runs_service.get_slice_metadata(user_leader_lemond, "tour_winners", '87', 'image_data', 0)
     assert len(config_data) == 0, 'no slice metadata for run user does not have access to'
 
+
+def test_slice_image_auth(monkeypatch, teams_service):
+    catalog = {
+        "tour_winners": {
+                '85': MockRun('la_vie_claire'),
+                '87': MockRun('carrera')
+        }
+    }
+    checker = TeamRunChecker()
+    runs_service = RunsService(teams_service, checker)
+    # patch the catalog into the service to override stock intake catalog
+    monkeypatch.setattr('splash.runs.runs_service.catalog', catalog)
+    image_array = runs_service.get_slice_image(user_leader_lemond, "tour_winners", '85', 'image_data', 0, raw_bytes=True)
+    assert image_array is not None, 'retrieved slice image for run user has access to'
+
+    image_array = runs_service.get_slice_image(user_leader_lemond, "tour_winners", '87', 'image_data', 0, raw_bytes=True)
+    assert image_array is None, 'no slice image for run user does not have access to'
 
 class MockRun(dict):
     def __init__(self, team):

@@ -17,11 +17,11 @@ import numpy as np
 from PIL import Image, ImageOps
 import io
 
-SPLASH_DATA_FIELD = 'splash_data'
-SPLASH_DARKS_FIELD = 'splash_darks'
-SPLASH_ENERGY_FIELD = 'splash_energy'
-SPLASH_SAMPLE_NAME_FIELD = 'splash_sample_name'
-SPLASH_DATA_COLLECTOR_FIELD = 'splash_collector'
+# SPLASH_DATA_FIELD = 'splash_data'
+# SPLASH_DARKS_FIELD = 'splash_darks'
+# SPLASH_ENERGY_FIELD = 'splash_energy'
+# SPLASH_SAMPLE_NAME_FIELD = 'splash_sample_name'
+# SPLASH_DATA_COLLECTOR_FIELD = 'splash_collector'
 
 
 logger = logging.getLogger("splash_server.runs_service")
@@ -88,14 +88,28 @@ class RunsService():
         self.teams_service = teams_service
         self.checker = checker
 
-    def get_image(self, catalog_name, uid, frame, raw_bytes=False):
+    def get_slice_image(self, user: UserModel, catalog_name, uid, image_field, slice: int, raw_bytes=False):
         """Retrieves image preview of run specified by `catalog_name` and `uid`.
         Returns a file object representing a compressed jpeg image by default.
         If `raw_bytes` is set to `True`, then it returns a generator
         for streaming the entire image as bytes"""
-        frame_number = validate_frame_num(frame)
+        
+        # get the user's teams...if they're not in one, get out quick
+        user_teams = self.teams_service.get_user_teams(user, user.uid)
+        if not user_teams:
+            if logger.isEnabledFor(logging.INFO):
+                logger.info(f"User {user.name} not a member of any team, can't view runs")
+            return None
+        # can this user see the run?
         dataset = return_dask_dataset(catalog_name, uid)
-        image_data = dataset[SPLASH_DATA_FIELD].squeeze()
+        run_summary = run_summary_from_dataset(uid, dataset)
+        if not self.checker.can_do(user, run_summary, Action.RETRIEVE, teams=user_teams):
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"User {user.name} can't retrieve {catalog_name}: {uid}")
+            return None
+        
+        frame_number = validate_frame_num(slice)
+        image_data = dataset[image_field].squeeze()
 
         try:
             image_data = image_data[frame_number]
@@ -132,7 +146,6 @@ class RunsService():
             return slice_config_data
         except(IndexError):
             raise FrameDoesNotExist(f'Slice number: {slice}, does not exist.')
-
 
     def list_root_catalogs(self):
         return list(catalog)
