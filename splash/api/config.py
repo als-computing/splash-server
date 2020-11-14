@@ -8,10 +8,10 @@ class ConfigStore():
     MONGO_DB_URI = config("MONGO_DB_URI", cast=str, default="mongodb://localhost:27017")
 
     # Client ID used to validate google tokens
-    GOOGLE_CLIENT_ID = config("GOOGLE_CLIENT_ID", cast=str)
+    GOOGLE_CLIENT_ID = config("GOOGLE_CLIENT_ID", cast=str, default="foobar")
 
     # Client secret used to validate google tokens during OCID access check
-    GOOGLE_CLIENT_SECRET = config("GOOGLE_CLIENT_SECRET", cast=str)
+    GOOGLE_CLIENT_SECRET = config("GOOGLE_CLIENT_SECRET", cast=str, default="foobar")
 
     # Key for generating access tokens
     TOKEN_SECRET_KEY = config("TOKEN_SECRET_KEY", cast=str)
