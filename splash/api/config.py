@@ -14,7 +14,7 @@ class ConfigStore():
     GOOGLE_CLIENT_SECRET = config("GOOGLE_CLIENT_SECRET", cast=str, default="foobar")
 
     # Key for generating access tokens
-    TOKEN_SECRET_KEY = config("TOKEN_SECRET_KEY", cast=str)
+    TOKEN_SECRET_KEY = config("TOKEN_SECRET_KEY", cast=str, default="foobar")
 
     # Life span of a generated access token
     ACCESS_TOKEN_EXPIRE_MINUTES = config("ACCESS_TOKEN_EXPIRE_MINUTES", cast=int, default=30)
