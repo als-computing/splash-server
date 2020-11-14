@@ -5,6 +5,10 @@ from ..teams.models import Team
 from ..teams.service import TeamsService
 
 
+class AccessDenied(Exception):
+    pass
+
+
 class Action(Enum):
     CREATE = "create"
     RETRIEVE = "RETRIEVE"

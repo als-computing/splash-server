@@ -2,6 +2,7 @@ from datetime import datetime
 import logging
 from os import name
 from typing import Any, Dict, List, Optional
+from attr import dataclass
 
 from databroker import catalog
 from databroker.projector import project_xarray
@@ -9,20 +10,13 @@ from pydantic import BaseModel, Field
 from xarray import Dataset
 
 from splash.models.users import UserModel
-from splash.service.authorization import TeamBasedChecker, Action
+from splash.service.authorization import TeamBasedChecker, Action, AccessDenied
 from splash.teams.service import TeamsService
 from splash.teams.models import Team
 import sys
 import numpy as np
 from PIL import Image, ImageOps
 import io
-
-# SPLASH_DATA_FIELD = 'splash_data'
-# SPLASH_DARKS_FIELD = 'splash_darks'
-# SPLASH_ENERGY_FIELD = 'splash_energy'
-# SPLASH_SAMPLE_NAME_FIELD = 'splash_sample_name'
-# SPLASH_DATA_COLLECTOR_FIELD = 'splash_collector'
-
 
 logger = logging.getLogger("splash_server.runs_service")
 
@@ -99,14 +93,15 @@ class RunsService():
         if not user_teams:
             if logger.isEnabledFor(logging.INFO):
                 logger.info(f"User {user.name} not a member of any team, can't view runs")
-            return None
+            raise AccessDenied
+
         # can this user see the run?
         dataset = return_dask_dataset(catalog_name, uid)
         run_summary = run_summary_from_dataset(uid, dataset)
         if not self.checker.can_do(user, run_summary, Action.RETRIEVE, teams=user_teams):
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f"User {user.name} can't retrieve {catalog_name}: {uid}")
-            return None
+            raise AccessDenied
         
         frame_number = validate_frame_num(slice)
         image_data = dataset[image_field].squeeze()
@@ -122,34 +117,36 @@ class RunsService():
             file_object = convert_raw(image_data)
             return file_object
 
-    def get_slice_metadata(self, user: UserModel, catalog_name, uid, field, slice) -> Dict:
+    def get_slice_metadata(self, user: UserModel, catalog_name, uid, slice: int) -> Dict:
         user_teams = self.teams_service.get_user_teams(user, user.uid)
         if not user_teams:
             if logger.isEnabledFor(logging.INFO):
                 logger.info(f"User {user.name} not a member of any team, can't view runs")
-            return []
+            raise AccessDenied
         if catalog_name not in catalog:
             raise CatalogDoesNotExist(f'Catalog name: {catalog_name} is not a catalog')
         slice = validate_frame_num(slice)
         dataset = project_xarray(catalog[catalog_name][uid])
-        slice_config_data = dataset[field].attrs['configuration'][slice]
-        if not slice_config_data:
-            raise FieldDoesNotExist(f'Field {field} not created after projecting {catalog_name}: {uid}')
-
         # can this user see it?
         run_summary = run_summary_from_dataset(uid, dataset)
         if not self.checker.can_do(user, run_summary, Action.RETRIEVE, teams=user_teams):
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f"User {user.name} can't retrieve {catalog_name}: {uid}")
-            return {}
-        try:
-            return slice_config_data
-        except(IndexError):
-            raise FrameDoesNotExist(f'Slice number: {slice}, does not exist.')
-
+            raise AccessDenied
+        
+        slice_dict = {}
+        for field in dataset:
+            # comment == apology...probably need a more rock-solid
+            # way to decide what fields to add, but for now, array size will
+            # have to do
+            try:
+                if len(dataset[field].shape) == 1:
+                    slice_dict[field] = dataset[field][slice].compute().item()
+            except(IndexError):
+                raise FrameDoesNotExist(f'Slice number: {slice}, does not exist.')
+        return slice_dict
     def list_root_catalogs(self):
         return list(catalog)
-
 
     def get_runs(self, user: UserModel, catalog_name) -> List[RunSummary]:
         if catalog_name not in catalog:

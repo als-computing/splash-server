@@ -1,14 +1,27 @@
-import pytest
+import io
 import json
-from fastapi.testclient import TestClient
 
+from fastapi.testclient import TestClient
 import numpy as np
 from PIL import Image, ImageOps
-import io
+import pytest
 
-from .category_runs_definitions import (
-    mock_project,
-    root_catalog)
+from splash.api.auth import create_access_token
+
+from .runs_definitions import root_catalog
+
+
+def create_token(user_id: str):
+    token_info = {"sub": user_id, "scopes": ['splash']}
+    token = create_access_token(token_info)
+    return {"Authorization": f"Bearer {token}"}
+
+
+
+@pytest.mark.usefixtures("splash_client", "token", "users", "teams_service")
+@pytest.fixture
+def leader_token(mongodb, users):
+    return create_token(users['leader'].uid)
 
 
 def convert_raw(data):
@@ -22,106 +35,112 @@ def convert_raw(data):
     # auto_contrast_image = resize(np.array(auto_contrast_image),
                                             # (size, size))
     file_object = io.BytesIO()
-
     auto_contrast_image.save(file_object, format='JPEG')
-
     # move to beginning of file so `send_file()` will read from start    
     file_object.seek(0)
 
     return file_object
 
 
-@pytest.mark.usefixtures("splash_client", "token")
+# @pytest.fixture
+# def mock_data(monkeypatch):
+#     monkeypatch.setattr('splash.runs.runs_service.catalog', root_catalog)
 
 
-@pytest.fixture
-def mock_data(monkeypatch):
-    monkeypatch.setattr('splash.runs.runs_service.project_xarray', mock_project)
-    monkeypatch.setattr('splash.runs.runs_service.catalog', root_catalog)
-
-
-def test_list_catalogs(api_url_root, splash_client: TestClient, token_header, mock_data):
-    response = splash_client.get(api_url_root + "/runs", headers=token_header)
+def test_list_catalogs(api_url_root, splash_client: TestClient, leader_token, monkeypatch):
+    monkeypatch.setattr('splash.runs.runs_service.catalog', root_catalog) 
+    response = splash_client.get(api_url_root + "/runs", headers=leader_token)
     assert response.status_code == 200
     catalog_list = response.json()
-    # assert "catalogs" in response_data
-    # catalog_list = response_data['catalogs']
-
     for catalog in root_catalog.keys():
         assert catalog in catalog_list
     assert len(catalog_list) == len(root_catalog.keys())
 
 
-def test_list_runs(api_url_root, splash_client: TestClient, token_header, mock_data):    
-    response = splash_client.get(api_url_root + "/runs/mordor_research", headers=token_header)
+def test_list_runs(api_url_root, splash_client: TestClient, leader_token, teams_service, monkeypatch):
+    monkeypatch.setattr('splash.runs.runs_service.catalog', root_catalog) 
+    response = splash_client.get(api_url_root + "/runs/root_catalog", headers=leader_token)
     assert response.status_code == 200
     response_data = response.json()
-    catalog = root_catalog['mordor_research']
-    assert len(response_data) == len(catalog)
+    catalog = root_catalog['root_catalog']
+    same_team_runs = []
+    {same_team_runs.append(run) for run in catalog if "same_team" in run}
+    assert len(response_data) == len(same_team_runs)
 
     for response_run in response_data:
         response_run_uid = response_run.get('uid')
         assert response_run_uid in catalog
-        assert response_run['sample_name'] == catalog[response_run_uid].metadata['sample']
+        assert response_run['sample_name'] == catalog[response_run_uid].metadata['start']['sample']
 
 
-def test_list_runs_catalog_doesnt_exist(api_url_root, splash_client: TestClient, token_header, mock_data):
-    response = splash_client.get(api_url_root + "/runs/gondor_research", headers=token_header)
+def test_list_runs_catalog_doesnt_exist(api_url_root, splash_client: TestClient, leader_token, teams_service):
+    
+    response = splash_client.get(api_url_root + "/runs/does_not_exist", headers=leader_token)
     assert response.status_code == 404
     response_data = json.loads(response.content)
-    assert response_data['detail'] == 'Catalog name: gondor_research is not a catalog'
+    assert response_data['detail'] == 'Catalog name: does_not_exist is not a catalog'
 
 
-def test_get_image_bad_frame(api_url_root, splash_client: TestClient, token_header, mock_data):
-    response = splash_client.get(api_url_root + "/runs/mordor_research/orc-mark-3-uid/image?frame=blah", headers=token_header)
+def test_get_image_bad_frame(api_url_root, splash_client: TestClient, leader_token, teams_service):
+    response = splash_client.get(api_url_root + "/runs/root_catalog/same_team_1/image?frame=blah",
+                                 headers=leader_token)
     assert response.status_code == 422
 
-    response = splash_client.get(api_url_root + "/runs/mordor_research/orc-mark-3-uid/image?frame=1.5", headers=token_header)
+    response = splash_client.get(api_url_root + "/runs/root_catalog/same_team_1/image?frame=1.5", 
+                                 headers=leader_token)
     assert response.status_code == 422
 
-    response = splash_client.get(api_url_root + "/runs/mordor_research/orc-mark-3-uid/image?frame=-1", headers=token_header)
-    assert response.status_code == 422
-
-
-
-def test_get_image_metadata_bad_frame(api_url_root, splash_client: TestClient, token_header, mock_data):
-    response = splash_client.get(api_url_root + "/runs/mordor_research/orc-mark-3-uid/metadata?frame=blah", headers=token_header)
-    assert response.status_code == 422
-
-    response = splash_client.get(api_url_root + "/runs/mordor_research/orc-mark-3-uid/metadata?frame=1.5", headers=token_header)
-    assert response.status_code == 422
-
-    response = splash_client.get(api_url_root + "/runs/mordor_research/orc-mark-3-uid/metadata?frame=-1", headers=token_header)
+    response = splash_client.get(api_url_root + "/runs/root_catalog/same_team_1/image?frame=-1", 
+                                 headers=leader_token)
     assert response.status_code == 422
 
 
 
+def test_get_image_metadata_bad_frame(api_url_root, splash_client: TestClient, leader_token):
+    response = splash_client.get(api_url_root + "/runs/root_catalog/same_team_1/metadata?frame=blah",
+                                 headers=leader_token)
+    assert response.status_code == 422
 
-def test_get_image(api_url_root, splash_client: TestClient, token_header, mock_data):
-    image_data = root_catalog['mordor_research']['orc-mark-3-uid'].dataset['ccd']
+    response = splash_client.get(api_url_root + "/runs/root_catalog/same_team_1/metadata?frame=1.5",
+                                 headers=leader_token)
+    assert response.status_code == 422
 
+    response = splash_client.get(api_url_root + "/runs/root_catalog/same_team_1/metadata?frame=-1",
+                                 headers=leader_token)
+    assert response.status_code == 422
+
+
+def test_get_image(api_url_root, splash_client: TestClient, leader_token, teams_service, monkeypatch):
+    monkeypatch.setattr('splash.runs.runs_service.catalog', root_catalog)
+    image_data = root_catalog['root_catalog']['same_team_1'].primary['image']
     for idx, image in enumerate(image_data):
-        response = splash_client.get(api_url_root + f"/runs/mordor_research/orc-mark-3-uid/image?frame={idx}", headers=token_header)
+        response = splash_client.get(api_url_root + f"/runs/root_catalog/same_team_1/image?frame={idx}&field=image_data",
+                                     headers=leader_token)
         assert response.status_code == 200
         assert response.headers['content-type'] == 'image/JPEG'
         assert response.content == convert_raw(image).read()
 
 
-def test_get_image_metadata(api_url_root, splash_client: TestClient, token_header, mock_data):
-    energy_data = root_catalog['mordor_research']['orc-mark-3-uid'].dataset['beamline_energy']
+def test_get_image_metadata(api_url_root, splash_client: TestClient, leader_token, teams_service, monkeypatch):
+    monkeypatch.setattr('splash.runs.runs_service.catalog', root_catalog)
+    energy_data = root_catalog['root_catalog']['same_team_1'].primary['energy']
     for idx, energy in enumerate(energy_data):
-        response = splash_client.get(api_url_root + f"/runs/mordor_research/orc-mark-3-uid/metadata?frame={idx}", headers=token_header)
+        response = splash_client.get(api_url_root + f"/runs/root_catalog/same_team_1/metadata?frame={idx}",
+                                     headers=leader_token)
         assert response.status_code == 200
         response_data = json.loads(response.content)
-        assert response_data['energy'] == energy
+        assert response_data['beamline_energy'] == energy
 
 
-def test_get_image_metadata_doesnt_exist(api_url_root, splash_client: TestClient, token_header, mock_data):
-    
-    response = splash_client.get(api_url_root + "/runs/mordor_research/orc-mark-3-uid/metadata?frame=50", headers=token_header)
+def test_get_image_metadata_doesnt_exist(api_url_root, splash_client: TestClient, leader_token, teams_service, monkeypatch):
+    monkeypatch.setattr('splash.runs.runs_service.catalog', root_catalog)
+    response = splash_client.get(api_url_root + "/runs/root_catalog/same_team_1/metadata?frame=50&field=image_data",
+                                 headers=leader_token)
     assert response.status_code == 400
 
 
-def test_get_image_doesnt_exist(api_url_root, splash_client: TestClient, token_header, mock_data):
-    response = splash_client.get(api_url_root + "/runs/mordor_research/orc-mark-3-uid/image?frame=50", headers=token_header)
+def test_get_image_doesnt_exist(api_url_root, splash_client: TestClient, leader_token, teams_service, monkeypatch):
+    monkeypatch.setattr('splash.runs.runs_service.catalog', root_catalog)
+    response = splash_client.get(api_url_root + "/runs/root_catalog/same_team_1/image?frame=50&field=image_data",
+                                 headers=leader_token)
     assert response.status_code == 400

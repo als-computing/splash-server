@@ -12,6 +12,7 @@ ValidationIssue = namedtuple('ValidationIssue', 'description, location, exceptio
 
 logger = logging.getLogger('splash_server.service')
 
+
 class BadPageArgument(Exception):
     pass
 

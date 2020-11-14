@@ -1,4 +1,6 @@
 from ..service.base import MongoService
+from splash.models.users import NewUserModel, UserModel
+
 
 class MultipleUsersAuthenticatorException(Exception):
     pass
@@ -9,6 +11,8 @@ class UserNotFoundException(Exception):
 
 
 class UsersService(MongoService):
+    def retrieve_one(self, current_user: UserModel, uid) -> UserModel:
+        return UserModel(**super().retrieve_one(current_user, uid))
 
     def __init__(self, db, collection_name):
         super().__init__(db, collection_name)

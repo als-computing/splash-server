@@ -203,9 +203,9 @@ async def get_current_user(
     except JWTError as e:
         logger.error("exception loggine in", exc_info=e)
         raise credentials_exception
-    user_dict = services.users.insecure_get_user(user_uid)
+    user = services.users.insecure_get_user(user_uid)
 
-    if user_dict is None:
+    if user is None:
         raise credentials_exception
 
     for scope in security_scopes.scopes:
@@ -215,4 +215,4 @@ async def get_current_user(
                 detail="Not enough permissions",
                 headers={"WWW-Authenticate": authenticate_value},
             )
-    return UserModel(**user_dict)
+    return user
