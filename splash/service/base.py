@@ -3,9 +3,7 @@ import logging
 from typing import Dict
 import uuid
 
-from pymongo import MongoClient
-
-from splash.models.users import UserModel
+from splash.users import User
 
 
 ValidationIssue = namedtuple('ValidationIssue', 'description, location, exception')
@@ -19,23 +17,23 @@ class BadPageArgument(Exception):
 
 class Service():
 
-    def create(self, current_user: UserModel, data):
+    def create(self, current_user: User, data):
         raise NotImplementedError
 
-    def retrieve_one(self, current_user: UserModel, uid):
+    def retrieve_one(self, current_user: User, uid):
         raise NotImplementedError
 
     def retrieve_multiple(self,
-                          current_user: UserModel,
+                          current_user: User,
                           page: int,
                           query=None,
                           page_size=10):
         raise NotImplementedError
 
-    def update(self, current_user: UserModel, data, uid: str):
+    def update(self, current_user: User, data, uid: str):
         raise NotImplementedError
 
-    def delete(self, current_user: UserModel, uid):
+    def delete(self, current_user: User, uid):
         raise NotImplementedError
 
 
@@ -45,7 +43,7 @@ class MongoService():
         self._db = db
         self._collection = db[collection_name]
 
-    def create(self, current_user: UserModel, data: Dict):
+    def create(self, current_user: User, data: dict):
         logger.debug(f"create doc in collection {0}, doc: {1}", self._collection, data)
         if 'uid' in data:
             raise UidInDictError('Document should not have uid field')
@@ -54,11 +52,11 @@ class MongoService():
         self._collection.insert_one(data)
         return data['uid']
 
-    def retrieve_one(self, current_user: UserModel, uid) -> dict:
+    def retrieve_one(self, current_user: User, uid) -> dict:
         return self._collection.find_one({"uid": uid}, {'_id': False})
 
     def retrieve_multiple(self,
-                          user: UserModel,
+                          user: User,
                           page: int = 1,
                           query=None,
                           page_size=10):
@@ -76,7 +74,7 @@ class MongoService():
         # Return documents
         return cursor
 
-    def update(self, current_user: UserModel, data: str, uid: str):
+    def update(self, current_user: User, data: str, uid: str):
         # update_one might be more efficient, but kinda tricky
         data['uid'] = uid
         status = self._collection.replace_one({"uid": uid}, data)
@@ -84,7 +82,7 @@ class MongoService():
             raise ObjectNotFoundError
         return uid
 
-    def delete(self, current_user: UserModel, uid):
+    def delete(self, current_user: User, uid):
         status = self._collection.delete_one({"uid": uid})
         if status.deleted_count == 0:
             raise ObjectNotFoundError

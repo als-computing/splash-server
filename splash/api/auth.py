@@ -22,7 +22,7 @@ from splash.users.users_service import (
     UsersService,
     MultipleUsersAuthenticatorException,
     UserNotFoundException)
-from splash.models.users import UserModel
+from splash.users import User
 
 logger = logging.getLogger('splash_server.auth')
 
@@ -50,7 +50,7 @@ class TokenData(BaseModel):
 
 class TokenResponseModel(BaseModel):
     access_token: str
-    user: UserModel
+    user: User
 
 
 @dataclass
@@ -139,7 +139,7 @@ def id_token_verify(
 
             response = TokenResponseModel(
                 access_token=access_token,
-                user=UserModel(**user_dict)
+                user=User(**user_dict)
             )
             return response
             # return  {"access_token": access_token, "token_type": "bearer"}   

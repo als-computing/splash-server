@@ -1,8 +1,7 @@
 from enum import Enum
 from typing import List
-from ..models.users import UserModel
-from ..teams.models import Team
-from ..teams.service import TeamsService
+from ..users import User
+from ..teams import Team
 
 
 class AccessDenied(Exception):
@@ -18,7 +17,7 @@ class Action(Enum):
 
 class Checker():
 
-    def can_do(self, user: UserModel, resource, action, **kwargs) -> bool:
+    def can_do(self, user: User, resource, action, **kwargs) -> bool:
         raise NotImplementedError()
 
 
@@ -26,5 +25,5 @@ class TeamBasedChecker(Checker):
     def __init__(self):
         super().__init__()
 
-    def can_do(self, user: UserModel, resource, action: Action, teams=List[Team], **kwargs):
+    def can_do(self, user: User, resource, action: Action, teams=List[Team], **kwargs):
         raise NotImplementedError

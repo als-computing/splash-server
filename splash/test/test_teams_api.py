@@ -1,7 +1,7 @@
 import pytest
 
 from .testing_utils import generic_test_api_crud
-from splash.teams.models import NewTeam
+from splash.teams import NewTeam
 
 @pytest.mark.usefixtures("splash_client", "token_header")
 def test_api_crud_team(api_url_root, splash_client, token_header):

@@ -1,8 +1,4 @@
-from pydantic import parse_obj_as
-import pytest
 from xarray import DataArray
-
-from splash.models.users import UserModel
 
 
 class MockRun(dict):

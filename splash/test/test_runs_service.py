@@ -1,13 +1,8 @@
-
-from typing import List
-from pydantic import parse_obj_as
 import pytest
-from xarray import DataArray
 
 from splash.runs.runs_service import RunsService, TeamRunChecker
 from splash.service.authorization import AccessDenied
-from splash.teams.service import TeamsService
-from splash.teams.models import NewTeam
+
 
 from .runs_definitions import root_catalog
 
@@ -19,7 +14,6 @@ def test_get_runs_auth(monkeypatch, teams_service, users):
     # patch the catalog into the service to override stock intake catalog
     monkeypatch.setattr('splash.runs.runs_service.catalog', root_catalog)
     runs = runs_service.get_runs(users['leader'], "root_catalog")
-    # lemond is a member of la_vie_claire, which created two run
     assert runs is not None and len(runs) == 2, '2 available runs match those submitted by same_team'
     runs = runs_service.get_runs(users['other_team'], "root_catalog")
     assert len(runs) == 1, 'one run available to use who is a member of other_team'

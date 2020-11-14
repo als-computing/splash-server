@@ -4,14 +4,14 @@ from attr import dataclass
 from fastapi import APIRouter, Path, Security, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from typing import List, Optional
-from pydantic import BaseModel
-from splash.models.users import UserModel
+
+from ..users import User
+from . import RunSummary
 from .runs_service import (
     CatalogDoesNotExist,
     FrameDoesNotExist,
     BadFrameArgument,
-    RunsService,
-    RunSummary)
+    RunsService)
 
 from splash.api.auth import get_current_user
 
@@ -32,7 +32,7 @@ def set_runs_service(runs_svc: RunsService):
 
 @runs_router.get("", tags=["runs"], response_model=List[str])
 def read_catalogs(
-        current_user: UserModel = Security(get_current_user)):
+        current_user: User = Security(get_current_user)):
 
     catalog_names = services.runs.list_root_catalogs()
     return catalog_names
@@ -41,7 +41,7 @@ def read_catalogs(
 @runs_router.get("/{catalog_name}", tags=['runs'], response_model=List[RunSummary])
 def read_catalog(
             catalog_name: str = Path(..., title="name of catalog"),
-            current_user: UserModel = Security(get_current_user)):
+            current_user: User = Security(get_current_user)):
     try:
         runs = services.runs.get_runs(current_user, catalog_name)
         return runs
@@ -55,7 +55,7 @@ def read_frame(
         run_uid: str = Path(..., title="run uid"),
         field: str = Query(..., title="field containing image"),
         frame: Optional[int] = Query(None, ge=0),
-        current_user: UserModel = Security(get_current_user)):
+        current_user: User = Security(get_current_user)):
     try:
         jpeg_generator = services.runs.get_slice_image(current_user, catalog_name, run_uid, field, frame)
     except FrameDoesNotExist as e:
@@ -72,7 +72,7 @@ def read_frame_metadata(
         catalog_name: str = Path(..., title="catalog name"),
         run_uid: str = Path(..., title="run uid"),
         frame: Optional[int] = Query(None, ge=0),
-        current_user: UserModel = Security(get_current_user)):
+        current_user: User = Security(get_current_user)):
     try:
         return_metadata = services.runs.get_slice_metadata(current_user, catalog_name, run_uid, frame)
         return return_metadata

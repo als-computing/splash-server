@@ -4,16 +4,17 @@ from fastapi.testclient import TestClient
 import mongomock
 import pytest
 
-from splash.models.users import NewUserModel
+from splash.users import NewUser
 from splash.compounds.compounds_routes import set_compounds_service
 from splash.compounds.compounds_service import CompoundsService
+from splash.users import NewUser, User
 from splash.users.users_routes import set_users_service
 from splash.users.users_service import UsersService
 from splash.runs.runs_routes import set_runs_service
 from splash.runs.runs_service import RunsService, TeamRunChecker
-from splash.teams.routes import set_teams_service
-from splash.teams.models import NewTeam
-from splash.teams.service import TeamsService
+from splash.teams import NewTeam
+from splash.teams.teams_routes import set_teams_service
+from splash.teams.teams_service import TeamsService
 from splash.api.auth import create_access_token, set_services as set_auth_services
 
 from splash.api.main import app
@@ -22,7 +23,7 @@ os.environ['TOKEN_SECRET_KEY'] = "the_question_to_the_life_the_universe_and_ever
 os.environ['GOOGLE_CLIENT_ID'] = "Gollum"
 os.environ['GOOGLE_CLIENT_SECRET'] = "the_one_ring"
 
-test_user = NewUserModel(
+test_user = NewUser(
     given_name="ford",
     family_name="prefect",
     email="ford@beetleguice.planet")
@@ -48,7 +49,7 @@ def mongodb():
 
 @pytest.fixture
 def splash_client(mongodb, monkeypatch):
-    uid = users_svc.create(test_user, dict(test_user))
+    uid = users_svc.create(test_user, test_user)
     token_info['sub'] = uid
     client = TestClient(app)
 
@@ -110,9 +111,9 @@ other_team = {
 
 @pytest.fixture(scope="session", autouse=True)
 def users():
-    user_leader_uid = users_svc.create(None, leader)
-    user_same_team_uid = users_svc.create(None, same_team)
-    user_other_team_uid = users_svc.create(None, other_team)
+    user_leader_uid = users_svc.create(None, NewUser(**leader))
+    user_same_team_uid = users_svc.create(None, NewUser(**same_team))
+    user_other_team_uid = users_svc.create(None, NewUser(**other_team))
     users = {}
     users['leader'] = users_svc.retrieve_one(None, user_leader_uid)
     users['same_team'] = users_svc.retrieve_one(None, user_same_team_uid)

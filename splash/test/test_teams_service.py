@@ -1,12 +1,12 @@
 import pytest
-from splash.teams.service import TeamsService
-from splash.teams.models import NewTeam
-from splash.models.users import UserModel
+from splash.teams.teams_service import TeamsService
+from splash.teams import NewTeam
+from splash.users import User
 
 
 @pytest.fixture
 def request_user():
-    return UserModel(
+    return User(
                     uid="foobar",
                     given_name="ford",
                     family_name="prefect",
@@ -27,11 +27,11 @@ def teams_service(mongodb, request_user):
 
 
 def test_get_user_teams(teams_service: TeamsService, request_user):
-    teams = teams_service.get_user_teams(request_user, 'indurain')
+    teams = list(teams_service.get_user_teams(request_user, 'indurain'))
     assert len(teams) == 1
     assert teams[0].name == 'banesto'
 
-    teams = teams_service.get_user_teams(request_user, 'shared_user')
+    teams = list(teams_service.get_user_teams(request_user, 'shared_user'))
     assert len(teams) == 2
     assert teams[0].name == 'banesto'
     assert teams[1].name == 'motorola'

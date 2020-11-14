@@ -9,10 +9,11 @@ from databroker.projector import project_xarray
 from pydantic import BaseModel, Field
 from xarray import Dataset
 
-from splash.models.users import UserModel
-from splash.service.authorization import TeamBasedChecker, Action, AccessDenied
-from splash.teams.service import TeamsService
-from splash.teams.models import Team
+from . import RunSummary
+from ..users import User
+from ..service.authorization import TeamBasedChecker, Action, AccessDenied
+from ..teams.teams_service import TeamsService
+from ..teams import Team
 import sys
 import numpy as np
 from PIL import Image, ImageOps
@@ -21,33 +22,11 @@ import io
 logger = logging.getLogger("splash_server.runs_service")
 
 
-class DataPoint(BaseModel):
-    value: Any
-    units: Optional[str]
-
-
-class RunSummary(BaseModel):
-    # beamline_energy: Optional[DataPoint] = Field(None, title="Beamline energy")
-    collector_name: str = Field(None, title="name of user or entity that performed collection")
-    collection_team: str = Field(None, title="Team that collected the run. e.g. PI name, safety form, proposal number")
-    team: str = Field(None, title="Team that collected the data")
-    collection_date: datetime = Field(None, title="run colleciton date")
-    instrument_name: Optional[str] = Field(
-        None, title="name of the instrument (beamline, etc) where data collection was performed")
-    num_data_images: Optional[int] = Field(None, title="number of data collection images")
-    sample_name: Optional[str] = Field(None, title="sample name")
-    uid: str
-
-    class Config:
-        title = "Summary information for a run, intended to be used by "\
-              "applications when a brief view is needed, as in a list of runs"
-
-
 class TeamRunChecker(TeamBasedChecker):
     def __init__(self):
         super().__init__()
 
-    def can_do(self, user: UserModel, run: RunSummary, action: Action, teams=List[Team], **kwargs):
+    def can_do(self, user: User, run: RunSummary, action: Action, teams=List[Team], **kwargs):
         if action == Action.RETRIEVE:
             # This rule is simple...check if the user
             # is a member the team that matches the run
@@ -82,7 +61,7 @@ class RunsService():
         self.teams_service = teams_service
         self.checker = checker
 
-    def get_slice_image(self, user: UserModel, catalog_name, uid, image_field, slice: int, raw_bytes=False):
+    def get_slice_image(self, user: User, catalog_name, uid, image_field, slice: int, raw_bytes=False):
         """Retrieves image preview of run specified by `catalog_name` and `uid`.
         Returns a file object representing a compressed jpeg image by default.
         If `raw_bytes` is set to `True`, then it returns a generator
@@ -117,7 +96,7 @@ class RunsService():
             file_object = convert_raw(image_data)
             return file_object
 
-    def get_slice_metadata(self, user: UserModel, catalog_name, uid, slice: int) -> Dict:
+    def get_slice_metadata(self, user: User, catalog_name, uid, slice: int) -> Dict:
         user_teams = self.teams_service.get_user_teams(user, user.uid)
         if not user_teams:
             if logger.isEnabledFor(logging.INFO):
@@ -148,14 +127,14 @@ class RunsService():
     def list_root_catalogs(self):
         return list(catalog)
 
-    def get_runs(self, user: UserModel, catalog_name) -> List[RunSummary]:
+    def get_runs(self, user: User, catalog_name) -> List[RunSummary]:
         if catalog_name not in catalog:
             raise CatalogDoesNotExist(f'Catalog name: {catalog_name} is not a catalog')
         runs = catalog[catalog_name]
         if len(runs) == 0:
             logger.info(f'catalog: {catalog_name} has no runs')
             return []
-        user_teams = self.teams_service.get_user_teams(user, user.uid)
+        user_teams = list(self.teams_service.get_user_teams(user, user.uid))
         if not user_teams:
             if logger.isEnabledFor(logging.INFO):
                 logger.info(f"User {user.name} not a member of any team, can't view runs")

@@ -10,8 +10,8 @@ from splash.users.users_routes import set_users_service, users_router
 from splash.users.users_service import UsersService
 from splash.runs.runs_routes import set_runs_service, runs_router
 from splash.runs.runs_service import RunsService, TeamRunChecker
-from splash.teams.routes import set_teams_service, teams_router
-from splash.teams.service import TeamsService
+from splash.teams.teams_routes import set_teams_service, teams_router
+from splash.teams.teams_service import TeamsService
 
 logger = logging.getLogger('splash_ingest')
 
