@@ -37,7 +37,7 @@ class UsersService(MongoService):
     def delete(self, current_user: User, uid):
         raise NotImplementedError
 
-    def get_user_authenticator(self, email):  # TODO Needs test
+    def get_user_authenticator(self, current_user: User, email):  # TODO Needs test
         """Fetches a user based on an issuer and subject. Use for example
         after receiving a JWT and validating that the user exists in the system.
 
@@ -48,7 +48,7 @@ class UsersService(MongoService):
         subject : str
             subject id in the authority's system
         """
-        users = list(self.retrieve_multiple(query={
+        users = list(self.retrieve_multiple(current_user, query={
                 "authenticators.email": email
             }))
 

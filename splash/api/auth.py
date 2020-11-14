@@ -129,17 +129,17 @@ def id_token_verify(
 
         validate_info(idinfo)
         try:
-            user_dict = services.users.get_user_authenticator(idinfo['email'])
+            user = services.users.get_user_authenticator(None, idinfo['email'])
             # when authenticated, return a fresh access token and a refresh token
             # https://blog.tecladocode.com/jwt-authentication-and-token-refreshing-in-rest-apis/
             access_token_expires = timedelta(minutes=ConfigStore.ACCESS_TOKEN_EXPIRE_MINUTES)
             access_token = create_access_token(
-                {"sub": user_dict['uid'], "scopes": ['splash']},
+                {"sub": user.uid, "scopes": ['splash']},
                 expires_delta=access_token_expires)
 
             response = TokenResponseModel(
                 access_token=access_token,
-                user=User(**user_dict)
+                user=user
             )
             return response
             # return  {"access_token": access_token, "token_type": "bearer"}   

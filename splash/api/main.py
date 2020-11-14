@@ -46,8 +46,8 @@ def setup_services():
     db = MongoClient(db_uri).splash
     users_svc = UsersService(db, 'users')
     compounds_svc = CompoundsService(db, 'compounds')
-    runs_svc = RunsService()
-    teams_svc = TeamsService()
+    teams_svc = TeamsService(db, 'teams')
+    runs_svc = RunsService(teams_svc, TeamRunChecker())
     set_auth_services(users_svc)
     set_compounds_service(compounds_svc)
     set_runs_service(runs_svc)
