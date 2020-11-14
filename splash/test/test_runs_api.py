@@ -41,12 +41,6 @@ def convert_raw(data):
 
     return file_object
 
-
-# @pytest.fixture
-# def mock_data(monkeypatch):
-#     monkeypatch.setattr('splash.runs.runs_service.catalog', root_catalog)
-
-
 def test_list_catalogs(api_url_root, splash_client: TestClient, leader_token, monkeypatch):
     monkeypatch.setattr('splash.runs.runs_service.catalog', root_catalog) 
     response = splash_client.get(api_url_root + "/runs", headers=leader_token)

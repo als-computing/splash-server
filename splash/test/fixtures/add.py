@@ -3,10 +3,8 @@ import os
 from fastapi.testclient import TestClient
 import mongomock
 import pytest
-from pydantic import parse_obj_as
 
-from splash.models.users import NewUserModel, UserModel
-from splash.api.config import ConfigStore
+from splash.models.users import NewUserModel
 from splash.compounds.compounds_routes import set_compounds_service
 from splash.compounds.compounds_service import CompoundsService
 from splash.users.users_routes import set_users_service
