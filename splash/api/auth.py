@@ -22,9 +22,9 @@ from splash.users.users_service import (
     UsersService,
     MultipleUsersAuthenticatorException,
     UserNotFoundException)
-from splash.models.users import UserModel
+from splash.users import User
 
-logger = logging.getLogger('splash-server')
+logger = logging.getLogger('splash_server.auth')
 
 auth_router = APIRouter()
 
@@ -50,7 +50,7 @@ class TokenData(BaseModel):
 
 class TokenResponseModel(BaseModel):
     access_token: str
-    user: UserModel
+    user: User
 
 
 @dataclass
@@ -129,17 +129,17 @@ def id_token_verify(
 
         validate_info(idinfo)
         try:
-            user_dict = services.users.get_user_authenticator(idinfo['email'])
+            user = services.users.get_user_authenticator(None, idinfo['email'])
             # when authenticated, return a fresh access token and a refresh token
             # https://blog.tecladocode.com/jwt-authentication-and-token-refreshing-in-rest-apis/
             access_token_expires = timedelta(minutes=ConfigStore.ACCESS_TOKEN_EXPIRE_MINUTES)
             access_token = create_access_token(
-                {"sub": user_dict['uid'], "scopes": ['splash']},
+                {"sub": user.uid, "scopes": ['splash']},
                 expires_delta=access_token_expires)
 
             response = TokenResponseModel(
                 access_token=access_token,
-                user=UserModel(**user_dict)
+                user=user
             )
             return response
             # return  {"access_token": access_token, "token_type": "bearer"}   
@@ -203,9 +203,9 @@ async def get_current_user(
     except JWTError as e:
         logger.error("exception loggine in", exc_info=e)
         raise credentials_exception
-    user_dict = services.users.insecure_get_user(user_uid)
+    user = services.users.insecure_get_user(user_uid)
 
-    if user_dict is None:
+    if user is None:
         raise credentials_exception
 
     for scope in security_scopes.scopes:
@@ -215,4 +215,4 @@ async def get_current_user(
                 detail="Not enough permissions",
                 headers={"WWW-Authenticate": authenticate_value},
             )
-    return UserModel(**user_dict)
+    return user

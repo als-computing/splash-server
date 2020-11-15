@@ -8,13 +8,13 @@ class ConfigStore():
     MONGO_DB_URI = config("MONGO_DB_URI", cast=str, default="mongodb://localhost:27017")
 
     # Client ID used to validate google tokens
-    GOOGLE_CLIENT_ID = config("GOOGLE_CLIENT_ID", cast=str)
+    GOOGLE_CLIENT_ID = config("GOOGLE_CLIENT_ID", cast=str, default="foobar")
 
     # Client secret used to validate google tokens during OCID access check
-    GOOGLE_CLIENT_SECRET = config("GOOGLE_CLIENT_SECRET", cast=str)
+    GOOGLE_CLIENT_SECRET = config("GOOGLE_CLIENT_SECRET", cast=str, default="foobar")
 
     # Key for generating access tokens
-    TOKEN_SECRET_KEY = config("TOKEN_SECRET_KEY", cast=str)
+    TOKEN_SECRET_KEY = config("TOKEN_SECRET_KEY", cast=str, default="foobar")
 
     # Life span of a generated access token
     ACCESS_TOKEN_EXPIRE_MINUTES = config("ACCESS_TOKEN_EXPIRE_MINUTES", cast=int, default=30)
@@ -24,3 +24,5 @@ class ConfigStore():
 
     # EXPERIMENTAL auth token redirect url for verifiying token
     OAUTH_TOKEN_URL = config("OAUTH_TOKEN_URL", cast=str, default="http://localhost:8080/api/idtokensignin/verifier")
+
+    SPLASH_LOG_LEVEL = config("SPLASH_LOG_LEVEL", cast=str, default="INFO")

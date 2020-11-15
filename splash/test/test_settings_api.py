@@ -1,8 +1,5 @@
-import os
-
 import pytest
 
-from .testing_utils import generic_test_api_crud
 from splash.api.config import ConfigStore
 
 @pytest.mark.usefixtures("splash_client")

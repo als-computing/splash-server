@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import FastAPI
 
 from .config import ConfigStore
@@ -7,8 +9,22 @@ from splash.compounds.compounds_service import CompoundsService
 from splash.users.users_routes import set_users_service, users_router
 from splash.users.users_service import UsersService
 from splash.runs.runs_routes import set_runs_service, runs_router
-from splash.runs.runs_service import RunsService
-from splash.runs.runs_service import RunsService
+from splash.runs.runs_service import RunsService, TeamRunChecker
+from splash.teams.teams_routes import set_teams_service, teams_router
+from splash.teams.teams_service import TeamsService
+
+logger = logging.getLogger('splash_ingest')
+
+
+def init_logging():
+
+    ch = logging.StreamHandler()
+    # ch.setLevel(logging.INFO)
+    # root_logger.addHandler(ch)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    logger.setLevel(ConfigStore.SPLASH_LOG_LEVEL)
 
 
 app = FastAPI(
@@ -25,15 +41,19 @@ def setup_services():
     # is decoupled from app creation, allowing test code to
     # mock the service_provider
     from pymongo import MongoClient
+    init_logging()
     db_uri = ConfigStore.MONGO_DB_URI
     db = MongoClient(db_uri).splash
     users_svc = UsersService(db, 'users')
     compounds_svc = CompoundsService(db, 'compounds')
-    runs_svc = RunsService()
-    set_users_service(users_svc)
+    teams_svc = TeamsService(db, 'teams')
+    runs_svc = RunsService(teams_svc, TeamRunChecker())
+    set_auth_services(users_svc)
     set_compounds_service(compounds_svc)
     set_runs_service(runs_svc)
-    set_auth_services(users_svc)
+    set_teams_service(teams_svc)
+    set_users_service(users_svc)
+
 
 @app.get("/api/v1/settings")
 async def get_settings():
@@ -65,5 +85,12 @@ app.include_router(
     runs_router,
     prefix="/api/v1/runs",
     tags=["runs"],
+    responses={404: {"description": "Not found"}}
+)
+
+app.include_router(
+    teams_router,
+    prefix="/api/v1/teams",
+    tags=["teams"],
     responses={404: {"description": "Not found"}}
 )
