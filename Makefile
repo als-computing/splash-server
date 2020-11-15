@@ -24,7 +24,9 @@ push_service:
 	@echo "Pushing " ${REGISTRY_WEB_SVC}
 	@docker push ${REGISTRY_WEB_SVC}
 
-
+run_service:
+	@echo docker run -d -p 80:80 ${REGISTRY_WEB_SVC}
+	@docker run -d -p 80:80 ${REGISTRY_WEB_SVC}
 
 login:
 	@docker log -u ${DOCKER_USER} -p ${DOCKER_PASS}
