@@ -8,6 +8,7 @@ python-dotenv
 python-jose[cryptography]
 python-multipart
 databroker
+git+https://github.com/bluesky/event-model.git@b7a5fd8
 Pillow
 numpy
 fastapi
