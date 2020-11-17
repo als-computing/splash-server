@@ -73,6 +73,9 @@ dist/
 # next.js build output
 .next
 
+# python profiling
+*.prof
+
 #pycharm project folder
 .idea/
 

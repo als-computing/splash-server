@@ -17,7 +17,7 @@ class ConfigStore():
     TOKEN_SECRET_KEY = config("TOKEN_SECRET_KEY", cast=str, default="foobar")
 
     # Life span of a generated access token
-    ACCESS_TOKEN_EXPIRE_MINUTES = config("ACCESS_TOKEN_EXPIRE_MINUTES", cast=int, default=30)
+    ACCESS_TOKEN_EXPIRE_MINUTES = config("ACCESS_TOKEN_EXPIRE_MINUTES", cast=int, default=3600)
 
     # EXPERIMENTAL auth token url for validating with external OCID authenticator
     OAUTH_AUTH_URL = config('OAUTH_AUTH_URL', cast=str, default="https://accounts.google.com/o/oauth2/auth/oauthchooseaccount")

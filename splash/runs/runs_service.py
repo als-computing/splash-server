@@ -1,12 +1,11 @@
-from datetime import datetime
 import logging
-from os import name
-from typing import Any, Dict, List, Optional
-from attr import dataclass
+from typing import Dict, List
+
 
 from databroker import catalog
-from databroker.projector import project_xarray
-from pydantic import BaseModel, Field
+from databroker.core import BlueskyRun
+from databroker.projector import project_xarray, project_summary_dict, ProjectionError
+
 from xarray import Dataset
 
 from . import RunSummary
@@ -19,19 +18,22 @@ import numpy as np
 from PIL import Image, ImageOps
 import io
 
-logger = logging.getLogger("splash_server.runs_service")
+logger = logging.getLogger("splash.runs_service")
 
 
 class TeamRunChecker(TeamBasedChecker):
     def __init__(self):
         super().__init__()
 
-    def can_do(self, user: User, run: RunSummary, action: Action, teams=List[Team], **kwargs):
+    def can_do(self, user: User, run: BlueskyRun, action: Action, teams=List[Team], **kwargs):
         if action == Action.RETRIEVE:
             # This rule is simple...check if the user
             # is a member the team that matches the run
+            session_auth = run.metadata['start'].get('session_auth')
+            if not session_auth or len(session_auth) == 0:
+                return False
             for team in teams:
-                if team.name == run.collection_team:
+                if team.name in session_auth:
                     return True
         return False
 
@@ -61,6 +63,13 @@ class RunsService():
         self.teams_service = teams_service
         self.checker = checker
 
+    def _get_user_teams(self, user: User):
+        user_teams = self.teams_service.get_user_teams(user, user.uid)
+        if not user_teams:
+            if logger.isEnabledFor(logging.INFO):
+                logger.info(f"User {user.name} not a member of any team, can't view runs")
+            raise AccessDenied("User not a member of any teams")
+
     def get_slice_image(self, user: User, catalog_name, uid, image_field, slice: int, raw_bytes=False):
         """Retrieves image preview of run specified by `catalog_name` and `uid`.
         Returns a file object representing a compressed jpeg image by default.
@@ -68,15 +77,12 @@ class RunsService():
         for streaming the entire image as bytes"""
         
         # get the user's teams...if they're not in one, get out quick
-        user_teams = self.teams_service.get_user_teams(user, user.uid)
-        if not user_teams:
-            if logger.isEnabledFor(logging.INFO):
-                logger.info(f"User {user.name} not a member of any team, can't view runs")
-            raise AccessDenied
-
+        user_teams = self._get_user_teams(user)
+       
         # can this user see the run?
         dataset = return_dask_dataset(catalog_name, uid)
         run_summary = run_summary_from_dataset(uid, dataset)
+
         if not self.checker.can_do(user, run_summary, Action.RETRIEVE, teams=user_teams):
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f"User {user.name} can't retrieve {catalog_name}: {uid}")
@@ -97,22 +103,19 @@ class RunsService():
             return file_object
 
     def get_slice_metadata(self, user: User, catalog_name, uid, slice: int) -> Dict:
-        user_teams = self.teams_service.get_user_teams(user, user.uid)
-        if not user_teams:
-            if logger.isEnabledFor(logging.INFO):
-                logger.info(f"User {user.name} not a member of any team, can't view runs")
-            raise AccessDenied
+        user_teams = self._get_user_teams(user)
         if catalog_name not in catalog:
             raise CatalogDoesNotExist(f'Catalog name: {catalog_name} is not a catalog')
         slice = validate_frame_num(slice)
         dataset = project_xarray(catalog[catalog_name][uid])
+
         # can this user see it?
         run_summary = run_summary_from_dataset(uid, dataset)
         if not self.checker.can_do(user, run_summary, Action.RETRIEVE, teams=user_teams):
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f"User {user.name} can't retrieve {catalog_name}: {uid}")
             raise AccessDenied
-        
+
         slice_dict = {}
         for field in dataset:
             # comment == apology...probably need a more rock-solid
@@ -124,31 +127,45 @@ class RunsService():
             except(IndexError):
                 raise FrameDoesNotExist(f'Slice number: {slice}, does not exist.')
         return slice_dict
+
     def list_root_catalogs(self):
         return list(catalog)
 
     def get_runs(self, user: User, catalog_name) -> List[RunSummary]:
         if catalog_name not in catalog:
             raise CatalogDoesNotExist(f'Catalog name: {catalog_name} is not a catalog')
-        runs = catalog[catalog_name]
+
+        user_teams = list(self.teams_service.get_user_teams(user, user.uid))
+        teams_list = []
+        for team in user_teams:
+            teams_list.append(team.name)
+        runs = catalog[catalog_name].search({"session_auth": {"$in": teams_list}})
         if len(runs) == 0:
             logger.info(f'catalog: {catalog_name} has no runs')
             return []
-        user_teams = list(self.teams_service.get_user_teams(user, user.uid))
-        if not user_teams:
-            if logger.isEnabledFor(logging.INFO):
-                logger.info(f"User {user.name} not a member of any team, can't view runs")
-            return []
+        # if not user_teams:
+        #     if logger.isEnabledFor(logging.INFO):
+        #         logger.info(f"User {user.name} not a member of any team, can't view runs")
+        #     return []
+
         return_runs = []
         for uid in runs:
-            dataset = project_xarray(runs[uid])
-            run_summary = run_summary_from_dataset(uid, dataset)
-            # can this user see this run?
-            if not self.checker.can_do(user, run_summary, Action.RETRIEVE, teams=user_teams):
+            try:
+
+                if not self.checker.can_do(user, runs[uid], Action.RETRIEVE, teams=user_teams):
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f"User {user.name} can't retrieve {catalog_name}: {uid}")
+                    continue
+                dataset, issues = project_summary_dict(runs[uid])
+                if issues and logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"projection encountered issues: {str(issues)}")
+                run_summary = run_summary_from_dataset(uid, dataset)
+                return_runs.append(run_summary)
+            except Exception as e:
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.debug(f"User {user.name} can't retrieve {catalog_name}: {uid}")
-                continue
-            return_runs.append(run_summary)
+                    logger.debug(f"skipping run: {e.args[0]}")
+
+            # can this user see this run?          
         return return_runs
 
 
@@ -164,17 +181,16 @@ def return_dask_dataset(catalog_name, uid):
     return project_xarray(runs[uid])
 
 
-def run_summary_from_dataset(uid: str, dataset: Dataset):
+def run_summary_from_dataset(uid: str, dataset: Dataset) -> RunSummary:
     run = {}
     run['uid'] = uid
-    run['collector_name'] = dataset.attrs.get('collector_name')
-    run['collection_team'] = dataset.attrs.get('collection_team')
-    run['collection_date'] = dataset.attrs.get('collection_date')
-    run['instrument_name'] = dataset.attrs.get('instrument_name')
-    run['sample_name'] = dataset.attrs.get('sample_name')
-    run['station'] = dataset.attrs.get('station')
-    run['num_data_images'] = dataset.attrs.get('num_data_images')
-    run['num_data_images'] = dataset.attrs.get('num_data_images')
+    run['session_auth'] = dataset.get('session_auth')
+    run['experimenter_name'] = dataset.get('experimenter_name')
+    run['experiment_title'] = dataset.get('experiment_title')
+    run['collection_date'] = dataset.get('collection_time')
+    run['instrument_name'] = dataset.get('instrument_name')
+    run['sample_name'] = dataset.get('sample_name')
+    run['station'] = dataset.get('instrument_name')
     return RunSummary(**run)
 
 

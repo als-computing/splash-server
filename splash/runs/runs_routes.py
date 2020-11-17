@@ -1,10 +1,13 @@
-from splash.service.authorization import AccessDenied
+from logging import log
 from attr import dataclass
+import logging
+from typing import List, Optional
+
 
 from fastapi import APIRouter, Path, Security, HTTPException, Query
 from fastapi.responses import StreamingResponse
-from typing import List, Optional
 
+from ..service.authorization import AccessDenied
 from ..users import User
 from . import RunSummary
 from .runs_service import (
@@ -14,6 +17,8 @@ from .runs_service import (
     RunsService)
 
 from splash.api.auth import get_current_user
+
+logger = logging.getLogger("splash.runs_router")
 
 runs_router = APIRouter()
 
@@ -39,14 +44,18 @@ def read_catalogs(
 
 
 @runs_router.get("/{catalog_name}", tags=['runs'], response_model=List[RunSummary])
-def read_catalog(
+async def read_catalog(
             catalog_name: str = Path(..., title="name of catalog"),
             current_user: User = Security(get_current_user)):
     try:
         runs = services.runs.get_runs(current_user, catalog_name)
         return runs
     except CatalogDoesNotExist as e:
+        logger.error(e)
         raise HTTPException(404, detail=e.args[0])
+    except Exception as e:
+        logger.error(e)
+        raise HTTPException(500, detail=e.args[0])
 
 
 @runs_router.get("/{catalog_name}/{run_uid}/image", tags=['runs'])
@@ -58,13 +67,17 @@ def read_frame(
         current_user: User = Security(get_current_user)):
     try:
         jpeg_generator = services.runs.get_slice_image(current_user, catalog_name, run_uid, field, frame)
+        return StreamingResponse(jpeg_generator, media_type="image/JPEG")
     except FrameDoesNotExist as e:
         raise HTTPException(400, detail=e.args[0])
     except BadFrameArgument as e:
         raise HTTPException(422, detail=e.args[0])
     except AccessDenied as e:
         raise HTTPException(403, detail=e.args[0])
-    return StreamingResponse(jpeg_generator, media_type="image/JPEG")
+    except Exception as e:
+        logger.error(e)
+        raise HTTPException(500, detail=e.args[0])
+
 
 
 @runs_router.get("/{catalog_name}/{run_uid}/metadata", tags=['runs'])
@@ -80,3 +93,6 @@ def read_frame_metadata(
         raise HTTPException(400, detail=e.args[0])
     except BadFrameArgument as e:
         raise HTTPException(422, detail=e.args[0])
+    except Exception as e:
+        logger.error(e)
+        raise HTTPException(500, detail=e.args[0])
