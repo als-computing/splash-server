@@ -14,7 +14,7 @@ from splash.teams.teams_routes import set_teams_service, teams_router
 from splash.teams.teams_service import TeamsService
 
 logger = logging.getLogger('splash')
-
+db = None
 
 def init_logging():
 

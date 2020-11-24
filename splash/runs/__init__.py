@@ -5,8 +5,7 @@ from pydantic import BaseModel, Field
 
 
 class RunSummary(BaseModel):
-    # beamline_energy: Optional[DataPoint] = Field(None, title="Beamline energy")
-    session_auth: Optional[List[str]] = Field(None, title="Team that collected the run. e.g. PI name, safety form, proposal number")
+    auth_session: Optional[List[str]] = Field(None, title="Team that collected the run. e.g. PI name, safety form, proposal number")
     experimenter_name: Optional[str] = Field(None, title="name of user or entity that performed collection")
     experiment_title: Optional[str]
     proposal: Optional[str] = Field(None, title="Team that collected the run. e.g. PI name, safety form, proposal number")

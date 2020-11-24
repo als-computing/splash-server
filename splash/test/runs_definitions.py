@@ -1,13 +1,18 @@
+from logging import root
+from uuid import uuid4
+from splash.api import auth
+from databroker.core import RemoteBlueskyEventStream
 from xarray import DataArray
 
 
 class MockRun(dict):
-    def __init__(self, team):
+    def __init__(self, auth_session):
         self.metadata = {
             'start': {
                 'user_id': 'runner_id',
-                'team': team,
+                'uid': str(uuid4()),
                 'sample': 'cloudy water',
+                'auth_session': auth_session,
                 'projections': [
                     {
                         'name': 'foo',
@@ -53,7 +58,7 @@ class MockRun(dict):
         # self.primary = type('MockStream', (dict,), {})()
         self['primary'] = self.primary
         self.primary['energy'] = DataArray([1.21, 1.22])
-        self.primary['image'] = DataArray([[1.0, 1.0], [0.0, 1.0]])
+        self.primary['image'] = DataArray([[[1.0, 1.0], [0.0, 1.0]]])
         self.primary.metadata = {}
         self.primary.metadata['descriptors'] = []
         self.primary.metadata['descriptors'].append({})
@@ -62,16 +67,40 @@ class MockRun(dict):
         self.primary.metadata['descriptors'][0]['configuration']['camera_device']['data'] = {}
         self.primary.metadata['descriptors'][0]['configuration']['camera_device']['data']['camera_config_field'] = 'config_value'
 
+        self.thumbnail = Stream()
+        self['thumbnail'] = self.thumbnail
+        self.thumbnail['image'] = DataArray([[[1.0, 1.0], [0.0, 1.0]]])
+
 
 class Stream(dict):
     def to_dask(self):
         return self
 
 
-root_catalog = {
-        "root_catalog": {
-                'same_team_1': MockRun('same_team'),
-                'other_team_1': MockRun('other_team'),
-                'same_team_2': MockRun('same_team'),
-        }
-    }
+class Catalog(dict):
+
+    # def __init__(self) -> None:
+    #     return super().__init__()
+
+    def search(self, query):
+        auth_session_filter = query.get("auth_session")
+        auth_sessions = auth_session_filter.get("$in")
+        # new_data = {k: v for k, v in self.items() if auth_sessions in v.metadata['start']['auth_session']}
+        new_data = {}
+        for k, v in self.items():
+            for auth_session in auth_sessions:
+                if auth_session in v.metadata['start']['auth_session']:
+                    new_data[k] = v
+        return new_data
+
+
+child_catalog = Catalog({"same_team_1": MockRun(['same_team']),
+                         "other_team_1": MockRun(['other_team']),
+                         "same_team_2": MockRun(['same_team'])})
+
+root_catalog = Catalog({"root_catalog": child_catalog})
+# root_catalog["root_catalog"] = Catalog({
+#             'same_team_1': MockRun('same_team'),
+#             'other_team_1': MockRun('other_team'),
+#             'same_team_2': MockRun('same_team'),
+# })

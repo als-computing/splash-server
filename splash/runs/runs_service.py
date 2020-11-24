@@ -25,15 +25,14 @@ class TeamRunChecker(TeamBasedChecker):
     def __init__(self):
         super().__init__()
 
-    def can_do(self, user: User, run: BlueskyRun, action: Action, teams=List[Team], **kwargs):
+    def can_do(self, user: User, run_auth_session: List[str], action: Action, teams=List[Team], **kwargs):
         if action == Action.RETRIEVE:
             # This rule is simple...check if the user
             # is a member the team that matches the run
-            session_auth = run.metadata['start'].get('session_auth')
-            if not session_auth or len(session_auth) == 0:
+            if not run_auth_session or len(run_auth_session) == 0:
                 return False
             for team in teams:
-                if team.name in session_auth:
+                if team.name in run_auth_session:
                     return True
         return False
 
@@ -69,64 +68,93 @@ class RunsService():
             if logger.isEnabledFor(logging.INFO):
                 logger.info(f"User {user.name} not a member of any team, can't view runs")
             raise AccessDenied("User not a member of any teams")
+        return list(user_teams)
 
-    def get_slice_image(self, user: User, catalog_name, uid, image_field, slice: int, raw_bytes=False):
+    def _get_run(self, user: User, catalog_name, uid):
+        # get the user's teams...if they're not in one, get out quick
+        user_teams = self._get_user_teams(user)
+
+        # can this user see the run?
+        if catalog_name not in catalog:
+            raise CatalogDoesNotExist(f'Catalog name: {catalog_name} is not a catalog')
+        run = catalog[catalog_name][uid]
+
+        if not run:
+            raise RunDoesNotExist(f'Run uid: {uid} does not exist')
+
+        run_auth = run.metadata['start'].get('auth_session')
+        if run_auth is None:
+            raise AccessDenied
+
+        if not self.checker.can_do(user, run_auth, Action.RETRIEVE, teams=user_teams):
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"User {user.name} can't retrieve {catalog_name}: {uid}")
+            raise AccessDenied
+        return run
+
+    def get_run_thumb(self, user: User, catalog_name, uid, slice=0):
         """Retrieves image preview of run specified by `catalog_name` and `uid`.
         Returns a file object representing a compressed jpeg image by default.
         If `raw_bytes` is set to `True`, then it returns a generator
         for streaming the entire image as bytes"""
-        
-        # get the user's teams...if they're not in one, get out quick
-        user_teams = self._get_user_teams(user)
-       
-        # can this user see the run?
-        dataset = return_dask_dataset(catalog_name, uid)
-        run_summary = run_summary_from_dataset(uid, dataset)
 
-        if not self.checker.can_do(user, run_summary, Action.RETRIEVE, teams=user_teams):
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f"User {user.name} can't retrieve {catalog_name}: {uid}")
-            raise AccessDenied
-        
-        frame_number = validate_frame_num(slice)
-        image_data = dataset[image_field].squeeze()
-
+        run = self._get_run(user, catalog_name, uid)
+        dataset = run.thumbnail.to_dask()["image"]
+        image_data = None
         try:
-            image_data = image_data[frame_number]
+            if not slice:
+                slice = 0
+            image_data = dataset[slice]
         except(IndexError):
-            raise FrameDoesNotExist(f'Frame number: {frame_number}, does not exist.')
+            raise FrameDoesNotExist(f'Frame number: {slice}, does not exist.')
+        return convert_raw(image_data)   
 
-        if raw_bytes:
-            return stream_image_as_bytes(image_data)
-        else:
-            file_object = convert_raw(image_data)
-            return file_object
+    #  temporarily removed until support is re-introduced
+    # def get_slice_image(self, user: User, catalog_name, uid, slice=0, raw_bytes=False, image_field=None):
+    #     """Retrieves image preview of run specified by `catalog_name` and `uid`.
+    #     Returns a file object representing a compressed jpeg image by default.
+    #     If `raw_bytes` is set to `True`, then it returns a generator
+    #     for streaming the entire image as bytes"""
 
-    def get_slice_metadata(self, user: User, catalog_name, uid, slice: int) -> Dict:
-        user_teams = self._get_user_teams(user)
-        if catalog_name not in catalog:
-            raise CatalogDoesNotExist(f'Catalog name: {catalog_name} is not a catalog')
-        slice = validate_frame_num(slice)
-        dataset = project_xarray(catalog[catalog_name][uid])
+    #     dataset, issues = self._get_run(user, catalog_name, uid)
+    #     dataset, issues = project_xarray(run)
+    #     image_data = dataset['image_data'].squeeze()
 
-        # can this user see it?
+    #     try:
+    #         if not slice:
+    #             slice = 0
+    #         image_data = image_data[slice]
+    #     except(IndexError):
+    #         raise FrameDoesNotExist(f'Frame number: {slice}, does not exist.')
+
+    #     if raw_bytes:
+    #         return stream_image_as_bytes(image_data), issues
+    #     else:
+    #         file_object = convert_raw(image_data)
+    #         return file_object, issues
+
+    # def get_slice_data(self, user: User, catalog_name, uid, slice=0):
+    #     """Retrieves non-image, single point data of a run's slice specified by `catalog_name` and `uid`.
+    #     Returns a file object representing a compressed jpeg image by default.
+    #     If `raw_bytes` is set to `True`, then it returns a generator
+    #     for streaming the entire image as bytes"""
+
+    #     dataset, issues = self._get_projected_dataset(user, catalog_name, uid)
+    #     image_data = dataset['image_data'].squeeze()
+
+    #     try:
+    #         if not slice:
+    #             slice = 0
+    #         image_data = image_data[slice]
+    #     except(IndexError):
+    #         raise FrameDoesNotExist(f'Frame number: {slice}, does not exist.')
+
+    def get_run_metadata(self, user: User, catalog_name, uid) -> RunSummary:
+        run = self.get_run(user, catalog_name, uid)
+        dataset, issues = project_summary_dict(run)
         run_summary = run_summary_from_dataset(uid, dataset)
-        if not self.checker.can_do(user, run_summary, Action.RETRIEVE, teams=user_teams):
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f"User {user.name} can't retrieve {catalog_name}: {uid}")
-            raise AccessDenied
-
-        slice_dict = {}
-        for field in dataset:
-            # comment == apology...probably need a more rock-solid
-            # way to decide what fields to add, but for now, array size will
-            # have to do
-            try:
-                if len(dataset[field].shape) == 1:
-                    slice_dict[field] = dataset[field][slice].compute().item()
-            except(IndexError):
-                raise FrameDoesNotExist(f'Slice number: {slice}, does not exist.')
-        return slice_dict
+    
+        return run_summary, issues
 
     def list_root_catalogs(self):
         return list(catalog)
@@ -139,20 +167,18 @@ class RunsService():
         teams_list = []
         for team in user_teams:
             teams_list.append(team.name)
-        runs = catalog[catalog_name].search({"session_auth": {"$in": teams_list}})
+        runs = catalog[catalog_name].search({"auth_session": {"$in": teams_list}})
         if len(runs) == 0:
             logger.info(f'catalog: {catalog_name} has no runs')
             return []
-        # if not user_teams:
-        #     if logger.isEnabledFor(logging.INFO):
-        #         logger.info(f"User {user.name} not a member of any team, can't view runs")
-        #     return []
 
         return_runs = []
         for uid in runs:
             try:
-
-                if not self.checker.can_do(user, runs[uid], Action.RETRIEVE, teams=user_teams):
+                run_auth = runs[uid].metadata['start'].get('auth_session')
+                if run_auth is None:
+                    continue
+                if not self.checker.can_do(user, run_auth, Action.RETRIEVE, teams=user_teams):
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.debug(f"User {user.name} can't retrieve {catalog_name}: {uid}")
                     continue
@@ -169,22 +195,10 @@ class RunsService():
         return return_runs
 
 
-def return_dask_dataset(catalog_name, uid):
-    if catalog_name not in catalog:
-        raise CatalogDoesNotExist(f'Catalog name: {catalog_name} is not a catalog')
-
-    runs = catalog[catalog_name]
-
-    if uid not in runs:
-        raise RunDoesNotExist(f'Run uid: {uid} does not exist')
-
-    return project_xarray(runs[uid])
-
-
 def run_summary_from_dataset(uid: str, dataset: Dataset) -> RunSummary:
     run = {}
     run['uid'] = uid
-    run['session_auth'] = dataset.get('session_auth')
+    # run['auth_session'] = dataset.get('auth_session')
     run['experimenter_name'] = dataset.get('experimenter_name')
     run['experiment_title'] = dataset.get('experiment_title')
     run['collection_date'] = dataset.get('collection_time')
@@ -194,15 +208,15 @@ def run_summary_from_dataset(uid: str, dataset: Dataset) -> RunSummary:
     return RunSummary(**run)
 
 
-def validate_frame_num(frame):
-    frame_number = frame
-    if not is_integer(frame_number):
-        raise BadFrameArgument('Frame number must be an integer, represented as an integer, string, or float.')
-    frame_number = int(frame)
+# def validate_frame_num(frame):
+#     frame_number = frame
+#     if not is_integer(frame_number):
+#         raise BadFrameArgument('Frame number must be an integer, represented as an integer, string, or float.')
+#     frame_number = int(frame)
 
-    if frame_number < 0:
-        raise BadFrameArgument('Frame number must be a positive integer')
-    return frame_number
+#     if frame_number < 0:
+#         raise BadFrameArgument('Frame number must be a positive integer')
+#     return frame_number
 
 
 # def guess_stream_field(catalog: BlueskyRun):
