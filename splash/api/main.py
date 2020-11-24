@@ -8,6 +8,8 @@ from splash.compounds.compounds_routes import set_compounds_service, compounds_r
 from splash.compounds.compounds_service import CompoundsService
 from splash.users.users_routes import set_users_service, users_router
 from splash.users.users_service import UsersService
+from splash.references.references_routes import set_references_service, references_router
+from splash.references.references_service import ReferencesService
 from splash.runs.runs_routes import set_runs_service, runs_router
 from splash.runs.runs_service import RunsService, TeamRunChecker
 from splash.teams.teams_routes import set_teams_service, teams_router
@@ -46,10 +48,12 @@ def setup_services():
     db = MongoClient(db_uri).splash
     users_svc = UsersService(db, 'users')
     compounds_svc = CompoundsService(db, 'compounds')
+    references_svc = ReferencesService(db, 'references')
     teams_svc = TeamsService(db, 'teams')
     runs_svc = RunsService(teams_svc, TeamRunChecker())
     set_auth_services(users_svc)
     set_compounds_service(compounds_svc)
+    set_references_service(references_svc)
     set_runs_service(runs_svc)
     set_teams_service(teams_svc)
     set_users_service(users_svc)
@@ -92,5 +96,12 @@ app.include_router(
     teams_router,
     prefix="/api/v1/teams",
     tags=["teams"],
+    responses={404: {"description": "Not found"}}
+)
+
+app.include_router(
+    references_router,
+    prefix="/api/v1/references",
+    tags=["references"],
     responses={404: {"description": "Not found"}}
 )

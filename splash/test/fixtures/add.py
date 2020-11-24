@@ -4,10 +4,11 @@ from fastapi.testclient import TestClient
 import mongomock
 import pytest
 
-from splash.users import NewUser
 from splash.compounds.compounds_routes import set_compounds_service
 from splash.compounds.compounds_service import CompoundsService
-from splash.users import NewUser, User
+from splash.references.references_routes import set_references_service
+from splash.references.references_service import ReferencesService
+from splash.users import NewUser
 from splash.users.users_routes import set_users_service
 from splash.users.users_service import UsersService
 from splash.runs.runs_routes import set_runs_service
@@ -33,10 +34,12 @@ token_info = {"sub": None, "scopes": ['splash']}
 db = mongomock.MongoClient().db
 users_svc = UsersService(db, 'users')
 compounds_svc = CompoundsService(db, 'compounds')
+references_svc = ReferencesService(db, 'references')
 teams_svc = TeamsService(db, 'teams')
 runs_svc = RunsService(teams_svc, TeamRunChecker())
 set_auth_services(users_svc)
 set_compounds_service(compounds_svc)
+set_references_service(references_svc)
 set_runs_service(runs_svc)
 set_teams_service(teams_svc)
 set_users_service(users_svc)
