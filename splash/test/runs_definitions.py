@@ -82,7 +82,7 @@ class Catalog(dict):
     # def __init__(self) -> None:
     #     return super().__init__()
 
-    def search(self, query):
+    def search(self, query, skip=0, limit=None):
         auth_session_filter = query.get("auth_session")
         auth_sessions = auth_session_filter.get("$in")
         # new_data = {k: v for k, v in self.items() if auth_sessions in v.metadata['start']['auth_session']}

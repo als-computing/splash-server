@@ -45,9 +45,11 @@ def read_catalogs(
 @runs_router.get("/{catalog_name}", tags=['runs'], response_model=List[RunSummary])
 def read_catalog(
             catalog_name: str = Path(..., title="name of catalog"),
-            current_user: User = Security(get_current_user)):
+            current_user: User = Security(get_current_user),
+            skip: Optional[int] = Query(None, ge=0),
+            limit: Optional[int] = Query(None, ge=0)):
     try:
-        runs = services.runs.get_runs(current_user, catalog_name)
+        runs = services.runs.get_runs(current_user, catalog_name, skip=skip, limit=limit)
         return runs
     except CatalogDoesNotExist as e:
         logger.error(e)

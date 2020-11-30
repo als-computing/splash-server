@@ -159,7 +159,7 @@ class RunsService():
     def list_root_catalogs(self):
         return list(catalog)
 
-    def get_runs(self, user: User, catalog_name) -> List[RunSummary]:
+    def get_runs(self, user: User, catalog_name, skip=0, limit=100) -> List[RunSummary]:
         if catalog_name not in catalog:
             raise CatalogDoesNotExist(f'Catalog name: {catalog_name} is not a catalog')
 
@@ -167,7 +167,11 @@ class RunsService():
         teams_list = []
         for team in user_teams:
             teams_list.append(team.name)
-        runs = catalog[catalog_name].search({"auth_session": {"$in": teams_list}})
+        # runs = catalog[catalog_name].search({"auth_session": {"$in": teams_list}})
+        runs = catalog[catalog_name].search(
+            {"auth_session": {"$in": teams_list}},
+            skip=skip,
+            limit=limit)
         if len(runs) == 0:
             logger.info(f'catalog: {catalog_name} has no runs')
             return []
