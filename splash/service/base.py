@@ -91,5 +91,6 @@ class MongoService():
 class ObjectNotFoundError(Exception):
     pass
 
+
 class UidInDictError(KeyError):
     pass

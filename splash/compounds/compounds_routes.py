@@ -1,7 +1,7 @@
 from attr import dataclass
 
 
-from fastapi import APIRouter,  Security
+from fastapi import APIRouter,  Security, HTTPException
 from typing import List
 from pydantic import parse_obj_as, BaseModel
 
@@ -11,6 +11,7 @@ from splash.api.auth import get_current_user
 from .compounds_service import CompoundsService
 
 compounds_router = APIRouter()
+
 
 @dataclass
 class Services():
@@ -41,7 +42,13 @@ def read_compound(
         current_user: User = Security(get_current_user)):
 
     compound = services.compounds.retrieve_one(current_user, uid)
+    if compound is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Not found",
+        )
     return compound
+
 
 @compounds_router.put("/{uid}", tags=['compounds'], response_model=CreateCompoundResponse)
 def replace_compound(

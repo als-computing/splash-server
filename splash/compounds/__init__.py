@@ -21,6 +21,7 @@ class Section(BaseModel):
 
 class Documentation(BaseModel):
     sections: List[Section] = []
+    references: List[constr(min_length=1)]
 
     class Config:
         extra = Extra.forbid

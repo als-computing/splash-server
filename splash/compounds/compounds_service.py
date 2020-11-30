@@ -12,7 +12,9 @@ class CompoundsService(MongoService):
         return super().create(current_user, Compound.dict())
 
     def retrieve_one(self, current_user: User, uid: str) -> Compound:
-        Compound_dict = super().retrieve_one(current_user, uid) 
+        Compound_dict = super().retrieve_one(current_user, uid)
+        if Compound_dict is None:
+            return None
         return Compound(**Compound_dict)
 
     def retrieve_multiple(self,
