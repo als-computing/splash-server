@@ -106,7 +106,7 @@ def read_run_thumb(
         return_metadata = services.runs.get_run_thumb(current_user, catalog_name, run_uid)
         return StreamingResponse(return_metadata, media_type="image/JPEG")
     except FrameDoesNotExist as e:
-        raise HTTPException(400, detail=e.args[0])
+        raise HTTPException(404, detail=e.args[0])
     except BadFrameArgument as e:
         raise HTTPException(422, detail=e.args[0])
     # except Exception as e:

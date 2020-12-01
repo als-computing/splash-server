@@ -1,10 +1,9 @@
 import logging
-from typing import Dict, List
+from typing import List
 
 
 from databroker import catalog
-from databroker.core import BlueskyRun
-from databroker.projector import project_xarray, project_summary_dict, ProjectionError
+from databroker.projector import project_summary_dict
 
 from xarray import Dataset
 
@@ -99,7 +98,16 @@ class RunsService():
         for streaming the entire image as bytes"""
 
         run = self._get_run(user, catalog_name, uid)
-        dataset = run.thumbnail.to_dask()["image"]
+        try:
+            run['thumbnail']
+        except KeyError:
+            raise FrameDoesNotExist("run does not have thumbnail stream")
+        thumb_key = ""
+        try:
+            thumb_key = list(run.thumbnail.to_dask().keys())[0]  # this is a kludge, get first key of dataset
+        except IndexError:
+            raise FrameDoesNotExist("stream field empty, no slices for thumbnail")
+        dataset = run.thumbnail.to_dask()[thumb_key]
         image_data = None
         try:
             if not slice:
