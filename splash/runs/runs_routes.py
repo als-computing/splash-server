@@ -47,9 +47,13 @@ def read_catalog(
             catalog_name: str = Path(..., title="name of catalog"),
             current_user: User = Security(get_current_user),
             skip: Optional[int] = Query(None, ge=0),
-            limit: Optional[int] = Query(None, ge=0)):
+            limit: Optional[int] = Query(None, ge=0),
+            text_query: Optional[str] = Query(None),
+            fromDT: Optional[int] = Query(None),
+            toDT: Optional[int] = Query(None)):
     try:
-        runs = services.runs.get_runs(current_user, catalog_name, skip=skip, limit=limit)
+        runs = (services.runs.get_runs(current_user, catalog_name, skip=skip,
+                limit=limit, text_query=text_query, from_query=fromDT, to_query=toDT))
         return runs
     except CatalogDoesNotExist as e:
         logger.error(e)

@@ -158,7 +158,7 @@ class RunsService():
     #         raise FrameDoesNotExist(f'Frame number: {slice}, does not exist.')
 
     def get_run_metadata(self, user: User, catalog_name, uid) -> RunSummary:
-        run = self.get_run(user, catalog_name, uid)
+        run = self._get_run(user, catalog_name, uid)
         dataset, issues = project_summary_dict(run)
         run_summary = run_summary_from_dataset(uid, dataset)
     
@@ -167,7 +167,14 @@ class RunsService():
     def list_root_catalogs(self):
         return list(catalog)
 
-    def get_runs(self, user: User, catalog_name, skip=0, limit=100) -> List[RunSummary]:
+    def get_runs(self,
+                 user: User,
+                 catalog_name,
+                 skip=0,
+                 limit=100,
+                 text_query=None,
+                 from_query=None,
+                 to_query=None) -> List[RunSummary]:
         if catalog_name not in catalog:
             raise CatalogDoesNotExist(f'Catalog name: {catalog_name} is not a catalog')
 
@@ -175,9 +182,10 @@ class RunsService():
         teams_list = []
         for team in user_teams:
             teams_list.append(team.name)
+        query = self._build_runs_query(teams_list, text_query, from_query, to_query)
         # runs = catalog[catalog_name].search({"auth_session": {"$in": teams_list}})
         runs = catalog[catalog_name].search(
-            {"auth_session": {"$in": teams_list}},
+            query,
             skip=skip,
             limit=limit)
         if len(runs) == 0:
@@ -205,6 +213,19 @@ class RunsService():
 
             # can this user see this run?          
         return return_runs
+
+    @staticmethod
+    def _build_runs_query(teams=None, text_search=None, from_query=None, to_query=None):
+        queries = []
+        queries.append({"auth_session": {"$in": teams}})
+        if text_search:
+            queries.append({"$text": {"$search": text_search}})
+        if from_query:
+            queries.append({"time": {"$gte": from_query}})
+        if to_query:
+            queries.append({"time": {"$lte": to_query}})
+        query = {"$and": queries}
+        return query
 
 
 def run_summary_from_dataset(uid: str, dataset: Dataset) -> RunSummary:
