@@ -11,7 +11,7 @@ from ..users import User
 from . import RunSummary
 from .runs_service import (
     CatalogDoesNotExist,
-    FrameDoesNotExist,
+    ThumbDoesNotExist,
     BadFrameArgument,
     RunsService)
 
@@ -92,7 +92,7 @@ def read_run_metadata(
     try:
         return_metadata, issues = services.runs.get_run_metadata(current_user, catalog_name, run_uid)
         return return_metadata
-    except FrameDoesNotExist as e:
+    except ThumbDoesNotExist as e:
         raise HTTPException(400, detail=e.args[0])
     except BadFrameArgument as e:
         raise HTTPException(422, detail=e.args[0])
@@ -109,7 +109,7 @@ def read_run_thumb(
     try:
         return_metadata = services.runs.get_run_thumb(current_user, catalog_name, run_uid)
         return StreamingResponse(return_metadata, media_type="image/JPEG")
-    except FrameDoesNotExist as e:
+    except ThumbDoesNotExist as e:
         raise HTTPException(404, detail=e.args[0])
     except BadFrameArgument as e:
         raise HTTPException(422, detail=e.args[0])

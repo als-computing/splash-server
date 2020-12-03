@@ -1,9 +1,11 @@
 import logging
+from pathlib import Path
 from typing import List
 
 
 from databroker import catalog
 from databroker.projector import project_summary_dict
+from pydantic.tools import T
 
 from xarray import Dataset
 
@@ -52,7 +54,7 @@ class FieldDoesNotExist(Exception):
     pass
 
 
-class FrameDoesNotExist(Exception):
+class ThumbDoesNotExist(Exception):
     pass
 
 
@@ -91,31 +93,45 @@ class RunsService():
             raise AccessDenied
         return run
 
-    def get_run_thumb(self, user: User, catalog_name, uid, slice=0):
+    def get_run_thumb(self, user: User, catalog_name, uid):
         """Retrieves image preview of run specified by `catalog_name` and `uid`.
         Returns a file object representing a compressed jpeg image by default.
         If `raw_bytes` is set to `True`, then it returns a generator
         for streaming the entire image as bytes"""
-
-        run = self._get_run(user, catalog_name, uid)
+        self._get_run(user, catalog_name, uid)
         try:
-            run['thumbnail']
+            thumbs_dir = Path(catalog[catalog_name].root_map['thumbs'])
         except KeyError:
-            raise FrameDoesNotExist("run does not have thumbnail stream")
-        thumb_key = ""
-        try:
-            thumb_key = list(run.thumbnail.to_dask().keys())[0]  # this is a kludge, get first key of dataset
-        except IndexError:
-            raise FrameDoesNotExist("stream field empty, no slices for thumbnail")
-        dataset = run.thumbnail.to_dask()[thumb_key]
-        image_data = None
-        try:
-            if not slice:
-                slice = 0
-            image_data = dataset[slice]
-        except(IndexError):
-            raise FrameDoesNotExist(f'Frame number: {slice}, does not exist.')
-        return convert_raw(image_data)   
+            raise ThumbDoesNotExist((f"catalog {catalog_name} does not have a thumbnail root configured." +
+                                    "The the intake cofiguration for this source, there must be a root_map entry" +
+                                    "called thuumbs."))
+
+        file_name = uid + ".png"
+        file = thumbs_dir / file_name
+        if not file.exists():
+            raise ThumbDoesNotExist(f"Thumb file does not exist for catalog {catalog_name} and uid {uid}")
+        return file
+        
+
+        # run = self._get_run(user, catalog_name, uid)
+        # try:
+        #     run['thumbnail']
+        # except KeyError:
+        #     raise FrameDoesNotExist("run does not have thumbnail stream")
+        # thumb_key = ""
+        # try:
+        #     thumb_key = list(run.thumbnail.to_dask().keys())[0]  # this is a kludge, get first key of dataset
+        # except IndexError:
+        #     raise FrameDoesNotExist("stream field empty, no slices for thumbnail")
+        # dataset = run.thumbnail.to_dask()[thumb_key]
+        # image_data = None
+        # try:
+        #     if not slice:
+        #         slice = 0
+        #     image_data = dataset[slice]
+        # except(IndexError):
+        #     raise FrameDoesNotExist(f'Frame number: {slice}, does not exist.')
+        # return convert_raw(image_data)   
 
     #  temporarily removed until support is re-introduced
     # def get_slice_image(self, user: User, catalog_name, uid, slice=0, raw_bytes=False, image_field=None):
