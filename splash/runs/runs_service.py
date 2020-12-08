@@ -1,7 +1,8 @@
 import logging
 from pathlib import Path
-from typing import List
+import time
 
+from typing import List
 
 from databroker import catalog
 from databroker.projector import project_summary_dict
@@ -14,10 +15,6 @@ from ..users import User
 from ..service.authorization import TeamBasedChecker, Action, AccessDenied
 from ..teams.teams_service import TeamsService
 from ..teams import Team
-import sys
-import numpy as np
-from PIL import Image, ImageOps
-import io
 
 logger = logging.getLogger("splash.runs_service")
 
@@ -62,6 +59,7 @@ class RunsService():
     def __init__(self, teams_service: TeamsService, checker: TeamRunChecker):
         self.teams_service = teams_service
         self.checker = checker
+        self._catalog_cache = {}  # caching names saves several orders of magitude on accessing for, say, thumbnails
 
     def _get_user_teams(self, user: User):
         user_teams = self.teams_service.get_user_teams(user, user.uid)
@@ -74,15 +72,26 @@ class RunsService():
     def _get_run(self, user: User, catalog_name, uid):
         # get the user's teams...if they're not in one, get out quick
         user_teams = self._get_user_teams(user)
-
-        # can this user see the run?
-        if catalog_name not in catalog:
-            raise CatalogDoesNotExist(f'Catalog name: {catalog_name} is not a catalog')
-        run = catalog[catalog_name][uid]
-
-        if not run:
+        # print("about to lock")
+        # catalog_lock.acquire()
+        # print("past lock")
+        before = time.perf_counter()
+        requested_catalog = None
+        run = None
+        requested_catalog = self._catalog_cache.get(catalog_name)
+        if not requested_catalog:
+            try:
+                requested_catalog = catalog[catalog_name]
+                self._catalog_cache[catalog_name] = requested_catalog
+            except KeyError:
+                raise CatalogDoesNotExist(f'Catalog name: {catalog_name} is not a catalog')
+        
+        try:
+            run = requested_catalog[uid]
+        except KeyError:
             raise RunDoesNotExist(f'Run uid: {uid} does not exist')
-
+        after = time.perf_counter()
+        logger.info(f"catalog took {after - before:0.4f} seconds")
         run_auth = run.metadata['start'].get('auth_session')
         if run_auth is None:
             raise AccessDenied
@@ -91,16 +100,16 @@ class RunsService():
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f"User {user.name} can't retrieve {catalog_name}: {uid}")
             raise AccessDenied
-        return run
+        return run, requested_catalog
 
     def get_run_thumb(self, user: User, catalog_name, uid):
         """Retrieves image preview of run specified by `catalog_name` and `uid`.
         Returns a file object representing a compressed jpeg image by default.
         If `raw_bytes` is set to `True`, then it returns a generator
         for streaming the entire image as bytes"""
-        self._get_run(user, catalog_name, uid)
+        requested_catalog = self._get_run(user, catalog_name, uid)[1]
         try:
-            thumbs_dir = Path(catalog[catalog_name].root_map['thumbs'])
+            thumbs_dir = Path(requested_catalog.root_map['thumbs'])
         except KeyError:
             raise ThumbDoesNotExist((f"catalog {catalog_name} does not have a thumbnail root configured." +
                                     "The the intake cofiguration for this source, there must be a root_map entry" +
@@ -111,30 +120,9 @@ class RunsService():
         if not file.exists():
             raise ThumbDoesNotExist(f"Thumb file does not exist for catalog {catalog_name} and uid {uid}")
         return file
-        
-
-        # run = self._get_run(user, catalog_name, uid)
-        # try:
-        #     run['thumbnail']
-        # except KeyError:
-        #     raise FrameDoesNotExist("run does not have thumbnail stream")
-        # thumb_key = ""
-        # try:
-        #     thumb_key = list(run.thumbnail.to_dask().keys())[0]  # this is a kludge, get first key of dataset
-        # except IndexError:
-        #     raise FrameDoesNotExist("stream field empty, no slices for thumbnail")
-        # dataset = run.thumbnail.to_dask()[thumb_key]
-        # image_data = None
-        # try:
-        #     if not slice:
-        #         slice = 0
-        #     image_data = dataset[slice]
-        # except(IndexError):
-        #     raise FrameDoesNotExist(f'Frame number: {slice}, does not exist.')
-        # return convert_raw(image_data)   
 
     #  temporarily removed until support is re-introduced
-    # def get_slice_image(self, user: User, catalog_name, uid, slice=0, raw_bytes=False, image_field=None):
+    # def get_slice_image(self,     user: User, catalog_name, uid, slice=0, raw_bytes=False, image_field=None):
     #     """Retrieves image preview of run specified by `catalog_name` and `uid`.
     #     Returns a file object representing a compressed jpeg image by default.
     #     If `raw_bytes` is set to `True`, then it returns a generator
@@ -174,10 +162,9 @@ class RunsService():
     #         raise FrameDoesNotExist(f'Frame number: {slice}, does not exist.')
 
     def get_run_metadata(self, user: User, catalog_name, uid) -> RunSummary:
-        run = self._get_run(user, catalog_name, uid)
+        run = self._get_run(user, catalog_name, uid)[0]
         dataset, issues = project_summary_dict(run)
         run_summary = run_summary_from_dataset(uid, dataset)
-    
         return run_summary, issues
 
     def list_root_catalogs(self):
@@ -255,84 +242,3 @@ def run_summary_from_dataset(uid: str, dataset: Dataset) -> RunSummary:
     run['sample_name'] = dataset.get('sample_name')
     run['station'] = dataset.get('instrument_name')
     return RunSummary(**run)
-
-
-# def validate_frame_num(frame):
-#     frame_number = frame
-#     if not is_integer(frame_number):
-#         raise BadFrameArgument('Frame number must be an integer, represented as an integer, string, or float.')
-#     frame_number = int(frame)
-
-#     if frame_number < 0:
-#         raise BadFrameArgument('Frame number must be a positive integer')
-#     return frame_number
-
-
-# def guess_stream_field(catalog: BlueskyRun):
-#     # TODO: use some metadata (techniques?) for guidance about how to get a preview
-
-#     for stream in ['primary', *bluesky_utils.streams_from_run(catalog)]:
-#         descriptor = bluesky_utils.descriptors_from_stream(catalog, stream)[0]
-#         fields = bluesky_utils.fields_from_descriptor(descriptor)
-#         for field in fields:
-#             field_ndims = bluesky_utils.ndims_from_descriptor(descriptor, field)
-#             if field_ndims > 1:
-#                 return stream, field
-
-
-def ensure_small_endianness(dataarray):
-    byteorder = dataarray.data.dtype.byteorder
-    if byteorder == '=' and sys.byteorder == 'little':
-        return dataarray
-    elif byteorder == '<':
-        return dataarray
-    elif byteorder == '|':
-        return dataarray
-    elif byteorder == '=' and sys.byteorder == 'big':
-        return dataarray.data.byteswap().newbyteorder()
-    elif byteorder == '>':
-        return dataarray.data.byteswap().newbyteorder()
-
-
-# This function should yield the array in 32 row chunks
-def stream_image_as_bytes(dataarray):
-    # TODO generalize the function for any sized image
-    for chunk_beginning in range(0, 1024, 32):
-        chunk_end = chunk_beginning + 32
-        chunk = dataarray[chunk_beginning:chunk_end].compute()
-        chunk = ensure_small_endianness(chunk)
-        yield bytes(chunk.data)
-
-
-def generate_buffer(buffer: io.BytesIO, chunk_size: int):
-    reader = io.BufferedReader(buffer, chunk_size)
-    for chunk in reader:
-        yield chunk
-
-
-def convert_raw(data):
-    log_image = np.array(data.compute())
-    log_image = log_image - np.min(log_image) + 1.001
-    log_image = np.log(log_image)
-    log_image = 205*log_image/(np.max(log_image))
-    auto_contrast_image = Image.fromarray(log_image.astype('uint8'))
-    auto_contrast_image = ImageOps.autocontrast(
-                            auto_contrast_image, cutoff=0.1)
-    # auto_contrast_image = resize(np.array(auto_contrast_image),
-                                            # (size, size))                   
-    file_buffer = io.BytesIO()
-
-    auto_contrast_image.save(file_buffer, format='JPEG')
-
-    # move to beginning of file so `send_file()` will read from start    
-    file_buffer.seek(0)
-    return generate_buffer(file_buffer, 2048)
-
-
-def is_integer(n):
-    try:
-        float(n)
-    except ValueError:
-        return False
-    else:
-        return float(n).is_integer()
