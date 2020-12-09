@@ -9,7 +9,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 # The install_requires does not support installation from git.
 try:
-    import databroker_fitshandler
+    import file_handlers.fits_handler
 except ImportError:
     print(
         "\n"
