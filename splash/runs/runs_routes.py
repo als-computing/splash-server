@@ -11,7 +11,7 @@ from ..users import User
 from . import RunSummary
 from .runs_service import (
     CatalogDoesNotExist,
-    FrameDoesNotExist,
+    ThumbDoesNotExist,
     BadFrameArgument,
     RunsService)
 
@@ -20,7 +20,6 @@ from splash.api.auth import get_current_user
 logger = logging.getLogger("splash.runs_router")
 
 runs_router = APIRouter()
-
 
 @dataclass
 class Services():
@@ -92,7 +91,7 @@ def read_run_metadata(
     try:
         return_metadata, issues = services.runs.get_run_metadata(current_user, catalog_name, run_uid)
         return return_metadata
-    except FrameDoesNotExist as e:
+    except ThumbDoesNotExist as e:
         raise HTTPException(400, detail=e.args[0])
     except BadFrameArgument as e:
         raise HTTPException(422, detail=e.args[0])
@@ -107,12 +106,20 @@ def read_run_thumb(
         run_uid: str = Path(..., title="run uid"),
         current_user: User = Security(get_current_user)):
     try:
-        return_metadata = services.runs.get_run_thumb(current_user, catalog_name, run_uid)
-        return StreamingResponse(return_metadata, media_type="image/JPEG")
-    except FrameDoesNotExist as e:
+        return_file = services.runs.get_run_thumb(current_user, catalog_name, run_uid)
+        file = open(return_file, "rb")
+        file.seek(0)
+        return StreamingResponse(generate_chunks(file), media_type="image/PNG")
+    except ThumbDoesNotExist as e:
         raise HTTPException(404, detail=e.args[0])
     except BadFrameArgument as e:
         raise HTTPException(422, detail=e.args[0])
     # except Exception as e:
     #     logger.error(e)
     #     raise HTTPException(500, detail=str(e))
+
+
+def generate_chunks(file):
+    for chunk in iter(lambda: file.read(4096), b''):
+        yield chunk
+    file.close()

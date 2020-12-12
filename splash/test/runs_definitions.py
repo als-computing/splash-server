@@ -99,8 +99,3 @@ child_catalog = Catalog({"same_team_1": MockRun(['same_team']),
                          "same_team_2": MockRun(['same_team'])})
 
 root_catalog = Catalog({"root_catalog": child_catalog})
-# root_catalog["root_catalog"] = Catalog({
-#             'same_team_1': MockRun('same_team'),
-#             'other_team_1': MockRun('other_team'),
-#             'same_team_2': MockRun('same_team'),
-# })
