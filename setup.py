@@ -7,10 +7,24 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
+# The install_requires does not support installation from git.
+try:
+    import file_handlers.fits_handler
+except ImportError:
+    print(
+        "\n"
+        "\n"
+        "You must manually install databroker_fitshandler:\n"
+        "pip install git+git://github.com/als-computing/datahandler_fits@master#egg=databroker-fitshandler"
+        "\n"
+        "\n"
+    )
+    import sys
+    sys.exit(1)
 with open(path.join(here, 'requirements.txt')) as requirements_file:
     # Parse requirements.txt, ignoring any commented-out lines.
     requirements = [line for line in requirements_file.read().splitlines()
-                    if not line.startswith('#')]
+                    if not (line.startswith('#') or line.startswith("git+"))]
 setup(
 
     name='splash-server',  
