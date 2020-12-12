@@ -24,14 +24,14 @@ class TeamRunChecker(TeamBasedChecker):
     def __init__(self):
         super().__init__()
 
-    def can_do(self, user: User, run_auth_session: List[str], action: Action, teams=List[Team], **kwargs):
+    def can_do(self, user: User, run_data_session: List[str], action: Action, teams=List[Team], **kwargs):
         if action == Action.RETRIEVE:
             # This rule is simple...check if the user
             # is a member the team that matches the run
-            if not run_auth_session or len(run_auth_session) == 0:
+            if not run_data_session or len(run_data_session) == 0:
                 return False
             for team in teams:
-                if team.name in run_auth_session:
+                if team.name in run_data_session:
                     return True
         return False
 
@@ -81,7 +81,7 @@ class RunsService():
         if not run:
             raise RunDoesNotExist(f'Run uid: {uid} does not exist')
 
-        run_auth = run.metadata['start'].get('auth_session')
+        run_auth = run.metadata['start'].get('data_session')
         if run_auth is None:
             raise AccessDenied
 
@@ -183,7 +183,7 @@ class RunsService():
         for team in user_teams:
             teams_list.append(team.name)
         query = self._build_runs_query(teams_list, text_query, from_query, to_query)
-        # runs = catalog[catalog_name].search({"auth_session": {"$in": teams_list}})
+        # runs = catalog[catalog_name].search({"data_session": {"$in": teams_list}})
         runs = catalog[catalog_name].search(
             query,
             skip=skip,
@@ -195,7 +195,7 @@ class RunsService():
         return_runs = []
         for uid in runs:
             try:
-                run_auth = runs[uid].metadata['start'].get('auth_session')
+                run_auth = runs[uid].metadata['start'].get('data_session')
                 if run_auth is None:
                     continue
                 if not self.checker.can_do(user, run_auth, Action.RETRIEVE, teams=user_teams):
@@ -217,7 +217,7 @@ class RunsService():
     @staticmethod
     def _build_runs_query(teams=None, text_search=None, from_query=None, to_query=None):
         queries = []
-        queries.append({"auth_session": {"$in": teams}})
+        queries.append({"data_session": {"$in": teams}})
         if text_search:
             queries.append({"$text": {"$search": text_search}})
         if from_query:
@@ -231,7 +231,7 @@ class RunsService():
 def run_summary_from_dataset(uid: str, dataset: Dataset) -> RunSummary:
     run = {}
     run['uid'] = uid
-    # run['auth_session'] = dataset.get('auth_session')
+    # run['data_session'] = dataset.get('data_session')
     run['experimenter_name'] = dataset.get('experimenter_name')
     run['experiment_title'] = dataset.get('experiment_title')
     run['collection_date'] = dataset.get('collection_time')
