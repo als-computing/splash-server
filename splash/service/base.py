@@ -8,7 +8,7 @@ from splash.users import User
 
 ValidationIssue = namedtuple('ValidationIssue', 'description, location, exception')
 
-logger = logging.getLogger('splash_server.service')
+logger = logging.getLogger('splash.service')
 
 
 class BadPageArgument(Exception):

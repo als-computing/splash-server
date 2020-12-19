@@ -24,7 +24,7 @@ from splash.users.users_service import (
     UserNotFoundException)
 from splash.users import User
 
-logger = logging.getLogger('splash_server.auth')
+logger = logging.getLogger('splash.auth')
 
 auth_router = APIRouter()
 

@@ -1,5 +1,6 @@
 import io
 import json
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 import numpy as np
@@ -74,67 +75,41 @@ def test_list_runs_catalog_doesnt_exist(api_url_root, splash_client: TestClient,
     response_data = json.loads(response.content)
     assert response_data['detail'] == 'Catalog name: does_not_exist is not a catalog'
 
+#  temporarily removed until support is re-introduced
+# def test_get_image_bad_frame(api_url_root, splash_client: TestClient, leader_token, teams_service):
+#     response = splash_client.get(api_url_root + "/runs/root_catalog/same_team_1/image?frame=blah",
+#                                  headers=leader_token)
+#     assert response.status_code == 422
 
-def test_get_image_bad_frame(api_url_root, splash_client: TestClient, leader_token, teams_service):
-    response = splash_client.get(api_url_root + "/runs/root_catalog/same_team_1/image?frame=blah",
-                                 headers=leader_token)
-    assert response.status_code == 422
+#     response = splash_client.get(api_url_root + "/runs/root_catalog/same_team_1/image?frame=1.5", 
+#                                  headers=leader_token)
+#     assert response.status_code == 422
 
-    response = splash_client.get(api_url_root + "/runs/root_catalog/same_team_1/image?frame=1.5", 
-                                 headers=leader_token)
-    assert response.status_code == 422
-
-    response = splash_client.get(api_url_root + "/runs/root_catalog/same_team_1/image?frame=-1", 
-                                 headers=leader_token)
-    assert response.status_code == 422
-
-
-
-def test_get_image_metadata_bad_frame(api_url_root, splash_client: TestClient, leader_token):
-    response = splash_client.get(api_url_root + "/runs/root_catalog/same_team_1/metadata?frame=blah",
-                                 headers=leader_token)
-    assert response.status_code == 422
-
-    response = splash_client.get(api_url_root + "/runs/root_catalog/same_team_1/metadata?frame=1.5",
-                                 headers=leader_token)
-    assert response.status_code == 422
-
-    response = splash_client.get(api_url_root + "/runs/root_catalog/same_team_1/metadata?frame=-1",
-                                 headers=leader_token)
-    assert response.status_code == 422
+#     response = splash_client.get(api_url_root + "/runs/root_catalog/same_team_1/image?frame=-1", 
+#                                  headers=leader_token)
+#     assert response.status_code == 422
 
 
-def test_get_image(api_url_root, splash_client: TestClient, leader_token, teams_service, monkeypatch):
+#  temporarily removed until support is re-introduced
+# def test_get_image(api_url_root, splash_client: TestClient, leader_token, teams_service, monkeypatch):
+#     monkeypatch.setattr('splash.runs.runs_service.catalog', root_catalog)
+#     image_data = root_catalog['root_catalog']['same_team_1'].primary['image']
+#     for idx, image in enumerate(image_data):
+#         response = splash_client.get(api_url_root + f"/runs/root_catalog/same_team_1/image?frame={idx}&field=image_data",
+#                                      headers=leader_token)
+#         assert response.status_code == 200
+#         assert response.headers['content-type'] == 'image/JPEG'
+#         assert response.content == convert_raw(image).read()
+
+
+def test_get_thumb(api_url_root, splash_client: TestClient, leader_token, teams_service, monkeypatch, tmpdir):
     monkeypatch.setattr('splash.runs.runs_service.catalog', root_catalog)
-    image_data = root_catalog['root_catalog']['same_team_1'].primary['image']
-    for idx, image in enumerate(image_data):
-        response = splash_client.get(api_url_root + f"/runs/root_catalog/same_team_1/image?frame={idx}&field=image_data",
-                                     headers=leader_token)
-        assert response.status_code == 200
-        assert response.headers['content-type'] == 'image/JPEG'
-        assert response.content == convert_raw(image).read()
-
-
-def test_get_image_metadata(api_url_root, splash_client: TestClient, leader_token, teams_service, monkeypatch):
-    monkeypatch.setattr('splash.runs.runs_service.catalog', root_catalog)
-    energy_data = root_catalog['root_catalog']['same_team_1'].primary['energy']
-    for idx, energy in enumerate(energy_data):
-        response = splash_client.get(api_url_root + f"/runs/root_catalog/same_team_1/metadata?frame={idx}",
-                                     headers=leader_token)
-        assert response.status_code == 200
-        response_data = json.loads(response.content)
-        assert response_data['beamline_energy'] == energy
-
-
-def test_get_image_metadata_doesnt_exist(api_url_root, splash_client: TestClient, leader_token, teams_service, monkeypatch):
-    monkeypatch.setattr('splash.runs.runs_service.catalog', root_catalog)
-    response = splash_client.get(api_url_root + "/runs/root_catalog/same_team_1/metadata?frame=50&field=image_data",
-                                 headers=leader_token)
-    assert response.status_code == 400
-
-
-def test_get_image_doesnt_exist(api_url_root, splash_client: TestClient, leader_token, teams_service, monkeypatch):
-    monkeypatch.setattr('splash.runs.runs_service.catalog', root_catalog)
-    response = splash_client.get(api_url_root + "/runs/root_catalog/same_team_1/image?frame=50&field=image_data",
-                                 headers=leader_token)
-    assert response.status_code == 400
+    filename = Path("same_team_1.png")
+    with open(Path(tmpdir) / filename, "wb") as file:
+        file.write(b"1234")
+    root_catalog['root_catalog'].root_map = {"thumbs": tmpdir}
+    response = splash_client.get(api_url_root + "/runs/root_catalog/same_team_1/thumb",
+                                                headers=leader_token)
+    assert response.status_code == 200
+    assert response.headers['content-type'] == 'image/PNG'
+    assert response.content == b"1234"

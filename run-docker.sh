@@ -1,1 +1,1 @@
-docker run -d -e APP_MODULE="splash.api.main:app" -p 82:80  splash-fastapi 
+docker run --env-file .env -p 8000:80 splash_server:$(git describe --tags)
