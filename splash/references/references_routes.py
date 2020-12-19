@@ -37,8 +37,7 @@ def read_references(
         print(search)
         query = {
             '$or': [
-                {'reference': {'$regex': search, '$options': 'i'}},
-                {'doi_url': {'$regex': search, '$options': 'i'}}
+                {'title': {'$regex': search, '$options': 'i'},}
             ]
         }
         references = services.references.retrieve_multiple(current_user, page=page, page_size=page_size, query=query)
