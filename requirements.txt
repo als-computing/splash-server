@@ -7,8 +7,8 @@ requests
 python-dotenv
 python-jose[cryptography]
 python-multipart
-git+https://github.com/dylanmcreynolds/databroker@102861c
-git+https://github.com/bluesky/event-model.git@b7a5fd8
+databroker
+event-model
 Pillow
 numpy
 fastapi
