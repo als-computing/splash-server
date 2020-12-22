@@ -4,8 +4,8 @@ from fastapi import FastAPI
 
 from .config import ConfigStore
 from splash.api.auth import auth_router, set_services as set_auth_services
-from splash.compounds.compounds_routes import set_compounds_service, compounds_router
-from splash.compounds.compounds_service import CompoundsService
+from splash.pages.pages_routes import set_pages_service, pages_router
+from splash.pages.pages_service import PagesService
 from splash.users.users_routes import set_users_service, users_router
 from splash.users.users_service import UsersService
 from splash.references.references_routes import set_references_service, references_router
@@ -47,12 +47,12 @@ def setup_services():
     db_uri = ConfigStore.MONGO_DB_URI
     db = MongoClient(db_uri).splash
     users_svc = UsersService(db, 'users')
-    compounds_svc = CompoundsService(db, 'compounds')
+    pages_svc = PagesService(db, 'pages')
     references_svc = ReferencesService(db, 'references')
     teams_svc = TeamsService(db, 'teams')
     runs_svc = RunsService(teams_svc, TeamRunChecker())
     set_auth_services(users_svc)
-    set_compounds_service(compounds_svc)
+    set_pages_service(pages_svc)
     set_references_service(references_svc)
     set_runs_service(runs_svc)
     set_teams_service(teams_svc)
@@ -79,9 +79,9 @@ app.include_router(
 )
 
 app.include_router(
-    compounds_router,
-    prefix="/api/v1/compounds", 
-    tags=["compounds"],
+    pages_router,
+    prefix="/api/v1/pages", 
+    tags=["pages"],
     responses={404: {"description": "Not found"}}
 )
 

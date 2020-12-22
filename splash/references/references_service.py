@@ -53,10 +53,12 @@ class ReferencesService(MongoService):
 
         if old_data_dict is None:
             return None
-        data['date_user_created'] = old_data_dict['date_user_created']
-        data['user_uid'] = old_data_dict['user_uid']
+        old_data_dict = old_data_dict.dict()
+        
+        data['splash_date_created'] = old_data_dict['splash_date_created']
+        data['splash_user_uid'] = old_data_dict['splash_user_uid']
 
-        return super().update(current_user, new_data_dict, old_data_dict['uid'])
+        return super().update(current_user, data, old_data_dict['uid'])
 
     def delete(self, current_user: User, uid):
         raise NotImplementedError

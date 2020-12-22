@@ -10,6 +10,7 @@ from . import Reference, NewReference, CreateReferenceResponse
 from ..users import User
 from splash.api.auth import get_current_user
 from .references_service import ReferencesService
+from splash.service.base import UidInDictError
 
 references_router = APIRouter()
 
@@ -32,14 +33,19 @@ def read_references(
         page: int = 1,
         page_size: int = 100,
         search: Optional[str] = Query(None, max_length=50)):
-
     if search is not None:
         print(search)
+        regex_query = {'$regex': search, '$options': 'i'}
         query = {
             '$or': [
-                {'title': {'$regex': search, '$options': 'i'},}
-            ]
-        }
+                {'title': regex_query},
+                {'author.given': regex_query},
+                {'author.family': regex_query},
+                {'author.literal': regex_query},
+                {'author.dropping-particle': regex_query},
+                {'author.non-dropping-particle': regex_query},
+                {'author.suffix': regex_query},
+            ]}
         references = services.references.retrieve_multiple(current_user, page=page, page_size=page_size, query=query)
     else:
         references = services.references.retrieve_multiple(current_user, page=page, page_size=page_size)
@@ -47,7 +53,7 @@ def read_references(
     return results
 
 
-@references_router.get("/uid/{uid}", tags=['references'])
+@ references_router.get("/uid/{uid}", tags=['references'])
 def read_reference_by_uid(
         uid: str,
         current_user: User = Security(get_current_user)):
@@ -61,13 +67,16 @@ def read_reference_by_uid(
     return reference_dict
 
 
-@references_router.get("/doi/{doi_prefix}/{doi_postfix}", tags=['references'])
+@ references_router.get("/doi/{doi_prefix}/{doi_postfix}", tags=['references'])
 def read_reference_by_doi(
         doi_prefix: str,
         doi_postfix: str,
         current_user: User = Security(get_current_user)):
     print('HI IM HERE')
+    
     reference_dict = services.references.retrieve_one(current_user, doi=doi_prefix + '/' + doi_postfix)
+    
+
     if reference_dict is None:
         raise HTTPException(
             status_code=404,
@@ -76,7 +85,7 @@ def read_reference_by_doi(
     return reference_dict
 
 
-@references_router.put("/doi/{doi_prefix}/{doi_postfix}", tags=['compounds'], response_model=CreateReferenceResponse)
+@ references_router.put("/doi/{doi_prefix}/{doi_postfix}", tags=['compounds'], response_model=CreateReferenceResponse)
 def replace_compound_by_doi(
         doi_prefix: str,
         doi_postfix: str,
@@ -86,7 +95,9 @@ def replace_compound_by_doi(
     #  because if we convert straight to dict
     # There are enum types in the dict that won't serialize when we try to save to Mongo
     # https://github.com/samuelcolvin/pydantic/issues/133
-    uid = services().references.update(current_user, json.loads(reference.json()), doi=doi_prefix+'/'+doi_postfix)
+ 
+    uid = services.references.update(current_user, json.loads(reference.json()), doi=doi_prefix+'/'+doi_postfix)
+
     if uid is None:
         raise HTTPException(
             status_code=404,
@@ -95,7 +106,7 @@ def replace_compound_by_doi(
     return CreateReferenceResponse(uid=uid)
 
 
-@references_router.put("/uid/{uid}", tags=['compounds'], response_model=CreateReferenceResponse)
+@ references_router.put("/uid/{uid}", tags=['compounds'], response_model=CreateReferenceResponse)
 def replace_compound_by_uid(
         uid: str,
         reference: NewReference,
@@ -104,7 +115,7 @@ def replace_compound_by_uid(
     #  because if we convert straight to dict
     # There are enum types in the dict that won't serialize when we try to save to Mongo
     # https://github.com/samuelcolvin/pydantic/issues/133
-    uid = services().references.update(current_user, json.loads(reference.json()), uid=uid)
+    uid = services.references.update(current_user, json.loads(reference.json()), uid=uid)
     if uid is None:
         raise HTTPException(
             status_code=404,
@@ -113,7 +124,7 @@ def replace_compound_by_uid(
     return CreateReferenceResponse(uid=uid)
 
 
-@references_router.post("", tags=['references'], response_model=CreateReferenceResponse)
+@ references_router.post("", tags=['references'], response_model=CreateReferenceResponse)
 def create_reference(
         new_reference: NewReference,
         current_user: User = Security(get_current_user)):
@@ -121,5 +132,11 @@ def create_reference(
     #  because if we convert straight to dict
     # There are enum types in the dict that won't serialize when we try to save to Mongo
     # https://github.com/samuelcolvin/pydantic/issues/133
-    uid = services.references.create(current_user, json.loads(new_reference.json()))
+    #I cannot forbid uid in the NewReferences model and so I must catch the appropriate error
+    try:
+        uid = services.references.create(current_user, json.loads(new_reference.json()))
+    except UidInDictError:
+        raise HTTPException(
+            status_code=422,
+        )
     return CreateReferenceResponse(uid=uid)

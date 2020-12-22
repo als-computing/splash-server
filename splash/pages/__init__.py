@@ -21,14 +21,14 @@ class Section(BaseModel):
 
 class Documentation(BaseModel):
     sections: List[Section] = []
-    references: List[constr(min_length=1)]
 
     class Config:
         extra = Extra.forbid
 
 
-class NewCompound(BaseModel):
-    species: constr(min_length=1)
+class NewPage(BaseModel):
+    page_type: constr(min_length=1)
+    title: constr(min_length=1)
     metadata: List[Metadata]
     documentation: Documentation
 
@@ -36,5 +36,5 @@ class NewCompound(BaseModel):
         extra = Extra.forbid
 
 
-class Compound(NewCompound):
+class Page(NewPage):
     uid: str

@@ -74,7 +74,7 @@ class MongoService():
         # Return documents
         return cursor
 
-    def update(self, current_user: User, data: str, uid: str):
+    def update(self, current_user: User, data: dict, uid: str):
         # update_one might be more efficient, but kinda tricky
         data['uid'] = uid
         status = self._collection.replace_one({"uid": uid}, data)
