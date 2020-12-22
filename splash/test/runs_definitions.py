@@ -6,13 +6,13 @@ from xarray import DataArray
 
 
 class MockRun(dict):
-    def __init__(self, data_session):
+    def __init__(self, data_groups):
         self.metadata = {
             'start': {
                 'user_id': 'runner_id',
                 'uid': str(uuid4()),
                 'sample': 'cloudy water',
-                'data_session': data_session,
+                'data_groups': data_groups,
                 'projections': [
                     {
                         'name': 'foo',
@@ -83,13 +83,12 @@ class Catalog(dict):
     #     return super().__init__()
 
     def search(self, query, skip=0, limit=None):
-        data_session_filter = query["$and"][0]["data_session"]
-        data_sessions = data_session_filter.get("$in")
-        # new_data = {k: v for k, v in self.items() if data_sessions in v.metadata['start']['data_session']}
+        data_groups_filter = query["$and"][0]["data_groups"]
+        data_groups = data_groups_filter.get("$in")
         new_data = {}
         for k, v in self.items():
-            for data_session in data_sessions:
-                if data_session in v.metadata['start']['data_session']:
+            for data_group in data_groups:
+                if data_group in v.metadata['start']['data_groups']:
                     new_data[k] = v
         return new_data
 
