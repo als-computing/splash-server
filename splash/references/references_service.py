@@ -21,15 +21,15 @@ class ReferencesService(MongoService):
         if uid is not None and doi is not None:
             raise TypeError("either param uid or doi must be None")
         if uid:
-            Reference_dict = super().retrieve_one(current_user, uid)
-            if Reference_dict is None:
+            reference_dict = super().retrieve_one(current_user, uid)
+            if reference_dict is None:
                 return None
-            return Reference(**Reference_dict)
+            return Reference(**reference_dict)
         if doi:
-            Reference_dict = self._collection.find_one({"DOI": doi}, {'_id': False})
-            if Reference_dict is None:
+            reference_dict = self._collection.find_one({"DOI": doi}, {'_id': False})
+            if reference_dict is None:
                 return None
-            return Reference(**Reference_dict)
+            return Reference(**reference_dict)
 
     def retrieve_multiple(self,
                           current_user: User,
@@ -37,24 +37,15 @@ class ReferencesService(MongoService):
                           query=None,
                           page_size=10):
         cursor = super().retrieve_multiple(current_user, page, query, page_size)
-        for Reference_dict in cursor:
-            yield Reference(**Reference_dict)
+        for reference_dict in cursor:
+            yield Reference(**reference_dict)
 
-    def update(self, current_user: User, data: NewReference, uid: str=None, doi: str=None):
-        if uid is None and doi is None:
-            raise TypeError("either param uid or doi must be a string.")
-        if uid is not None and doi is not None:
-            raise TypeError("either param uid or doi must be None")
-        old_data_dict = None
-        if uid is not None:
-            old_data_dict = self.retrieve_one(current_user, uid=uid)
-        if doi is not None:
-            old_data_dict = self.retrieve_one(current_user, doi=doi)
-
+    def update(self, current_user: User, data: NewReference, uid: str = None, doi: str = None):
+        old_data_dict = self.retrieve_one(current_user, uid=uid, doi=doi)
         if old_data_dict is None:
             return None
         old_data_dict = old_data_dict.dict()
-        
+
         data['splash_date_created'] = old_data_dict['splash_date_created']
         data['splash_user_uid'] = old_data_dict['splash_user_uid']
 

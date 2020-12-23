@@ -1,9 +1,8 @@
 import pytest
 import json
-from .testing_utils import generic_test_api_crud
 
 
-#TODO: Test that the time of the documents is correct, test that the user uid is correct
+# TODO: Test that the time of the documents is correct, test that the user uid is correct
 # Test the put functions
 @pytest.mark.usefixtures("splash_client", "token_header")
 def test_flask_crud_user(api_url_root, splash_client, token_header):

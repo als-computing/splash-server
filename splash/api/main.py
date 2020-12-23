@@ -18,6 +18,7 @@ from splash.teams.teams_service import TeamsService
 logger = logging.getLogger('splash')
 db = None
 
+
 def init_logging():
 
     ch = logging.StreamHandler()
@@ -80,7 +81,7 @@ app.include_router(
 
 app.include_router(
     pages_router,
-    prefix="/api/v1/pages", 
+    prefix="/api/v1/pages",
     tags=["pages"],
     responses={404: {"description": "Not found"}}
 )

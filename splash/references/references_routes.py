@@ -73,9 +73,8 @@ def read_reference_by_doi(
         doi_postfix: str,
         current_user: User = Security(get_current_user)):
     print('HI IM HERE')
-    
+
     reference_dict = services.references.retrieve_one(current_user, doi=doi_prefix + '/' + doi_postfix)
-    
 
     if reference_dict is None:
         raise HTTPException(
@@ -95,7 +94,7 @@ def replace_compound_by_doi(
     #  because if we convert straight to dict
     # There are enum types in the dict that won't serialize when we try to save to Mongo
     # https://github.com/samuelcolvin/pydantic/issues/133
- 
+
     uid = services.references.update(current_user, json.loads(reference.json()), doi=doi_prefix+'/'+doi_postfix)
 
     if uid is None:
@@ -132,7 +131,7 @@ def create_reference(
     #  because if we convert straight to dict
     # There are enum types in the dict that won't serialize when we try to save to Mongo
     # https://github.com/samuelcolvin/pydantic/issues/133
-    #I cannot forbid uid in the NewReferences model and so I must catch the appropriate error
+    # I cannot forbid uid in the NewReferences model and so I must catch the appropriate error
     try:
         uid = services.references.create(current_user, json.loads(new_reference.json()))
     except UidInDictError:

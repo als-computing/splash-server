@@ -1,3 +1,4 @@
+from typing import Generator
 from . import Page, NewPage
 from ..service import MongoService
 from ..users import User
@@ -21,7 +22,7 @@ class PagesService(MongoService):
                           current_user: User,
                           page: int = 1,
                           query=None,
-                          page_size=10):
+                          page_size=10) -> Generator[Page, None, None]:
         cursor = super().retrieve_multiple(current_user, page, query, page_size)
         for page_dict in cursor:
             yield Page(**page_dict)
