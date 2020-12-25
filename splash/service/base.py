@@ -1,3 +1,4 @@
+from calendar import c
 from collections import namedtuple
 import logging
 from typing import Dict
@@ -76,6 +77,8 @@ class MongoService():
 
     def update(self, current_user: User, data: dict, uid: str):
         # update_one might be more efficient, but kinda tricky
+        if 'uid' in data:
+            raise UidInDictError('Document should not have uid field')
         data['uid'] = uid
         status = self._collection.replace_one({"uid": uid}, data)
         if status.matched_count == 0:
@@ -88,9 +91,62 @@ class MongoService():
             raise ObjectNotFoundError
 
 
+class VersionedMongoService(MongoService):
+    def __init__(self, db, collection_name, revisions_collection_name):
+        super().__init__(db, collection_name)
+        self._versions_svc = MongoService(db, revisions_collection_name)
+
+    def update(self, current_user: User, data: dict, uid: str):
+        # update_one might be more efficient, but kinda tricky
+        if "document_version" in data:
+            raise VersionInDictError("Cannot have `document_version` key in dict.")
+
+        current_document = super().retrieve_one(current_user, uid)
+        if current_document is None:
+            raise ObjectNotFoundError
+        data["document_version"] = current_document["document_version"] + 1
+        self._versions_svc._collection.insert_one(current_document)
+        return super().update(current_user, data, uid)
+
+    def create(self, current_user: User, data: dict):
+        if "document_version" in data:
+            raise VersionInDictError("Cannot have `document_version` key in dict.")
+        data["document_version"] = 1
+        return super().create(current_user, data)
+
+    def retrieve_version(self, current_user: User, uid: str, version):
+        if not isinstance(version, int):
+            raise TypeError("argument `version` must be an integer")
+        if version <= 0:
+            raise ValueError("argument `version` must be more than zero")
+
+        document = super().retrieve_one(current_user, uid)
+        if document is None or document["document_version"] != version:
+            document = self._versions_svc._collection.find_one({"$and": [{"uid": uid}, {"document_version": version}]}, {'_id': False})
+            if document is not None:
+                return document
+            # If the document exists nowhere then the object was not found
+            elif self._versions_svc.retrieve_one(current_user, uid) is None \
+                    and super().retrieve_one(current_user, uid) is None:
+                raise ObjectNotFoundError
+            # If the document does exist somewhere then version was not found
+            else:
+                raise VersionNotFoundError
+
+        return document
+
+
 class ObjectNotFoundError(Exception):
     pass
 
 
+class VersionNotFoundError(Exception):
+    pass
+
+
 class UidInDictError(KeyError):
+    pass
+
+
+class VersionInDictError(KeyError):
     pass
