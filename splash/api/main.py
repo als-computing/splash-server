@@ -48,7 +48,7 @@ def setup_services():
     db_uri = ConfigStore.MONGO_DB_URI
     db = MongoClient(db_uri).splash
     users_svc = UsersService(db, 'users')
-    pages_svc = PagesService(db, 'pages')
+    pages_svc = PagesService(db, 'pages', 'pages_old')
     references_svc = ReferencesService(db, 'references')
     teams_svc = TeamsService(db, 'teams')
     runs_svc = RunsService(teams_svc, TeamRunChecker())

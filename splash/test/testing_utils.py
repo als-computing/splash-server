@@ -15,6 +15,9 @@ def generic_test_api_crud(sample_new_object, url_path, splash_client, token_head
                                   headers=token_header)
     assert response.status_code == 422, f"{response.status_code}: response is {response.content}"
 
+    # response = splash_client.get(url_path + '/' + "DOES NOT EXIST", headers=token_header)
+    # assert response.status_code == 404, f"{response.status_code}: response is {response.content}"
+
     # response = splash_client.put(url_path + "/sample_uid",
     #                              data=json.dumps(sample_new_object),
     #                              headers=token_header)
