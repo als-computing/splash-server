@@ -1,5 +1,3 @@
-import re
-from typing import Dict, TypedDict
 from splash.users import User
 import pytest
 from splash.service.base import VersionNotFoundError, VersionedMongoService, ObjectNotFoundError, VersionInDictError
