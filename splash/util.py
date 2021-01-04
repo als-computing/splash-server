@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 from timeit import default_timer
 
+
 @contextmanager
 def context_timer():
     start = default_timer()

@@ -26,8 +26,9 @@ class Documentation(BaseModel):
         extra = Extra.forbid
 
 
-class NewCompound(BaseModel):
-    species: constr(min_length=1)
+class NewPage(BaseModel):
+    page_type: constr(min_length=1)
+    title: constr(min_length=1)
     metadata: List[Metadata]
     documentation: Documentation
 
@@ -35,5 +36,5 @@ class NewCompound(BaseModel):
         extra = Extra.forbid
 
 
-class Compound(NewCompound):
+class Page(NewPage):
     uid: str

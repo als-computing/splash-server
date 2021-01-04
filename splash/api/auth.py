@@ -147,7 +147,7 @@ def id_token_verify(
         except UserNotFoundException:
             # it's possible that we want to not throw anpi error,
             # so that the client has a chance to le the user register
-            raise UserNotFoundError('User not registered') from None
+            raise HTTPException(status_code=401, detail="user_not_found")
         except ValueError as e:
             # This should catch any ValueErrors that come from the the id_token.verify_oauth2_token
             # However, there are still possible connection errors from that function that may
