@@ -38,3 +38,4 @@ class NewPage(BaseModel):
 
 class Page(NewPage):
     uid: str
+    document_version: int

@@ -3,6 +3,7 @@ import json
 from .testing_utils import generic_test_api_crud
 
 
+
 @pytest.mark.usefixtures("splash_client", "token_header")
 def test_flask_crud_user(api_url_root, splash_client, token_header):
     generic_test_api_crud(
@@ -50,7 +51,7 @@ def test_retrieve_by_type(api_url_root, splash_client, token_header):
         url,
         data=json.dumps(
             {
-                "title": "Drake",
+                "title": "Maiar",
                 "page_type": "mythical_animals",
                 "metadata": [],
                 "documentation": [],
@@ -100,8 +101,120 @@ def test_retrieve_by_type(api_url_root, splash_client, token_header):
     ), f"{response.status_code}: response is {response.content}"
     resp_obj = response.json()
     assert len(resp_obj) == 2
-    assert any(page["title"] == "Drake" for page in resp_obj)
+    assert any(page["title"] == "Maiar" for page in resp_obj)
     assert any(page["title"] == "Troll" for page in resp_obj)
+
+
+def test_versioning(api_url_root, splash_client, token_header):
+    url = api_url_root + "/pages"
+    response = splash_client.post(
+        url,
+        data=json.dumps(
+            {
+                "title": "Drake",
+                "page_type": "mythical_animals",
+                "metadata": [],
+                "documentation": [],
+            }
+        ),
+        headers=token_header,
+    )
+    uid = response.json()["uid"]
+    response = splash_client.get(url + "/" + uid, headers=token_header)
+    assert response.json()["document_version"] == 1
+    assert response.json()["title"] == "Drake"
+
+    splash_client.put(
+        url + "/" + uid,
+        data=json.dumps(
+            {
+                "title": "Drake/Dragon",
+                "page_type": "mythical_animals",
+                "metadata": [],
+                "documentation": [],
+            }
+        ),
+        headers=token_header,
+    )
+    response = splash_client.get(url + "/" + uid, headers=token_header)
+    assert response.json()["document_version"] == 2
+    assert response.json()["title"] == "Drake/Dragon"
+
+    response = splash_client.get(url, headers=token_header)
+    data = response.json()
+    # Make sure that the old version does not get returned in the list of pages
+    assert all(page["title"] != "Drake" for page in data)
+    # make sure that the current version is in the returned list of pages
+    assert any(page["title"] == "Drake/Dragon" and page["document_version"] == 2 for page in data)
+
+    response = splash_client.get(url + "/" + uid + "?version=1", headers=token_header)
+    data = response.json()
+    assert data["document_version"] == 1
+    assert data["title"] == "Drake"
+
+    response = splash_client.get(url + "/" + uid + "?version=2", headers=token_header)
+    data = response.json()
+    assert data["document_version"] == 2
+    assert data["title"] == "Drake/Dragon"
+
+    response = splash_client.get(url + "/" + uid + "?version=1.5", headers=token_header)
+    assert response.status_code == 422, f"{response.status_code}: response is {response.content}"
+    
+    response = splash_client.get(url + "/" + uid + "?version=0", headers=token_header)
+    assert response.status_code == 422, f"{response.status_code}: response is {response.content}"
+
+    response = splash_client.get(url + "/" + uid + "?version=3", headers=token_header)
+    assert response.status_code == 404, f"{response.status_code}: response is {response.content}"
+    assert response.json()["detail"] == "version not found"
+
+    response = splash_client.put(url + "/" + "does not exist", data=json.dumps({
+                "title": "Drake/Dragon",
+                "page_type": "mythical_animals",
+                "metadata": [],
+                "documentation": [],
+            }), headers=token_header)
+    assert response.status_code == 404, f"{response.status_code}: response is {response.content}"
+    assert response.json()["detail"] == "object not found"
+
+    response = splash_client.get(url + "/" + "does not exist", headers=token_header)
+    assert response.status_code == 404, f"{response.status_code}: response is {response.content}"
+    assert response.json()["detail"] == "object not found"
+    
+    response = splash_client.get(url + "/" + "doesnotexist?version=1", headers=token_header)
+    assert response.status_code == 404, f"{response.status_code}: response is {response.content}"
+    assert response.json()["detail"] == "object not found"
+
+    response = splash_client.put(
+        url + "/" + uid,
+        data=json.dumps(
+            {
+                "title": "Drake/Dragon",
+                "page_type": "mythical_animals",
+                "metadata": [],
+                "documentation": [],
+                "document_version": 3
+            }
+        ),
+        headers=token_header,
+    )
+
+    assert response.status_code == 422, f"{response.status_code}: response is {response.content}"
+
+    response = splash_client.post(
+        url,
+        data=json.dumps(
+            {
+                "title": "Drake/Dragon",
+                "page_type": "mythical_animals",
+                "metadata": [],
+                "documentation": [],
+                "document_version": 3
+            }
+        ),
+        headers=token_header,
+    )
+
+    assert response.status_code == 422, f"{response.status_code}: response is {response.content}"
 
 
 new_page = {

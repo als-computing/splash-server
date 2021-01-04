@@ -1,13 +1,13 @@
 from typing import Generator
 from . import Page, NewPage
-from ..service import MongoService
+from ..service import VersionedMongoService
 from ..users import User
 
 
-class PagesService(MongoService):
+class PagesService(VersionedMongoService):
 
-    def __init__(self, db, collection_name):
-        super().__init__(db, collection_name)
+    def __init__(self, db, collection_name, versioned_collection_name):
+        super().__init__(db, collection_name, versioned_collection_name)
 
     def create(self, current_user: User, Page: NewPage) -> str:
         return super().create(current_user, Page.dict())
@@ -17,6 +17,9 @@ class PagesService(MongoService):
         if Page_dict is None:
             return None
         return Page(**Page_dict)
+
+    def retrieve_version(self, current_user: User, uid: str, version):
+        return super().retrieve_version(current_user, uid, version)
 
     def retrieve_multiple(self,
                           current_user: User,
