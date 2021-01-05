@@ -67,14 +67,14 @@ def read_reference_by_uid(
     return reference_dict
 
 
-@ references_router.get("/doi/{doi_prefix}/{doi_postfix}", tags=['references'])
+@ references_router.get("/doi/{doi:path}", tags=['references'])
 def read_reference_by_doi(
-        doi_prefix: str,
-        doi_postfix: str,
+        doi: str,
         current_user: User = Security(get_current_user)):
     print('HI IM HERE')
+    print(doi)
 
-    reference_dict = services.references.retrieve_one(current_user, doi=doi_prefix + '/' + doi_postfix)
+    reference_dict = services.references.retrieve_one(current_user, doi=doi)
 
     if reference_dict is None:
         raise HTTPException(
@@ -84,10 +84,9 @@ def read_reference_by_doi(
     return reference_dict
 
 
-@ references_router.put("/doi/{doi_prefix}/{doi_postfix}", tags=['compounds'], response_model=CreateReferenceResponse)
+@ references_router.put("/doi/{doi:path}", tags=['compounds'], response_model=CreateReferenceResponse)
 def replace_compound_by_doi(
-        doi_prefix: str,
-        doi_postfix: str,
+        doi: str,
         reference: NewReference,
         current_user: User = Security(get_current_user)):
     # It is necessary to convert to json first, then create a dict,
@@ -95,7 +94,7 @@ def replace_compound_by_doi(
     # There are enum types in the dict that won't serialize when we try to save to Mongo
     # https://github.com/samuelcolvin/pydantic/issues/133
 
-    uid = services.references.update(current_user, json.loads(reference.json()), doi=doi_prefix+'/'+doi_postfix)
+    uid = services.references.update(current_user, json.loads(reference.json()), doi=doi)
 
     if uid is None:
         raise HTTPException(
