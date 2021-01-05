@@ -12,6 +12,5 @@ event-model
 Pillow
 numpy
 fastapi
-git+git://github.com/als-computing/datahandler_fits@master#egg=databroker-fitshandler
 datadog
 
