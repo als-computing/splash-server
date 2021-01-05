@@ -216,6 +216,61 @@ def test_versioning(api_url_root, splash_client, token_header):
 
     assert response.status_code == 422, f"{response.status_code}: response is {response.content}"
 
+def test_retrieve_num_versions(api_url_root, splash_client, token_header):
+    url = api_url_root + "/pages"
+    response = splash_client.post(
+        url,
+        data=json.dumps(
+            {
+                "title": "Beethoven's 5th",
+                "page_type": "songs",
+                "metadata": [],
+                "documentation": [],
+            }
+        ),
+        headers=token_header,
+    )
+    uid = response.json()["uid"]
+    response = splash_client.get(url + "/num_versions/" + uid, headers=token_header)
+    assert response.status_code == 200, f"{response.status_code}: response is {response.content}"
+    assert response.json()["number"] == 1
+
+    response = splash_client.put(
+        url + "/" + uid,
+        data=json.dumps(
+            {
+                "title": "Schicksals-Sinfonie",
+                "page_type": "songs",
+                "metadata": [],
+                "documentation": [],
+            }
+        ),
+        headers=token_header,
+    )
+    response = splash_client.get(url + "/num_versions/" + uid, headers=token_header)
+    assert response.status_code == 200, f"{response.status_code}: response is {response.content}"
+    assert response.json()["number"] == 2
+
+    response = splash_client.put(
+        url + "/" + uid,
+        data=json.dumps(
+            {
+                "title": "Schicksals-Sinfonie, Beethoven's 5th",
+                "page_type": "songs",
+                "metadata": [],
+                "documentation": [],
+            }
+        ),
+        headers=token_header,
+    )
+    response = splash_client.get(url + "/num_versions/" + uid, headers=token_header)
+    assert response.status_code == 200, f"{response.status_code}: response is {response.content}"
+    assert response.json()["number"] == 3
+
+    response = splash_client.get(url + "/num_versions/" + "this_uid_is_non_existent", headers=token_header)
+    assert response.status_code == 404, f"{response.status_code}: response is {response.content}"
+
+
 
 new_page = {
     "title": "Boron",

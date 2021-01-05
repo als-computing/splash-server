@@ -135,6 +135,13 @@ class VersionedMongoService(MongoService):
 
         return document
 
+    def get_num_versions(self, current_user, uid):
+        document = super().retrieve_one(current_user, uid)
+        if document is None:
+            raise ObjectNotFoundError
+        num = document['document_version']
+        return num
+
 
 class ObjectNotFoundError(Exception):
     pass

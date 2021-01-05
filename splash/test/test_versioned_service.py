@@ -107,3 +107,17 @@ def test_retrieve_version(versioned_service: VersionedMongoService, request_user
 
     with pytest.raises(TypeError, match="argument `version` must be an integer"):
         versioned_service.retrieve_version(request_user, uid, 2.5)
+
+
+def test_get_num_versions(versioned_service: VersionedMongoService, request_user: User):
+    uid = versioned_service.create(request_user, {"name": "Sauron", "Occupation": "Industrialist"})
+    assert versioned_service.get_num_versions(request_user, uid) == 1
+    versioned_service.update(request_user, {"name": "Sauron", "Occupation": "Industrialist, Necromancer"},
+                             uid)
+    assert versioned_service.get_num_versions(request_user, uid) == 2
+    versioned_service.update(request_user, {"name": "Celebrimbor", "Occupation": "Industrialist, Necromancer, Dark Lord"},
+                             uid)
+    assert versioned_service.get_num_versions(request_user, uid) == 3
+
+    with pytest.raises(ObjectNotFoundError):
+        versioned_service.get_num_versions(request_user, "this_uid_does_not_exist")
