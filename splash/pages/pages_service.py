@@ -21,6 +21,9 @@ class PagesService(VersionedMongoService):
     def retrieve_version(self, current_user: User, uid: str, version):
         return super().retrieve_version(current_user, uid, version)
 
+    def get_num_versions(self, current_user, uid):
+        return super().get_num_versions(current_user, uid)
+
     def retrieve_multiple(self,
                           current_user: User,
                           page: int = 1,

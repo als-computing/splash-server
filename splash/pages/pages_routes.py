@@ -6,7 +6,7 @@ from typing import List, Optional
 from fastapi.param_functions import Query
 from pydantic import parse_obj_as, BaseModel
 
-from . import Page, NewPage
+from . import NumVersions, Page, NewPage
 from ..users import User
 from splash.api.auth import get_current_user
 from .pages_service import PagesService
@@ -65,6 +65,17 @@ def read_page(
                 detail="object not found",
             )
         return page
+
+@pages_router.get("/num_versions/{uid}", tags=["pages"], response_model=NumVersions)
+def get_num_versions(
+    uid: str,
+    current_user: User = Security(get_current_user)
+):
+    try:
+        num_versions = services.pages.get_num_versions(current_user, uid)
+    except ObjectNotFoundError:
+        raise HTTPException(status_code=404, detail="object not found")
+    return NumVersions(number=num_versions)
 
 
 @pages_router.get("/page_type/{page_type}", tags=["pages"], response_model=List[Page])

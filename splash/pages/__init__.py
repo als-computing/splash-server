@@ -39,3 +39,6 @@ class NewPage(BaseModel):
 class Page(NewPage):
     uid: str
     document_version: int
+
+class NumVersions(BaseModel):
+    number: int
