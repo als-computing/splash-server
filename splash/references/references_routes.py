@@ -34,19 +34,7 @@ def read_references(
         page_size: int = 100,
         search: Optional[str] = Query(None, max_length=50)):
     if search is not None:
-        print(search)
-        regex_query = {'$regex': search, '$options': 'i'}
-        query = {
-            '$or': [
-                {'title': regex_query},
-                {'author.given': regex_query},
-                {'author.family': regex_query},
-                {'author.literal': regex_query},
-                {'author.dropping-particle': regex_query},
-                {'author.non-dropping-particle': regex_query},
-                {'author.suffix': regex_query},
-            ]}
-        references = services.references.retrieve_multiple(current_user, page=page, page_size=page_size, query=query)
+        references = services.references.search(current_user, search, page=page, page_size=page_size)
     else:
         references = services.references.retrieve_multiple(current_user, page=page, page_size=page_size)
     results = parse_obj_as(List[Reference], list(references))
