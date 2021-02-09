@@ -87,7 +87,7 @@ class MongoService():
         # Skip and limit
         if query is None:
             query = {}
-        cursor = self._collection.find(query, {'_id': False}).sort([("splash_md.last_edit", -1), ("splash_md.uid", -1)]).skip(skips).limit(page_size)
+        cursor = self._collection.find(query, {'_id': False}).sort([("splash_md.last_edit", -1), ("uid", -1)]).skip(skips).limit(page_size)
 
         # Return documents
         return cursor

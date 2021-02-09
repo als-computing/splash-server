@@ -2,8 +2,8 @@ import pytest
 import json
 
 
-# TODO: Test that the time of the documents is correct, test that the user uid is correct
-# Test the put functions
+
+#TODO: Test the put functions
 @pytest.mark.usefixtures("splash_client", "token_header")
 def test_flask_crud_user(api_url_root, splash_client, token_header):
     url_path = api_url_root + "/references"

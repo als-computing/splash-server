@@ -30,8 +30,8 @@ def set_references_service(references_svc: ReferencesService):
 @references_router.get("", tags=["references"], response_model=List[Reference])
 def read_references(
         current_user: User = Security(get_current_user),
-        page: int = 1,
-        page_size: int = 100,
+        page: Optional[int] = Query(1, gt=0),
+        page_size: Optional[int] = Query(10, gt=0),
         search: Optional[str] = Query(None, max_length=50)):
     if search is not None:
         references = services.references.search(current_user, search, page=page, page_size=page_size)

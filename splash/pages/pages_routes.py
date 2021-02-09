@@ -32,15 +32,19 @@ class CreatePageResponse(BaseModel):
 
 
 @pages_router.get("", tags=["pages"], response_model=List[Page])
-def read_pages(current_user: User = Security(get_current_user)):
-    pages = services.pages.retrieve_multiple(current_user, 1)
+def read_pages(
+    current_user: User = Security(get_current_user), page: Optional[int] = Query(1, gt=0), page_size: Optional[int] = Query(10, gt=0)
+):
+    pages = services.pages.retrieve_multiple(current_user, page=page, page_size=page_size)
     results = parse_obj_as(List[Page], list(pages))
     return results
 
 
 @pages_router.get("/{uid}", tags=["pages"])
 def read_page(
-    uid: str, version: Optional[int] = Query(None, gt=0), current_user: User = Security(get_current_user)
+    uid: str,
+    version: Optional[int] = Query(None, gt=0),
+    current_user: User = Security(get_current_user),
 ):
 
     if version is not None:
@@ -66,11 +70,9 @@ def read_page(
             )
         return page
 
+
 @pages_router.get("/num_versions/{uid}", tags=["pages"], response_model=NumVersions)
-def get_num_versions(
-    uid: str,
-    current_user: User = Security(get_current_user)
-):
+def get_num_versions(uid: str, current_user: User = Security(get_current_user)):
     try:
         num_versions = services.pages.get_num_versions(current_user, uid)
     except ObjectNotFoundError:
@@ -82,12 +84,11 @@ def get_num_versions(
 def get_pages_by_type(
     page_type: str,
     current_user: User = Security(get_current_user),
-    page: int = 1,
-    page_size: int = 100,
+    page: Optional[int] = Query(1, gt=0),
+    page_size: Optional[int] = Query(10, gt=0)
 ):
     pages = services.pages.retrieve_by_page_type(
-        current_user,
-        page_type,
+        current_user, page_type, page, page_size
     )
     results = parse_obj_as(List[Page], list(pages))
     return results
@@ -101,9 +102,9 @@ def replace_page(
         uid = services.pages.update(current_user, page, uid)
     except ObjectNotFoundError:
         raise HTTPException(
-                status_code=404,
-                detail="object not found",
-            )
+            status_code=404,
+            detail="object not found",
+        )
     return CreatePageResponse(uid=uid)
 
 
