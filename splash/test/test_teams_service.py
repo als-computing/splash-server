@@ -2,6 +2,7 @@ import pytest
 from splash.teams.teams_service import TeamsService
 from splash.teams import NewTeam
 from splash.users import User
+from freezegun import freeze_time
 
 
 @pytest.fixture
@@ -23,32 +24,33 @@ def request_user():
 @pytest.fixture
 def teams_service(mongodb, request_user):
     teams_service = TeamsService(mongodb, "teams")
-    teams_service.create(
-        request_user,
-        NewTeam(
-            **{
-                "name": "banesto",
-                "members": {
-                    "indurain": ["legend"],
-                    "delgado": ["domestique"],
-                    "shared_user": ["domestique"],
-                },
-            }
-        ),
-    )
-    teams_service.create(
-        request_user,
-        NewTeam(
-            **{
-                "name": "motorola",
-                "members": {
-                    "armstrong": ["doper"],
-                    "landis": ["domestique"],
-                    "shared_user": ["domestique"],
-                },
-            }
-        ),
-    )
+    with freeze_time("2020-02-9T13:40:53", tz_offset=-4, auto_tick_seconds=15):
+        teams_service.create(
+            request_user,
+            NewTeam(
+                **{
+                    "name": "banesto",
+                    "members": {
+                        "indurain": ["legend"],
+                        "delgado": ["domestique"],
+                        "shared_user": ["domestique"],
+                    },
+                }
+            ),
+        )
+        teams_service.create(
+            request_user,
+            NewTeam(
+                **{
+                    "name": "motorola",
+                    "members": {
+                        "armstrong": ["doper"],
+                        "landis": ["domestique"],
+                        "shared_user": ["domestique"],
+                    },
+                }
+            ),
+        )
     return teams_service
 
 
