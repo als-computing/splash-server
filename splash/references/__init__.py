@@ -1,5 +1,5 @@
+from splash.service import CreatedDocument
 from pydantic import BaseModel, Extra
-from datetime import datetime
 
 
 class NewReference(BaseModel):
@@ -10,10 +10,8 @@ class NewReference(BaseModel):
         extra = Extra.allow
 
 
-class Reference(NewReference):
-    uid: str
-    splash_date_created: datetime
-    splash_user_uid: str
+class Reference(NewReference, CreatedDocument):
+    pass
 
 
 class CreateReferenceResponse(BaseModel):

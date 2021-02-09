@@ -95,3 +95,4 @@ instance/
 datahandler_fits/
 
 .scratch/
+.netrc.gpg

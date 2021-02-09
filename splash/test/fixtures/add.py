@@ -52,7 +52,7 @@ def mongodb():
 
 @pytest.fixture
 def splash_client(mongodb, monkeypatch):
-    uid = users_svc.create(test_user, test_user)
+    uid = users_svc.create(None, test_user)
     token_info['sub'] = uid
     client = TestClient(app)
 
@@ -127,10 +127,10 @@ def users():
 @pytest.fixture
 def teams_service(mongodb, users):
     teams_service = TeamsService(mongodb, "teams")
-    teams_service.create("foobar", NewTeam(**{"name": "other_team",
+    teams_service.create(users['leader'], NewTeam(**{"name": "other_team",
                                               "members": {users['other_team'].uid: ['leader']}}))
 
-    teams_service.create("foobar", NewTeam(**{'name': 'same_team',
+    teams_service.create(users['leader'], NewTeam(**{'name': 'same_team',
                                               'members': {
                                                     users['leader'].uid: ['leader'],
                                                     users['same_team'].uid: ['domestique']}

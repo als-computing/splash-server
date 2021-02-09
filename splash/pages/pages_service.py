@@ -1,6 +1,6 @@
 from typing import Generator
 from . import Page, NewPage
-from ..service import VersionedMongoService
+from ..service.base import VersionedMongoService
 from ..users import User
 
 
@@ -9,8 +9,8 @@ class PagesService(VersionedMongoService):
     def __init__(self, db, collection_name, versioned_collection_name):
         super().__init__(db, collection_name, versioned_collection_name)
 
-    def create(self, current_user: User, Page: NewPage) -> str:
-        return super().create(current_user, Page.dict())
+    def create(self, current_user: User, page: NewPage) -> str:
+        return super().create(current_user, page.dict())
 
     def retrieve_one(self, current_user: User, uid: str) -> Page:
         Page_dict = super().retrieve_one(current_user, uid)
@@ -41,7 +41,7 @@ class PagesService(VersionedMongoService):
         query = {'page_type': page_type}
         return self.retrieve_multiple(current_user, page, query, page_size)
 
-    def update(self, current_user: User, data: Page, uid: str):
+    def update(self, current_user: User, data: NewPage, uid: str):
         return super().update(current_user, data.dict(), uid)
 
     def delete(self, current_user: User, uid):

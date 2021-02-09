@@ -1,5 +1,5 @@
+from splash.service import CreatedDocument, CreatedVersionedDocument
 from typing import List
-
 from pydantic import BaseModel, Extra, constr
 
 
@@ -36,9 +36,9 @@ class NewPage(BaseModel):
         extra = Extra.forbid
 
 
-class Page(NewPage):
-    uid: str
-    document_version: int
+class Page(NewPage, CreatedVersionedDocument):
+    pass
+
 
 class NumVersions(BaseModel):
     number: int

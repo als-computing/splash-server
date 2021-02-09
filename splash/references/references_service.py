@@ -1,6 +1,5 @@
-from datetime import datetime
 from . import NewReference, Reference
-from ..service import MongoService
+from ..service.base import MongoService
 from ..users import User
 
 
@@ -10,8 +9,7 @@ class ReferencesService(MongoService):
         self._collection.create_index("DOI", unique=True)
 
     def create(self, current_user: User, reference: NewReference):
-        reference["splash_date_created"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-        reference["splash_user_uid"] = current_user.uid
+        
         return super().create(current_user=current_user, data=reference)
 
     def retrieve_one(

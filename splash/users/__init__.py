@@ -1,6 +1,7 @@
-from typing import Optional, List
+from typing import List, Optional
 
 from pydantic import BaseModel, Extra
+from splash.service.models import CreatedDocument
 
 
 class AuthenticatorModel(BaseModel):
@@ -20,6 +21,5 @@ class NewUser(BaseModel):
         extra = Extra.forbid
 
 
-class User(NewUser):
-    uid: str
+class User(NewUser, CreatedDocument):
     disabled: Optional[bool] = None

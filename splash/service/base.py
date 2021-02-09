@@ -1,9 +1,8 @@
-from calendar import c
 from collections import namedtuple
 import logging
-from typing import Dict
+from splash.service.models import SplashMetadata
 import uuid
-
+from datetime import datetime
 from splash.users import User
 
 
@@ -45,11 +44,29 @@ class MongoService():
         self._collection = db[collection_name]
 
     def create(self, current_user: User, data: dict):
-        logger.debug(f"create doc in collection {0}, doc: {1}", self._collection, data)
         if 'uid' in data:
             raise UidInDictError('Document should not have uid field')
         uid = uuid.uuid4()
         data['uid'] = str(uid)
+
+        if "splash_md" not in data:
+            data["splash_md"] = {}
+        
+        basic_md_fields = SplashMetadata.__dict__["__fields__"]
+        for field in basic_md_fields:
+            if field in data["splash_md"]:
+                raise ImmutableMetadataField(f"Cannot mutate field: `{field}` in `splash_md`")
+
+        data["splash_md"]["create_date"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+        data["splash_md"]["last_edit"] = data["splash_md"]["create_date"]
+        if current_user is None:
+            data["splash_md"]["creator"] = "NONE"
+        else:
+            data["splash_md"]["creator"] = current_user.uid
+        data["splash_md"]["edit_record"] = []
+
+        logger.debug(f"create doc in collection {0}, doc: {1}", self._collection, data)
+
         self._collection.insert_one(data)
         return data['uid']
 
@@ -70,7 +87,7 @@ class MongoService():
         # Skip and limit
         if query is None:
             query = {}
-        cursor = self._collection.find(query, {'_id': False}).skip(skips).limit(page_size)
+        cursor = self._collection.find(query, {'_id': False}).sort([("splash_md.last_edit", -1), ("splash_md.uid", -1)]).skip(skips).limit(page_size)
 
         # Return documents
         return cursor
@@ -80,6 +97,22 @@ class MongoService():
         if 'uid' in data:
             raise UidInDictError('Document should not have uid field')
         data['uid'] = uid
+        
+        current_document = MongoService.retrieve_one(self, current_user, uid)
+        metadata = current_document["splash_md"]
+        if "splash_md" not in data:
+            data["splash_md"] = metadata
+        else:
+            basic_md_fields = SplashMetadata.__dict__["__fields__"]
+            for field in basic_md_fields:
+                # The top layer that called this cannot mutate
+                # any of these fields. They should only be mutated by
+                # This service layer
+                if field in data["splash_md"]:
+                    raise ImmutableMetadataField(f"Cannot mutate field: `{field}` in `splash_md`")
+                data["splash_md"][field] = metadata[field]
+        data["splash_md"]["last_edit"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+        data["splash_md"]["edit_record"].append({"date": data["splash_md"]["last_edit"], "user": current_user.uid})
         status = self._collection.replace_one({"uid": uid}, data)
         if status.matched_count == 0:
             raise ObjectNotFoundError
@@ -97,21 +130,26 @@ class VersionedMongoService(MongoService):
         self._versions_svc = MongoService(db, revisions_collection_name)
 
     def update(self, current_user: User, data: dict, uid: str):
-        # update_one might be more efficient, but kinda tricky
-        if "document_version" in data:
-            raise VersionInDictError("Cannot have `document_version` key in dict.")
+        if "splash_md" in data:
+            if "version" in data["splash_md"]:
+                raise ImmutableMetadataField("Cannot mutate field: `version` in `splash_md`")
+        else:
+            data["splash_md"] = {}
 
         current_document = super().retrieve_one(current_user, uid)
         if current_document is None:
             raise ObjectNotFoundError
-        data["document_version"] = current_document["document_version"] + 1
+        data["splash_md"]["version"] = current_document["splash_md"]["version"] + 1
         self._versions_svc._collection.insert_one(current_document)
         return super().update(current_user, data, uid)
 
     def create(self, current_user: User, data: dict):
-        if "document_version" in data:
-            raise VersionInDictError("Cannot have `document_version` key in dict.")
-        data["document_version"] = 1
+        if "splash_md" in data:
+            if "version" in data["splash_md"]:
+                raise ImmutableMetadataField("Cannot mutate field: `version` in `splash_md`")
+        else:
+            data["splash_md"] = {}
+        data["splash_md"]["version"] = 1
         return super().create(current_user, data)
 
     def retrieve_version(self, current_user: User, uid: str, version):
@@ -121,8 +159,8 @@ class VersionedMongoService(MongoService):
             raise ValueError("argument `version` must be more than zero")
 
         document = super().retrieve_one(current_user, uid)
-        if document is None or document["document_version"] != version:
-            document = self._versions_svc._collection.find_one({"$and": [{"uid": uid}, {"document_version": version}]}, {'_id': False})
+        if document is None or document["splash_md"]["version"] != version:
+            document = self._versions_svc._collection.find_one({"$and": [{"uid": uid}, {"splash_md.version": version}]}, {'_id': False})
             if document is not None:
                 return document
             # If the document exists nowhere then the object was not found
@@ -135,12 +173,15 @@ class VersionedMongoService(MongoService):
 
         return document
 
-    def get_num_versions(self, current_user, uid):
+    def get_num_versions(self, current_user: User, uid):
         document = super().retrieve_one(current_user, uid)
         if document is None:
             raise ObjectNotFoundError
-        num = document['document_version']
+        num = document["splash_md"]['version']
         return num
+
+    def delete(self, current_user: User, uid):
+        raise NotImplementedError
 
 
 class ObjectNotFoundError(Exception):
@@ -155,5 +196,5 @@ class UidInDictError(KeyError):
     pass
 
 
-class VersionInDictError(KeyError):
+class ImmutableMetadataField(KeyError):
     pass
