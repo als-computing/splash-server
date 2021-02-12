@@ -91,12 +91,9 @@ def test_creation(
         assert metadata["last_edit"] == mock_times[0]
         assert len(metadata["edit_record"]) == 0
 
-def collationMock(self, collation):
-    assert collation.document == {'locale':'en_US'}
-    return self
+
 
 def test_create_ordering(mongo_service: MongoService, request_user_1: User, monkeypatch):
-    monkeypatch.setattr(collection.Cursor, "collation", collationMock)
     with freeze_time(mock_times[0], tz_offset=-4, auto_tick_seconds=15):
         mongo_service.create(
             request_user_1,
