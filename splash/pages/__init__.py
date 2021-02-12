@@ -36,9 +36,9 @@ class NewPage(BaseModel):
         extra = Extra.forbid
 
 
-class Page(NewPage, CreatedVersionedDocument):
+class UpdatePage(NewPage):
     pass
 
 
-class NumVersions(BaseModel):
-    number: int
+class Page(NewPage, CreatedVersionedDocument):
+    pass

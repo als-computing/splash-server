@@ -10,6 +10,7 @@ from splash.service.base import (
     ImmutableMetadataField,
 )
 import mongomock
+from mongomock import collection
 from freezegun import freeze_time
 from copy import deepcopy
 
@@ -90,8 +91,12 @@ def test_creation(
         assert metadata["last_edit"] == mock_times[0]
         assert len(metadata["edit_record"]) == 0
 
+def collationMock(self, collation):
+    assert collation.document == {'locale':'en_US'}
+    return self
 
 def test_create_ordering(mongo_service: MongoService, request_user_1: User, monkeypatch):
+    monkeypatch.setattr(collection.Cursor, "collation", collationMock)
     with freeze_time(mock_times[0], tz_offset=-4, auto_tick_seconds=15):
         mongo_service.create(
             request_user_1,
@@ -108,6 +113,37 @@ def test_create_ordering(mongo_service: MongoService, request_user_1: User, monk
         equal_dicts(galadriel, elves[1], ignore_keys)
         equal_dicts(legolas, elves[2], ignore_keys)
         equal_dicts(celebrimbor, elves[3], ignore_keys)
+
+
+def test_order_by_key(mongo_service: MongoService, request_user_1: User, monkeypatch):
+    mongo_service.create(
+            request_user_1,
+            deepcopy(celebrimbor),
+        )
+    mongo_service.create(request_user_1, deepcopy(legolas))
+    mongo_service.create(request_user_1, deepcopy(galadriel))
+    mongo_service.create(request_user_1, deepcopy(elrond))
+    elves = list(mongo_service.retrieve_multiple(request_user_1, sort="name", order=1))
+
+    assert len(elves) == 4
+    equal_dicts(celebrimbor, elves[0], ignore_keys)
+    equal_dicts(elrond, elves[1], ignore_keys)
+    equal_dicts(galadriel, elves[2], ignore_keys)
+    equal_dicts(legolas, elves[3], ignore_keys)
+    
+def test_retrieve_multiple_errors(mongo_service: MongoService, request_user_1: User, monkeypatch):
+    mongo_service.create(
+            request_user_1,
+            deepcopy(celebrimbor),
+        )
+    mongo_service.create(request_user_1, deepcopy(legolas))
+    mongo_service.create(request_user_1, deepcopy(galadriel))
+    mongo_service.create(request_user_1, deepcopy(elrond))
+    with pytest.raises(TypeError, match="`sort` argument must be of type string"):
+        mongo_service.retrieve_multiple(request_user_1, sort=None, order=1)
+    with pytest.raises(ValueError, match="`order` argument must be 1 or -1"):
+        mongo_service.retrieve_multiple(request_user_1, sort=None, order=0)
+
 
 
 def test_edits(mongo_service: MongoService, request_user_1: User, request_user_2: User):
@@ -172,6 +208,7 @@ def test_edit_ordering(mongo_service: MongoService, request_user_1: User, monkey
         equal_dicts(elrond, elves[1], ignore_keys)
         equal_dicts(galadriel, elves[2], ignore_keys)
         equal_dicts(legolas, elves[3], ignore_keys)
+
 
 def test_create_with_good_metadata(mongo_service: MongoService, request_user_1: User):
     uid = mongo_service.create(

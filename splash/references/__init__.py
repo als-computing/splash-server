@@ -13,6 +13,5 @@ class NewReference(BaseModel):
 class Reference(NewReference, CreatedDocument):
     pass
 
-
-class CreateReferenceResponse(BaseModel):
-    uid: str
+class UpdateReference(NewReference):
+    pass

@@ -6,7 +6,7 @@ from typing import List, Optional
 from fastapi.param_functions import Query
 from pydantic import parse_obj_as, BaseModel
 
-from . import NumVersions, Page, NewPage
+from . import Page, NewPage, UpdatePage
 from ..users import User
 from splash.api.auth import get_current_user
 from .pages_service import PagesService
@@ -26,7 +26,8 @@ services = Services(None)
 def set_pages_service(pages_svc: PagesService):
     services.pages = pages_svc
 
-
+class NumVersionsResponse(BaseModel):
+    number: int
 class CreatePageResponse(BaseModel):
     uid: str
 
@@ -71,13 +72,13 @@ def read_page(
         return page
 
 
-@pages_router.get("/num_versions/{uid}", tags=["pages"], response_model=NumVersions)
+@pages_router.get("/num_versions/{uid}", tags=["pages"], response_model=NumVersionsResponse)
 def get_num_versions(uid: str, current_user: User = Security(get_current_user)):
     try:
         num_versions = services.pages.get_num_versions(current_user, uid)
     except ObjectNotFoundError:
         raise HTTPException(status_code=404, detail="object not found")
-    return NumVersions(number=num_versions)
+    return NumVersionsResponse(number=num_versions)
 
 
 @pages_router.get("/page_type/{page_type}", tags=["pages"], response_model=List[Page])
@@ -96,7 +97,7 @@ def get_pages_by_type(
 
 @pages_router.put("/{uid}", tags=["pages"], response_model=CreatePageResponse)
 def replace_page(
-    uid: str, page: NewPage, current_user: User = Security(get_current_user)
+    uid: str, page: UpdatePage, current_user: User = Security(get_current_user)
 ):
     try:
         uid = services.pages.update(current_user, page, uid)

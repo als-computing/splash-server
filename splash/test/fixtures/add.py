@@ -2,6 +2,7 @@ import os
 
 from fastapi.testclient import TestClient
 import mongomock
+from mongomock import collection
 import pytest
 
 from splash.pages.pages_routes import set_pages_service
@@ -43,6 +44,17 @@ set_references_service(references_svc)
 set_runs_service(runs_svc)
 set_teams_service(teams_svc)
 set_users_service(users_svc)
+
+
+def collationMock(self, collation):
+    assert collation.document == {'locale':'en_US'}
+    return self
+
+
+@pytest.fixture(scope="function", autouse=True)
+def mock_collation_prop(monkeypatch):
+    print('hello')
+    monkeypatch.setattr(collection.Cursor, "collation", collationMock)
 
 
 @pytest.fixture

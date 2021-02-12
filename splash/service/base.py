@@ -4,6 +4,7 @@ from splash.service.models import SplashMetadata
 import uuid
 from datetime import datetime
 from splash.users import User
+from pymongo.collation import Collation
 
 
 ValidationIssue = namedtuple('ValidationIssue', 'description, location, exception')
@@ -77,8 +78,13 @@ class MongoService():
                           user: User,
                           page: int = 1,
                           query=None,
-                          page_size=10):
-
+                          page_size=10,
+                          sort="splash_md.last_edit",
+                          order=-1):
+        if(order != -1 and order != 1):
+            raise ValueError("`order` argument must be 1 or -1")
+        if (type(sort) is not str):
+            raise TypeError("`sort` argument must be of type string")
         if page <= 0:
             raise BadPageArgument("Page parameter must greater than 0")
 
@@ -87,10 +93,10 @@ class MongoService():
         # Skip and limit
         if query is None:
             query = {}
-        cursor = self._collection.find(query, {'_id': False}).sort([("splash_md.last_edit", -1), ("uid", -1)]).skip(skips).limit(page_size)
+        cursor = self._collection.find(query, {'_id': False})
 
         # Return documents
-        return cursor
+        return cursor.sort([(sort, order), ("uid", -1)]).collation(Collation('en_US')).skip(skips).limit(page_size)
 
     def update(self, current_user: User, data: dict, uid: str):
         # update_one might be more efficient, but kinda tricky
