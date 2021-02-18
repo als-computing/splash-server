@@ -77,8 +77,8 @@ class MongoService():
 
     def update(self, current_user: User, data: dict, uid: str):
         # update_one might be more efficient, but kinda tricky
-        if 'uid' in data:
-            raise UidInDictError('Document should not have uid field')
+        # if 'uid' in data:
+        #     raise UidInDictError('Document should not have uid field')
         data['uid'] = uid
         status = self._collection.replace_one({"uid": uid}, data)
         if status.matched_count == 0:

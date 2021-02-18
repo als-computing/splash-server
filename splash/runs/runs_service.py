@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 import time
 
-from typing import List
+from typing import Dict, List
 
 from databroker import catalog
 from databroker.projector import project_summary_dict
@@ -164,7 +164,14 @@ class RunsService():
         run = self._get_run(user, catalog_name, uid)[0]
         dataset, issues = project_summary_dict(run)
         run_summary = run_summary_from_dataset(uid, dataset)
+        run_summary.num_events = run.metadata['stop']['num_events']
         return run_summary, issues
+
+
+    def get_stream_configuration(self, user: User, catalog_name: str, uid: str, stream_name: str) -> Dict[str, object]:
+        run = self._get_run(user, catalog_name, uid)[0]
+        stream = run[stream_name]
+        return stream.metadata['descriptors'][0]['configuration']
 
     def list_root_catalogs(self):
         return list(catalog)
@@ -228,7 +235,7 @@ class RunsService():
         query = {"$and": queries}
         return query
 
-
+    
 def run_summary_from_dataset(uid: str, dataset: Dataset) -> RunSummary:
     run = {}
     run['uid'] = uid

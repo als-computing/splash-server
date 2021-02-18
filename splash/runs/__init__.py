@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -15,7 +15,7 @@ class RunSummary(BaseModel):
     num_data_images: Optional[int] = Field(None, title="number of data collection images")
     sample_name: Optional[str] = Field(None, title="sample name")
     uid: str
-
+    num_events: Optional[Dict[str, int]]
     class Config:
         title = "Summary information for a run, intended to be used by "\
               "applications when a brief view is needed, as in a list of runs"
