@@ -99,6 +99,14 @@ def read_run_metadata(
     #     logger.error(e)
     #     raise HTTPException(500, detail=str(e))
 
+@runs_router.get("/{catalog_name}/{run_uid}/stream/{stream_name}/configuration", tags=['runs'])
+def read_stream_configuration(
+        catalog_name: str = Path(..., title="catalog name"),
+        run_uid: str = Path(..., title="run uid"),
+        stream_name: str = Path(..., title="stream name"),
+        current_user: User = Security(get_current_user)):
+        return_metadata = services.runs.get_stream_configuration(current_user, catalog_name, run_uid, stream_name)
+        return return_metadata
 
 @runs_router.get("/{catalog_name}/{run_uid}/thumb", tags=['runs'])
 def read_run_thumb(
