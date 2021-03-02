@@ -6,7 +6,7 @@ from typing import List, Optional
 from fastapi.param_functions import Query
 from pydantic import parse_obj_as, BaseModel
 
-from . import NumVersions, Page, NewPage
+from . import Page, NewPage, UpdatePage
 from ..users import User
 from splash.api.auth import get_current_user
 from .pages_service import PagesService
@@ -26,21 +26,26 @@ services = Services(None)
 def set_pages_service(pages_svc: PagesService):
     services.pages = pages_svc
 
-
+class NumVersionsResponse(BaseModel):
+    number: int
 class CreatePageResponse(BaseModel):
     uid: str
 
 
 @pages_router.get("", tags=["pages"], response_model=List[Page])
-def read_pages(current_user: User = Security(get_current_user)):
-    pages = services.pages.retrieve_multiple(current_user, 1)
+def read_pages(
+    current_user: User = Security(get_current_user), page: Optional[int] = Query(1, gt=0), page_size: Optional[int] = Query(10, gt=0)
+):
+    pages = services.pages.retrieve_multiple(current_user, page=page, page_size=page_size)
     results = parse_obj_as(List[Page], list(pages))
     return results
 
 
 @pages_router.get("/{uid}", tags=["pages"])
 def read_page(
-    uid: str, version: Optional[int] = Query(None, gt=0), current_user: User = Security(get_current_user)
+    uid: str,
+    version: Optional[int] = Query(None, gt=0),
+    current_user: User = Security(get_current_user),
 ):
 
     if version is not None:
@@ -66,28 +71,25 @@ def read_page(
             )
         return page
 
-@pages_router.get("/num_versions/{uid}", tags=["pages"], response_model=NumVersions)
-def get_num_versions(
-    uid: str,
-    current_user: User = Security(get_current_user)
-):
+
+@pages_router.get("/num_versions/{uid}", tags=["pages"], response_model=NumVersionsResponse)
+def get_num_versions(uid: str, current_user: User = Security(get_current_user)):
     try:
         num_versions = services.pages.get_num_versions(current_user, uid)
     except ObjectNotFoundError:
         raise HTTPException(status_code=404, detail="object not found")
-    return NumVersions(number=num_versions)
+    return NumVersionsResponse(number=num_versions)
 
 
 @pages_router.get("/page_type/{page_type}", tags=["pages"], response_model=List[Page])
 def get_pages_by_type(
     page_type: str,
     current_user: User = Security(get_current_user),
-    page: int = 1,
-    page_size: int = 100,
+    page: Optional[int] = Query(1, gt=0),
+    page_size: Optional[int] = Query(10, gt=0)
 ):
     pages = services.pages.retrieve_by_page_type(
-        current_user,
-        page_type,
+        current_user, page_type, page, page_size
     )
     results = parse_obj_as(List[Page], list(pages))
     return results
@@ -95,15 +97,15 @@ def get_pages_by_type(
 
 @pages_router.put("/{uid}", tags=["pages"], response_model=CreatePageResponse)
 def replace_page(
-    uid: str, page: NewPage, current_user: User = Security(get_current_user)
+    uid: str, page: UpdatePage, current_user: User = Security(get_current_user)
 ):
     try:
         uid = services.pages.update(current_user, page, uid)
     except ObjectNotFoundError:
         raise HTTPException(
-                status_code=404,
-                detail="object not found",
-            )
+            status_code=404,
+            detail="object not found",
+        )
     return CreatePageResponse(uid=uid)
 
 

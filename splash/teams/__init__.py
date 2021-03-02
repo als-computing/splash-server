@@ -1,3 +1,4 @@
+from splash.service.models import CreatedDocument
 from typing import Dict, List
 
 from pydantic import BaseModel, Extra
@@ -11,5 +12,5 @@ class NewTeam(BaseModel):
         extra = Extra.forbid
 
 
-class Team(NewTeam):
-    uid: str
+class Team(NewTeam, CreatedDocument):
+    pass
