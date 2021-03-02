@@ -2,6 +2,7 @@ import os
 
 from fastapi.testclient import TestClient
 import mongomock
+from mongomock import collection
 import pytest
 
 from splash.pages.pages_routes import set_pages_service
@@ -45,6 +46,17 @@ set_teams_service(teams_svc)
 set_users_service(users_svc)
 
 
+def collationMock(self, collation):
+    assert collation.document == {'locale':'en_US'}
+    return self
+
+
+@pytest.fixture(scope="function", autouse=True)
+def mock_collation_prop(monkeypatch):
+    print('hello')
+    monkeypatch.setattr(collection.Cursor, "collation", collationMock)
+
+
 @pytest.fixture
 def mongodb():
     return db
@@ -52,7 +64,7 @@ def mongodb():
 
 @pytest.fixture
 def splash_client(mongodb, monkeypatch):
-    uid = users_svc.create(test_user, test_user)
+    uid = users_svc.create(None, test_user)
     token_info['sub'] = uid
     client = TestClient(app)
 
@@ -127,10 +139,10 @@ def users():
 @pytest.fixture
 def teams_service(mongodb, users):
     teams_service = TeamsService(mongodb, "teams")
-    teams_service.create("foobar", NewTeam(**{"name": "other_team",
+    teams_service.create(users['leader'], NewTeam(**{"name": "other_team",
                                               "members": {users['other_team'].uid: ['leader']}}))
 
-    teams_service.create("foobar", NewTeam(**{'name': 'same_team',
+    teams_service.create(users['leader'], NewTeam(**{'name': 'same_team',
                                               'members': {
                                                     users['leader'].uid: ['leader'],
                                                     users['same_team'].uid: ['domestique']}

@@ -121,7 +121,7 @@ def test_versioning(api_url_root, splash_client, token_header):
     )
     uid = response.json()["uid"]
     response = splash_client.get(url + "/" + uid, headers=token_header)
-    assert response.json()["document_version"] == 1
+    assert response.json()["splash_md"]["version"] == 1
     assert response.json()["title"] == "Drake"
 
     splash_client.put(
@@ -137,7 +137,7 @@ def test_versioning(api_url_root, splash_client, token_header):
         headers=token_header,
     )
     response = splash_client.get(url + "/" + uid, headers=token_header)
-    assert response.json()["document_version"] == 2
+    assert response.json()["splash_md"]["version"] == 2
     assert response.json()["title"] == "Drake/Dragon"
 
     response = splash_client.get(url, headers=token_header)
@@ -145,16 +145,16 @@ def test_versioning(api_url_root, splash_client, token_header):
     # Make sure that the old version does not get returned in the list of pages
     assert all(page["title"] != "Drake" for page in data)
     # make sure that the current version is in the returned list of pages
-    assert any(page["title"] == "Drake/Dragon" and page["document_version"] == 2 for page in data)
+    assert any(page["title"] == "Drake/Dragon" and page["splash_md"]["version"] == 2 for page in data)
 
     response = splash_client.get(url + "/" + uid + "?version=1", headers=token_header)
     data = response.json()
-    assert data["document_version"] == 1
+    assert data["splash_md"]["version"] == 1
     assert data["title"] == "Drake"
 
     response = splash_client.get(url + "/" + uid + "?version=2", headers=token_header)
     data = response.json()
-    assert data["document_version"] == 2
+    assert data["splash_md"]["version"] == 2
     assert data["title"] == "Drake/Dragon"
 
     response = splash_client.get(url + "/" + uid + "?version=1.5", headers=token_header)

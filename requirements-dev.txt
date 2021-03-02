@@ -1,4 +1,4 @@
 pytest
-pytest-mongodb
+mongomock>=3.22
 xarray 
-
+freezegun

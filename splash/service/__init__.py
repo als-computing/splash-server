@@ -1,1 +1,1 @@
-from .base import MongoService, VersionedMongoService
+from .models import CreatedDocument, CreatedVersionedDocument

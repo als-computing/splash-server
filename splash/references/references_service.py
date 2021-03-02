@@ -1,6 +1,5 @@
-from datetime import datetime
 from . import NewReference, Reference
-from ..service import MongoService
+from ..service.base import MongoService
 from ..users import User
 
 
@@ -10,8 +9,7 @@ class ReferencesService(MongoService):
         self._collection.create_index("DOI", unique=True)
 
     def create(self, current_user: User, reference: NewReference):
-        reference["splash_date_created"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-        reference["splash_user_uid"] = current_user.uid
+        
         return super().create(current_user=current_user, data=reference)
 
     def retrieve_one(
@@ -33,9 +31,9 @@ class ReferencesService(MongoService):
             return Reference(**reference_dict)
 
     def retrieve_multiple(
-        self, current_user: User, page: int = 1, query=None, page_size=10
+        self, current_user: User, page: int = 1, query=None, page_size=10, sort="splash_md.last_edit"
     ):
-        cursor = super().retrieve_multiple(current_user, page, query, page_size)
+        cursor = super().retrieve_multiple(current_user, page, query, page_size, sort)
         for reference_dict in cursor:
             yield Reference(**reference_dict)
 

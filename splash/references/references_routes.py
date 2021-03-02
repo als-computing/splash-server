@@ -4,9 +4,10 @@ from attr import dataclass
 from fastapi import APIRouter,  Security, Query
 from typing import List, Optional
 from fastapi.exceptions import HTTPException
+from pydantic.main import BaseModel
 
 from pydantic.tools import parse_obj_as
-from . import Reference, NewReference, CreateReferenceResponse
+from . import Reference, NewReference, UpdateReference
 from ..users import User
 from splash.api.auth import get_current_user
 from .references_service import ReferencesService
@@ -14,6 +15,8 @@ from splash.service.base import UidInDictError
 
 references_router = APIRouter()
 
+class CreateReferenceResponse(BaseModel):
+    uid: str
 
 @dataclass
 class Services():
@@ -30,8 +33,8 @@ def set_references_service(references_svc: ReferencesService):
 @references_router.get("", tags=["references"], response_model=List[Reference])
 def read_references(
         current_user: User = Security(get_current_user),
-        page: int = 1,
-        page_size: int = 100,
+        page: Optional[int] = Query(1, gt=0),
+        page_size: Optional[int] = Query(10, gt=0),
         search: Optional[str] = Query(None, max_length=50)):
     if search is not None:
         references = services.references.search(current_user, search, page=page, page_size=page_size)
@@ -75,7 +78,7 @@ def read_reference_by_doi(
 @ references_router.put("/doi/{doi:path}", tags=['compounds'], response_model=CreateReferenceResponse)
 def replace_compound_by_doi(
         doi: str,
-        reference: NewReference,
+        reference: UpdateReference,
         current_user: User = Security(get_current_user)):
     # It is necessary to convert to json first, then create a dict,
     #  because if we convert straight to dict
@@ -95,7 +98,7 @@ def replace_compound_by_doi(
 @ references_router.put("/uid/{uid}", tags=['compounds'], response_model=CreateReferenceResponse)
 def replace_compound_by_uid(
         uid: str,
-        reference: NewReference,
+        reference: UpdateReference,
         current_user: User = Security(get_current_user)):
     # It is necessary to convert to json first, then create a dict,
     #  because if we convert straight to dict
