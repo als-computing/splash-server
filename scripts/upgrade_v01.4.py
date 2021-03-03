@@ -1,7 +1,4 @@
-# This python file uploads all JSON from the folder
-# that should be created by the Fake_seeder
 import os
-
 import pymongo
 from datetime import datetime
 
@@ -10,7 +7,6 @@ def update():
     mongo_uri = os.getenv('MONGO_DB_URI')
     print(f'using {mongo_uri}')
     db = pymongo.MongoClient(mongo_uri).get_database()
-    
     now = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
     # default splash_md value
     splash_md = {
@@ -18,18 +14,13 @@ def update():
         "create_date": now,
         "last_edit": now,
         "edit_record": [],
-    }
-
-    # insert this default field into all users
+    }    # insert this default field into all users
     users = db["users"]
     results = users.update_many({}, {"$set": {"splash_md": splash_md}})
-    print(f'users: matched: {results.matched_count}  modified: {results.modified_count}')
-
-
+    print(f'users: matched: {results.matched_count}  modified: {results.modified_count}')    
     # insert this default field into all teams
     teams = db["teams"]
     teams.update_many({}, {"$set": {"splash_md": splash_md}})
-
     references = db["references"]
     # Insert this default field into all references
     references.update_many({}, {"$set": {"splash_md": splash_md}})
@@ -45,8 +36,7 @@ def update():
                 "splash_user_uid": "splash_md.creator",
             }
         },
-    )
-
+    )    
     pages = db["pages"]
     # Set default  `splash_md`
     results = pages.update_many({}, {"$set": {"splash_md": splash_md}})
@@ -61,5 +51,4 @@ def update():
     print(f'pages old set: matched: {results.matched_count}  modified: {results.modified_count}')
     results = pages_old.update_many({}, {"$rename": {"document_version": "splash_md.version"}})
     print(f'pages old  move version: matched: {results.matched_count}  modified: {results.modified_count}')
-
-update()
+    update()
