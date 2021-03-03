@@ -11,26 +11,11 @@ class Metadata(BaseModel):
         extra = Extra.forbid
 
 
-class Section(BaseModel):
-    title: constr(min_length=1)
-    text: constr(min_length=1)
-
-    class Config:
-        extra = Extra.forbid
-
-
-class Documentation(BaseModel):
-    sections: List[Section] = []
-
-    class Config:
-        extra = Extra.forbid
-
-
 class NewPage(BaseModel):
     page_type: constr(min_length=1)
     title: constr(min_length=1)
     metadata: List[Metadata]
-    documentation: Documentation
+    documentation: constr(min_length=1)
 
     class Config:
         extra = Extra.forbid
