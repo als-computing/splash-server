@@ -48,6 +48,7 @@ def test_retrieve_by_type(api_url_root, splash_client, token_header):
                 "page_type": "mythical_animals",
                 "metadata": [],
                 "documentation": "Hello",
+                "references": [],
             }
         ),
         headers=token_header,
@@ -63,6 +64,7 @@ def test_retrieve_by_type(api_url_root, splash_client, token_header):
                 "page_type": "mythical_animals",
                 "metadata": [],
                 "documentation": "Hello",
+                "references": [],
             }
         ),
         headers=token_header,
@@ -78,6 +80,7 @@ def test_retrieve_by_type(api_url_root, splash_client, token_header):
                 "page_type": "mythical_items",
                 "metadata": [],
                 "documentation": "Hello",
+                "references": [],
             }
         ),
         headers=token_header,
@@ -108,6 +111,7 @@ def test_versioning(api_url_root, splash_client, token_header):
                 "page_type": "mythical_animals",
                 "metadata": [],
                 "documentation": "Hello",
+                "references": [],
             }
         ),
         headers=token_header,
@@ -125,6 +129,7 @@ def test_versioning(api_url_root, splash_client, token_header):
                 "page_type": "mythical_animals",
                 "metadata": [],
                 "documentation": "Hello",
+                "references": [],
             }
         ),
         headers=token_header,
@@ -177,6 +182,7 @@ def test_versioning(api_url_root, splash_client, token_header):
                 "page_type": "mythical_animals",
                 "metadata": [],
                 "documentation": "Hello",
+                "references": [],
             }
         ),
         headers=token_header,
@@ -209,6 +215,7 @@ def test_versioning(api_url_root, splash_client, token_header):
                 "metadata": [],
                 "documentation": "test",
                 "document_version": 3,
+                "references": [],
             }
         ),
         headers=token_header,
@@ -227,6 +234,7 @@ def test_versioning(api_url_root, splash_client, token_header):
                 "metadata": [],
                 "documentation": "test",
                 "document_version": 3,
+                "references": [],
             }
         ),
         headers=token_header,
@@ -247,6 +255,7 @@ def test_retrieve_num_versions(api_url_root, splash_client, token_header):
                 "page_type": "songs",
                 "metadata": [],
                 "documentation": "test",
+                "references": [],
             }
         ),
         headers=token_header,
@@ -266,6 +275,7 @@ def test_retrieve_num_versions(api_url_root, splash_client, token_header):
                 "page_type": "songs",
                 "metadata": [],
                 "documentation": "test",
+                "references": [],
             }
         ),
         headers=token_header,
@@ -284,6 +294,7 @@ def test_retrieve_num_versions(api_url_root, splash_client, token_header):
                 "page_type": "songs",
                 "metadata": [],
                 "documentation": "test",
+                "references": [],
             }
         ),
         headers=token_header,
@@ -312,6 +323,7 @@ new_page = {
                 in several crops [[4]](#4) .\n - Small, neutral solute\n\t - Boric acid is a small solute, with an \
                 estimated Stokes radius of 1.6 Å [[5]](#5) , compared to 1.8 Å and 1.2 Å for sodium and chloride, \
                 respectively [[6]](#6) .\n\t - The Stokes radius of borate has been estimated as 2.6 Å [[7]](#7) .",
+    "references": [{"doi": "10.XX/XXXX", "in_text": False}],
 }
 
 empty_string_title = {
@@ -320,6 +332,7 @@ empty_string_title = {
     "metadata": [{"title": "contributors", "text": "Matt Landsman, Lauren Nalley"}],
     "documentation": " - Landsman, Lawler, Katz (2020). Application of electrodialysis pretreatment to enhance boron \
                     removal and reduce fouling during nanofiltration/reverse osmosis",
+    "references": [],
 }
 
 empty_string_metadata_title = {
@@ -328,6 +341,7 @@ empty_string_metadata_title = {
     "metadata": [{"title": "", "text": "Matt Landsman, Lauren Nalley"}],
     "documentation": " - Landsman, Lawler, Katz (2020). Application of electrodialysis pretreatment to enhance boron \
                 removal and reduce fouling during nanofiltration/reverse osmosis",
+    "references": [],
 }
 
 empty_string_metadata_text = {
@@ -336,6 +350,7 @@ empty_string_metadata_text = {
     "metadata": [{"title": "contributors", "text": ""}],
     "documentation": " - Landsman, Lawler, Katz (2020). Application of electrodialysis pretreatment to enhance boron \
                     removal and reduce fouling during nanofiltration/reverse osmosis",
+    "references": [],
 }
 
 empty_string_documentation = {
@@ -343,4 +358,5 @@ empty_string_documentation = {
     "page_type": "compound",
     "metadata": [{"title": "contributors", "text": "Matt Landsman, Lauren Nalley"}],
     "documentation": "",
+    "references": [],
 }
