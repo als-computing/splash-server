@@ -20,6 +20,8 @@ class UsersService(MongoService):
 
     def retrieve_one(self, current_user: User, uid: str) -> User:
         user_dict = super().retrieve_one(current_user, uid)
+        if user_dict is None:
+            return None
         return User(**user_dict)
 
     def retrieve_multiple(self,
