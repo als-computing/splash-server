@@ -1,6 +1,7 @@
 from . import NewReference, Reference
 from ..service.base import MongoService
 from ..users import User
+import re
 
 
 class ReferencesService(MongoService):
@@ -38,7 +39,8 @@ class ReferencesService(MongoService):
             yield Reference(**reference_dict)
 
     def search(self, current_user: User, search, page: int = 1, page_size=10):
-        regex_query = {"$regex": search, "$options": "i"}
+        escaped_search = re.escape(search)
+        regex_query = {"$regex": escaped_search, "$options": "i"}
         query = {
             "$or": [
                 {"title": regex_query},
