@@ -1,4 +1,5 @@
-from splash.service import CreatedDocument, CreatedVersionedDocument
+from pydantic.types import StrictBool
+from splash.service import CreatedVersionedDocument
 from typing import List
 from pydantic import BaseModel, Extra, constr
 
@@ -11,11 +12,17 @@ class Metadata(BaseModel):
         extra = Extra.forbid
 
 
+class ReferenceDois(BaseModel):
+    doi: constr(min_length=1)
+    in_text: StrictBool
+
+
 class NewPage(BaseModel):
     page_type: constr(min_length=1)
     title: constr(min_length=1)
     metadata: List[Metadata]
     documentation: constr(min_length=1)
+    references: List[ReferenceDois]
 
     class Config:
         extra = Extra.forbid

@@ -51,4 +51,5 @@ def update():
     print(f'pages old set: matched: {results.matched_count}  modified: {results.modified_count}')
     results = pages_old.update_many({}, {"$rename": {"document_version": "splash_md.version"}})
     print(f'pages old  move version: matched: {results.matched_count}  modified: {results.modified_count}')
-    update()
+
+update()
