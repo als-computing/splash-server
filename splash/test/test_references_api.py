@@ -81,6 +81,10 @@ def test_search(api_url_root, splash_client, token_header):
     assert len(resp_obj) == 1
     assert resp_obj[0]['title'] == reference_1['title']
 
+    #Test to make sure that regex is escaped
+    response = splash_client.get(url+"?search=^", headers=token_header)
+    assert len(response.json()) == 0
+
 
 reference_1 = {
     "DOI": "10.5406/jfilmvideo.67.3-4.0079",

@@ -1,5 +1,6 @@
 from attr import dataclass
 from fastapi import APIRouter, Security
+from fastapi.exceptions import HTTPException
 # from fastapi.security import OpenIdConnect
 from pydantic import BaseModel
 from typing import List
@@ -39,7 +40,13 @@ def read_users(
 def read_user(
             uid: str,
             current_user: User = Security(get_current_user)):
-    return services.users.retrieve_one(current_user, uid)
+    user = services.users.retrieve_one(current_user, uid)
+    if user is None:
+        raise HTTPException(
+                status_code=404,
+                detail="object not found",
+            )
+    return user
 
 
 @users_router.put("/{uid}", tags=['users'], response_model=CreateUserResponse)
