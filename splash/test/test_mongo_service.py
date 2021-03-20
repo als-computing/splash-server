@@ -59,7 +59,6 @@ mock_times = [
     "2021-01-06T19:15:53",
     "2021-03-06T19:15:53",
 ]
-uid = ""
 
 celebrimbor = {"name": "Celebrimbor", "Occupation": "Ringmaker"}
 celebrimbor_2 = {"name": "Celebrimbor", "Occupation": "Ringmaker, Archer"}
@@ -78,10 +77,11 @@ def test_creation(
     # We are in a different timezone we are still timestamping using utcnow
     # So everything is consistent https://github.com/spulec/freezegun#timezones
     with freeze_time(mock_times[0], tz_offset=-4, as_arg=True) as frozen_datetime:
-        uid = mongo_service.create(
+        response = mongo_service.create(
             request_user_1,
             deepcopy(celebrimbor),
         )
+        uid = response["uid"]
         frozen_datetime.move_to(mock_times[1])
         document_1 = mongo_service.retrieve_one(request_user_1, uid)
         metadata = document_1["splash_md"]
@@ -90,10 +90,12 @@ def test_creation(
         assert metadata["creator"] == request_user_1.uid
         assert metadata["last_edit"] == mock_times[0]
         assert len(metadata["edit_record"]) == 0
+        assert metadata == response["splash_md"]
 
 
-
-def test_create_ordering(mongo_service: MongoService, request_user_1: User, monkeypatch):
+def test_create_ordering(
+    mongo_service: MongoService, request_user_1: User, monkeypatch
+):
     with freeze_time(mock_times[0], tz_offset=-4, auto_tick_seconds=15):
         mongo_service.create(
             request_user_1,
@@ -114,9 +116,9 @@ def test_create_ordering(mongo_service: MongoService, request_user_1: User, monk
 
 def test_order_by_key(mongo_service: MongoService, request_user_1: User, monkeypatch):
     mongo_service.create(
-            request_user_1,
-            deepcopy(celebrimbor),
-        )
+        request_user_1,
+        deepcopy(celebrimbor),
+    )
     mongo_service.create(request_user_1, deepcopy(legolas))
     mongo_service.create(request_user_1, deepcopy(galadriel))
     mongo_service.create(request_user_1, deepcopy(elrond))
@@ -127,12 +129,15 @@ def test_order_by_key(mongo_service: MongoService, request_user_1: User, monkeyp
     equal_dicts(elrond, elves[1], ignore_keys)
     equal_dicts(galadriel, elves[2], ignore_keys)
     equal_dicts(legolas, elves[3], ignore_keys)
-    
-def test_retrieve_multiple_errors(mongo_service: MongoService, request_user_1: User, monkeypatch):
+
+
+def test_retrieve_multiple_errors(
+    mongo_service: MongoService, request_user_1: User, monkeypatch
+):
     mongo_service.create(
-            request_user_1,
-            deepcopy(celebrimbor),
-        )
+        request_user_1,
+        deepcopy(celebrimbor),
+    )
     mongo_service.create(request_user_1, deepcopy(legolas))
     mongo_service.create(request_user_1, deepcopy(galadriel))
     mongo_service.create(request_user_1, deepcopy(elrond))
@@ -142,41 +147,42 @@ def test_retrieve_multiple_errors(mongo_service: MongoService, request_user_1: U
         mongo_service.retrieve_multiple(request_user_1, sort=None, order=0)
 
 
-
 def test_edits(mongo_service: MongoService, request_user_1: User, request_user_2: User):
     with freeze_time(mock_times[0], tz_offset=-4, as_arg=True) as frozen_datetime:
-        uid = mongo_service.create(
+        response = mongo_service.create(
             request_user_1,
             deepcopy(celebrimbor),
         )
         frozen_datetime.move_to(mock_times[1])
-        uid = mongo_service.update(
+        response = mongo_service.update(
             request_user_1,
             deepcopy(celebrimbor_2),
-            uid,
+            response["uid"],
         )
 
-        document = mongo_service.retrieve_one(request_user_1, uid)
+        document = mongo_service.retrieve_one(request_user_1, response["uid"])
         equal_dicts(document, celebrimbor_2, ignore_keys)
         metadata = document["splash_md"]
         assert metadata["create_date"] == mock_times[0]
         assert metadata["creator"] == request_user_1.uid
         assert metadata["last_edit"] == mock_times[1]
+        assert metadata == response["splash_md"]
         frozen_datetime.move_to(mock_times[2])
 
-        uid = mongo_service.update(
+        response = mongo_service.update(
             request_user_2,
             deepcopy(celebrimbor_3),
-            uid,
+            response["uid"],
         )
 
-        document = mongo_service.retrieve_one(request_user_1, uid)
+        document = mongo_service.retrieve_one(request_user_1, response["uid"])
 
         equal_dicts(document, celebrimbor_3, ignore_keys)
         metadata = document["splash_md"]
         assert metadata["create_date"] == mock_times[0]
         assert metadata["creator"] == request_user_1.uid
         assert metadata["last_edit"] == mock_times[2]
+        assert metadata == response["splash_md"]
 
         edit_record = metadata["edit_record"]
 
@@ -188,16 +194,17 @@ def test_edits(mongo_service: MongoService, request_user_1: User, request_user_2
         assert edit_record[1]["date"] == mock_times[2]
         assert edit_record[1]["user"] == request_user_2.uid
 
+
 def test_edit_ordering(mongo_service: MongoService, request_user_1: User, monkeypatch):
     with freeze_time(mock_times[0], tz_offset=-4, auto_tick_seconds=15):
-        uid = mongo_service.create(
+        response = mongo_service.create(
             request_user_1,
             deepcopy(celebrimbor),
         )
         mongo_service.create(request_user_1, deepcopy(legolas))
         mongo_service.create(request_user_1, deepcopy(galadriel))
         mongo_service.create(request_user_1, deepcopy(elrond))
-        mongo_service.update(request_user_1, {}, uid)
+        mongo_service.update(request_user_1, {}, response["uid"])
         elves = list(mongo_service.retrieve_multiple(request_user_1))
 
         assert len(elves) == 4
@@ -208,10 +215,10 @@ def test_edit_ordering(mongo_service: MongoService, request_user_1: User, monkey
 
 
 def test_create_with_good_metadata(mongo_service: MongoService, request_user_1: User):
-    uid = mongo_service.create(
+    response = mongo_service.create(
         request_user_1, {"splash_md": {"mutable_field": "test_value"}}
     )
-    assert uid
+    assert response
 
 
 immutable_fields = SplashMetadata.__dict__["__fields__"]
@@ -228,9 +235,9 @@ def test_create_with_bad_metadata(mongo_service: MongoService, request_user_1: U
 
 
 def test_update_with_bad_metadata(mongo_service: MongoService, request_user_1: User):
-    uid = mongo_service.create(request_user_1, {"Mordor": "Mt. Dum"})
+    response = mongo_service.create(request_user_1, {"Mordor": "Mt. Doom"})
 
-    data = mongo_service.retrieve_one(request_user_1, uid)
+    data = mongo_service.retrieve_one(request_user_1, response["uid"])
 
     for field in immutable_fields:
         with pytest.raises(
@@ -238,6 +245,6 @@ def test_update_with_bad_metadata(mongo_service: MongoService, request_user_1: U
             match=f"Cannot mutate field: `{field}` in `splash_md`",
         ):
             mongo_service.update(
-                request_user_1, {"splash_md": {field: "test_value"}}, uid
+                request_user_1, {"splash_md": {field: "test_value"}}, response["uid"]
             )
-        assert mongo_service.retrieve_one(request_user_1, uid) == data
+        assert mongo_service.retrieve_one(request_user_1, response["uid"]) == data

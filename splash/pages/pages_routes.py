@@ -11,6 +11,7 @@ from ..users import User
 from splash.api.auth import get_current_user
 from .pages_service import PagesService
 from ..service.base import ObjectNotFoundError, VersionNotFoundError
+from ..service import VersionedSplashMetadata
 
 pages_router = APIRouter()
 
@@ -26,17 +27,25 @@ services = Services(None)
 def set_pages_service(pages_svc: PagesService):
     services.pages = pages_svc
 
+
 class NumVersionsResponse(BaseModel):
     number: int
+
+
 class CreatePageResponse(BaseModel):
     uid: str
+    splash_md: VersionedSplashMetadata
 
 
 @pages_router.get("", tags=["pages"], response_model=List[Page])
 def read_pages(
-    current_user: User = Security(get_current_user), page: Optional[int] = Query(1, gt=0), page_size: Optional[int] = Query(10, gt=0)
+    current_user: User = Security(get_current_user),
+    page: Optional[int] = Query(1, gt=0),
+    page_size: Optional[int] = Query(10, gt=0),
 ):
-    pages = services.pages.retrieve_multiple(current_user, page=page, page_size=page_size)
+    pages = services.pages.retrieve_multiple(
+        current_user, page=page, page_size=page_size
+    )
     results = parse_obj_as(List[Page], list(pages))
     return results
 
@@ -72,7 +81,9 @@ def read_page(
         return page
 
 
-@pages_router.get("/num_versions/{uid}", tags=["pages"], response_model=NumVersionsResponse)
+@pages_router.get(
+    "/num_versions/{uid}", tags=["pages"], response_model=NumVersionsResponse
+)
 def get_num_versions(uid: str, current_user: User = Security(get_current_user)):
     try:
         num_versions = services.pages.get_num_versions(current_user, uid)
@@ -86,7 +97,7 @@ def get_pages_by_type(
     page_type: str,
     current_user: User = Security(get_current_user),
     page: Optional[int] = Query(1, gt=0),
-    page_size: Optional[int] = Query(10, gt=0)
+    page_size: Optional[int] = Query(10, gt=0),
 ):
     pages = services.pages.retrieve_by_page_type(
         current_user, page_type, page, page_size
@@ -100,16 +111,16 @@ def replace_page(
     uid: str, page: UpdatePage, current_user: User = Security(get_current_user)
 ):
     try:
-        uid = services.pages.update(current_user, page, uid)
+        response = services.pages.update(current_user, page, uid)
     except ObjectNotFoundError:
         raise HTTPException(
             status_code=404,
             detail="object not found",
         )
-    return CreatePageResponse(uid=uid)
+    return response
 
 
 @pages_router.post("", tags=["pages"], response_model=CreatePageResponse)
 def create_page(new_page: NewPage, current_user: User = Security(get_current_user)):
-    uid = services.pages.create(current_user, new_page)
-    return CreatePageResponse(uid=uid)
+    response = services.pages.create(current_user, new_page)
+    return response

@@ -1,3 +1,4 @@
+from splash.service.models import SplashMetadata
 from attr import dataclass
 from fastapi import APIRouter, Security
 from fastapi.exceptions import HTTPException
@@ -27,6 +28,7 @@ def set_users_service(users_service: UsersService):
 
 class CreateUserResponse(BaseModel):
     uid: str
+    splash_md: SplashMetadata
 
 
 @users_router.get("", tags=["users"], response_model=List[User])
@@ -54,13 +56,11 @@ def replace_user(
         uid: str,
         user: NewUser,
         current_user: User = Security(get_current_user)):
-    uid = services.users.update(current_user, user, uid)
-    return CreateUserResponse(uid=uid)
+    return services.users.update(current_user, user, uid)
 
 
 @users_router.post("", tags=['users'], response_model=CreateUserResponse)
 def create_user(
                 user: NewUser,
                 current_user: User = Security(get_current_user)):
-    uid = services.users.create(current_user, user)
-    return CreateUserResponse(uid=uid)
+    return services.users.create(current_user, user)

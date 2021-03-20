@@ -12,35 +12,35 @@ def test_flask_crud_user(api_url_root, splash_client, token_header):
 
 def test_no_empty_strings(api_url_root, splash_client, token_header):
     url = api_url_root + "/pages"
-    response = splash_client.post(
+    post_resp = splash_client.post(
         url, data=json.dumps(empty_string_metadata_title), headers=token_header
     )
     assert (
-        response.status_code == 422
-    ), f"{response.status_code}: response is {response.content}"
-    response = splash_client.post(
+        post_resp.status_code == 422
+    ), f"{post_resp.status_code}: response is {post_resp.content}"
+    post_resp = splash_client.post(
         url, data=json.dumps(empty_string_metadata_text), headers=token_header
     )
     assert (
-        response.status_code == 422
-    ), f"{response.status_code}: response is {response.content}"
-    response = splash_client.post(
+        post_resp.status_code == 422
+    ), f"{post_resp.status_code}: response is {post_resp.content}"
+    post_resp = splash_client.post(
         url, data=json.dumps(empty_string_title), headers=token_header
     )
     assert (
-        response.status_code == 422
-    ), f"{response.status_code}: response is {response.content}"
-    response = splash_client.post(
+        post_resp.status_code == 422
+    ), f"{post_resp.status_code}: response is {post_resp.content}"
+    post_resp = splash_client.post(
         url, data=json.dumps(empty_string_documentation), headers=token_header
     )
     assert (
-        response.status_code == 422
-    ), f"{response.status_code}: response is {response.content}"
+        post_resp.status_code == 422
+    ), f"{post_resp.status_code}: response is {post_resp.content}"
 
 
 def test_retrieve_by_type(api_url_root, splash_client, token_header):
     url = api_url_root + "/pages"
-    response = splash_client.post(
+    post_resp1 = splash_client.post(
         url,
         data=json.dumps(
             {
@@ -54,9 +54,9 @@ def test_retrieve_by_type(api_url_root, splash_client, token_header):
         headers=token_header,
     )
     assert (
-        response.status_code == 200
-    ), f"{response.status_code}: response is {response.content}"
-    response = splash_client.post(
+        post_resp1.status_code == 200
+    ), f"{post_resp1.status_code}: response is {post_resp1.content}"
+    post_resp2 = splash_client.post(
         url,
         data=json.dumps(
             {
@@ -70,9 +70,9 @@ def test_retrieve_by_type(api_url_root, splash_client, token_header):
         headers=token_header,
     )
     assert (
-        response.status_code == 200
-    ), f"{response.status_code}: response is {response.content}"
-    response = splash_client.post(
+        post_resp2.status_code == 200
+    ), f"{post_resp2.status_code}: response is {post_resp2.content}"
+    post_resp3 = splash_client.post(
         url,
         data=json.dumps(
             {
@@ -86,8 +86,8 @@ def test_retrieve_by_type(api_url_root, splash_client, token_header):
         headers=token_header,
     )
     assert (
-        response.status_code == 200
-    ), f"{response.status_code}: response is {response.content}"
+        post_resp3.status_code == 200
+    ), f"{post_resp3.status_code}: response is {post_resp3.content}"
 
     response = splash_client.get(
         url + "/page_type/mythical_animals", headers=token_header
@@ -103,7 +103,7 @@ def test_retrieve_by_type(api_url_root, splash_client, token_header):
 
 def test_versioning(api_url_root, splash_client, token_header):
     url = api_url_root + "/pages"
-    response = splash_client.post(
+    post_resp = splash_client.post(
         url,
         data=json.dumps(
             {
@@ -116,12 +116,13 @@ def test_versioning(api_url_root, splash_client, token_header):
         ),
         headers=token_header,
     )
-    uid = response.json()["uid"]
+    uid = post_resp.json()["uid"]
     response = splash_client.get(url + "/" + uid, headers=token_header)
     assert response.json()["splash_md"]["version"] == 1
     assert response.json()["title"] == "Drake"
+    assert post_resp.json()["splash_md"] == response.json()["splash_md"]
 
-    splash_client.put(
+    put_resp = splash_client.put(
         url + "/" + uid,
         data=json.dumps(
             {
@@ -137,6 +138,7 @@ def test_versioning(api_url_root, splash_client, token_header):
     response = splash_client.get(url + "/" + uid, headers=token_header)
     assert response.json()["splash_md"]["version"] == 2
     assert response.json()["title"] == "Drake/Dragon"
+    assert put_resp.json()["splash_md"] == response.json()["splash_md"]
 
     response = splash_client.get(url, headers=token_header)
     data = response.json()
@@ -174,7 +176,7 @@ def test_versioning(api_url_root, splash_client, token_header):
     ), f"{response.status_code}: response is {response.content}"
     assert response.json()["detail"] == "version not found"
 
-    response = splash_client.put(
+    put_resp = splash_client.put(
         url + "/" + "does not exist",
         data=json.dumps(
             {
@@ -188,9 +190,9 @@ def test_versioning(api_url_root, splash_client, token_header):
         headers=token_header,
     )
     assert (
-        response.status_code == 404
-    ), f"{response.status_code}: response is {response.content}"
-    assert response.json()["detail"] == "object not found"
+        put_resp.status_code == 404
+    ), f"{put_resp.status_code}: response is {put_resp.content}"
+    assert put_resp.json()["detail"] == "object not found"
 
     response = splash_client.get(url + "/" + "does not exist", headers=token_header)
     assert (
@@ -206,7 +208,7 @@ def test_versioning(api_url_root, splash_client, token_header):
     ), f"{response.status_code}: response is {response.content}"
     assert response.json()["detail"] == "object not found"
 
-    response = splash_client.put(
+    put_resp = splash_client.put(
         url + "/" + uid,
         data=json.dumps(
             {
@@ -222,10 +224,10 @@ def test_versioning(api_url_root, splash_client, token_header):
     )
 
     assert (
-        response.status_code == 422
-    ), f"{response.status_code}: response is {response.content}"
+        put_resp.status_code == 422
+    ), f"{put_resp.status_code}: response is {put_resp.content}"
 
-    response = splash_client.post(
+    post_resp = splash_client.post(
         url,
         data=json.dumps(
             {
@@ -241,13 +243,13 @@ def test_versioning(api_url_root, splash_client, token_header):
     )
 
     assert (
-        response.status_code == 422
-    ), f"{response.status_code}: response is {response.content}"
+        post_resp.status_code == 422
+    ), f"{post_resp.status_code}: response is {post_resp.content}"
 
 
 def test_retrieve_num_versions(api_url_root, splash_client, token_header):
     url = api_url_root + "/pages"
-    response = splash_client.post(
+    post_resp = splash_client.post(
         url,
         data=json.dumps(
             {
@@ -260,7 +262,7 @@ def test_retrieve_num_versions(api_url_root, splash_client, token_header):
         ),
         headers=token_header,
     )
-    uid = response.json()["uid"]
+    uid = post_resp.json()["uid"]
     response = splash_client.get(url + "/num_versions/" + uid, headers=token_header)
     assert (
         response.status_code == 200

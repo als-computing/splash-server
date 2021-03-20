@@ -1,1 +1,1 @@
-from .models import CreatedDocument, CreatedVersionedDocument
+from .models import CreatedDocument, CreatedVersionedDocument, SplashMetadata, VersionedSplashMetadata

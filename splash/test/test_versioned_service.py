@@ -36,7 +36,7 @@ def test_versioned_update(versioned_service: VersionedMongoService, request_user
     with pytest.raises(
         ImmutableMetadataField, match="Cannot mutate field: `version` in `splash_md`"
     ):
-        uid = versioned_service.create(
+        versioned_service.create(
             request_user,
             {
                 "name": "Celebrimbor",
@@ -45,15 +45,17 @@ def test_versioned_update(versioned_service: VersionedMongoService, request_user
             },
         )
 
-    uid = versioned_service.create(
+    response = versioned_service.create(
         request_user, {"name": "Celebrimbor", "Occupation": "Ringmaker"}
     )
+    uid = response["uid"]
 
     document_1 = versioned_service.retrieve_one(request_user, uid)
     assert document_1["uid"] == uid
     assert document_1["splash_md"]["version"] == 1
     assert document_1["name"] == "Celebrimbor"
     assert document_1["Occupation"] == "Ringmaker"
+    assert document_1["splash_md"] == response["splash_md"]
     assert len(document_1) == 4
 
     with pytest.raises(
@@ -69,34 +71,34 @@ def test_versioned_update(versioned_service: VersionedMongoService, request_user
             uid,
         )
 
-    assert (
-        versioned_service.update(
-            request_user,
-            {"name": "Celebrimbor", "Occupation": "Ringmaker, Swordsmith"},
-            uid,
-        )
-        == uid
+    update_resp = versioned_service.update(
+        request_user,
+        {"name": "Celebrimbor", "Occupation": "Ringmaker, Swordsmith"},
+        response["uid"],
     )
+    assert update_resp["uid"] == uid
+
     document_2 = versioned_service.retrieve_one(request_user, uid)
     assert document_2["uid"] == uid
     assert document_2["splash_md"]["version"] == 2
     assert document_2["name"] == "Celebrimbor"
     assert document_2["Occupation"] == "Ringmaker, Swordsmith"
+    assert document_2["splash_md"] == update_resp["splash_md"]
     assert len(document_2) == 4
 
-    assert (
-        versioned_service.update(
-            request_user,
-            {"name": "Celebrimbor", "Occupation": "Ringmaker, Swordsmith, Archer"},
-            uid,
-        )
-        == uid
+    update_resp = versioned_service.update(
+        request_user,
+        {"name": "Celebrimbor", "Occupation": "Ringmaker, Swordsmith, Archer"},
+        uid,
     )
+    assert update_resp["uid"] == uid
+
     document_3 = versioned_service.retrieve_one(request_user, uid)
     assert document_3["uid"] == uid
     assert document_3["splash_md"]["version"] == 3
     assert document_3["name"] == "Celebrimbor"
     assert document_3["Occupation"] == "Ringmaker, Swordsmith, Archer"
+    assert document_3["splash_md"] == update_resp["splash_md"]
     assert len(document_3) == 4
 
     # Make sure there's only one version in the main collection at a time
@@ -114,15 +116,16 @@ def test_versioned_update(versioned_service: VersionedMongoService, request_user
 
 
 def test_retrieve_version(versioned_service: VersionedMongoService, request_user: User):
-    uid = versioned_service.create(
+    create_resp = versioned_service.create(
         request_user, {"name": "Celebrimbor", "Occupation": "Ringmaker"}
     )
-    versioned_service.update(
+    uid = create_resp["uid"]
+    update_resp1 = versioned_service.update(
         request_user,
         {"name": "Celebrimbor", "Occupation": "Ringmaker, Swordsmith"},
         uid,
     )
-    versioned_service.update(
+    update_resp2 = versioned_service.update(
         request_user,
         {"name": "Celebrimbor", "Occupation": "Ringmaker, Swordsmith, Archer"},
         uid,
@@ -132,6 +135,7 @@ def test_retrieve_version(versioned_service: VersionedMongoService, request_user
     assert document_1["splash_md"]["version"] == 1
     assert document_1["name"] == "Celebrimbor"
     assert document_1["Occupation"] == "Ringmaker"
+    assert create_resp["splash_md"] == create_resp["splash_md"]
     assert len(document_1) == 4
 
     document_2 = versioned_service.retrieve_version(request_user, uid, 2)
@@ -139,6 +143,7 @@ def test_retrieve_version(versioned_service: VersionedMongoService, request_user
     assert document_2["splash_md"]["version"] == 2
     assert document_2["name"] == "Celebrimbor"
     assert document_2["Occupation"] == "Ringmaker, Swordsmith"
+    assert update_resp1["splash_md"] == document_2["splash_md"]
     assert len(document_2) == 4
 
     document_3 = versioned_service.retrieve_version(request_user, uid, 3)
@@ -146,6 +151,7 @@ def test_retrieve_version(versioned_service: VersionedMongoService, request_user
     assert document_3["splash_md"]["version"] == 3
     assert document_3["name"] == "Celebrimbor"
     assert document_3["Occupation"] == "Ringmaker, Swordsmith, Archer"
+    assert update_resp2["splash_md"] == document_3["splash_md"]
     assert len(document_3) == 4
 
     with pytest.raises(VersionNotFoundError):
@@ -165,9 +171,10 @@ def test_retrieve_version(versioned_service: VersionedMongoService, request_user
 
 
 def test_get_num_versions(versioned_service: VersionedMongoService, request_user: User):
-    uid = versioned_service.create(
+    response = versioned_service.create(
         request_user, {"name": "Sauron", "Occupation": "Industrialist"}
     )
+    uid = response["uid"]
     assert versioned_service.get_num_versions(request_user, uid) == 1
     versioned_service.update(
         request_user,
