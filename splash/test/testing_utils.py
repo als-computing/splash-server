@@ -1,5 +1,6 @@
 import json
 import pytest
+from ..users import User
 
 
 @pytest.mark.usefixtures("splash_client")
@@ -62,6 +63,49 @@ def generic_test_api_crud(sample_new_object, url_path, splash_client, token_head
     # sample_new_object_returned = response.json()
     # sample_new_object['uid'] = sample_new_object_returned['uid']  # now let's give the generated uid so we can compare
     # assert sample_new_object_returned == sample_new_object
+
+
+def generic_test_etag_functionality(
+    sample_new_object, url_path, splash_client, token_header, token_user: User
+):
+    post_resp = splash_client.post(
+        url_path, data=json.dumps(sample_new_object), headers=token_header
+    )
+    assert (
+        post_resp.status_code == 200
+    ), f"{post_resp.status_code}: response is {post_resp.content}"
+    assert len(post_resp.json()["splash_md"]["etag"]) > 0
+    uid = post_resp.json()["uid"]
+
+    get_resp1 = splash_client.get(url_path + "/" + uid, headers=token_header)
+
+    etag1 = get_resp1.json()["splash_md"]["etag"]
+    assert len(etag1) > 0
+
+    put_resp1 = splash_client.put(
+        url_path + "/" + uid,
+        data=json.dumps(sample_new_object),
+        headers={"If-Match": etag1, **token_header},
+    )
+    assert (
+        put_resp1.status_code == 200
+    ), f"{put_resp1.status_code}: response is {put_resp1.content}"
+
+    get_resp2 = splash_client.get(url_path + "/" + uid, headers=token_header)
+    assert get_resp2.json()["splash_md"]["etag"] != etag1
+
+    put_resp2 = splash_client.put(
+        url_path + "/" + uid,
+        data=json.dumps(sample_new_object),
+        headers={"If-Match": etag1, **token_header},
+    )
+    assert (
+        put_resp2.status_code == 412
+    ), f"{put_resp2.status_code}: response is {put_resp2.content}"
+    assert put_resp2.json()["document"] == get_resp2.json()
+    equal_dicts(
+        put_resp2.json()["user"], token_user.dict(), ignore_keys=["uid", "splash_md"]
+    )
 
 
 # Utility function for asserting that dicts are equal, excluding specific keys

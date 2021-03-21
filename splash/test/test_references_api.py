@@ -1,9 +1,11 @@
+from .testing_utils import equal_dicts
+from ..users import User
 import pytest
 import json
 
 
 # TODO: Test the put functions
-@pytest.mark.usefixtures("splash_client", "token_header")
+@pytest.mark.usefixtures("splash_client", "token_header", "test_user")
 def test_flask_crud(api_url_root, splash_client, token_header):
     url_path = api_url_root + "/references"
     post_resp = splash_client.post(url_path, data="{", headers=token_header)
@@ -57,6 +59,48 @@ def test_flask_crud(api_url_root, splash_client, token_header):
     assert (
         response.status_code == 200
     ), f"{response.status_code}: response is {response.content}"
+
+
+def test_etag_functionality(
+    sample_new_object, api_url_root, splash_client, token_header, token_user: User
+):
+    url_path = api_url_root + "/references"
+    post_resp = splash_client.post(
+        url_path, data=json.dumps(reference_1), headers=token_header
+    )
+    assert (
+        post_resp.status_code == 200
+    ), f"{post_resp.status_code}: response is {post_resp.content}"
+    assert len(post_resp.json()["splash_md"]["etag"]) > 0
+    uid = post_resp.json()["uid"]
+
+    get_resp1 = splash_client.get(url_path + "/uid/" + uid, headers=token_header)
+
+    etag1 = get_resp1.json()["splash_md"]["etag"]
+    assert len(etag1) > 0
+
+    put_resp1 = splash_client.put(
+        url_path + "/uid/" + uid,
+        data=json.dumps(sample_new_object),
+        headers={"If-Match": etag1, **token_header},
+    )
+    assert (
+        put_resp1.status_code == 200
+    ), f"{put_resp1.status_code}: response is {put_resp1.content}"
+
+    get_resp2 = splash_client.get(url_path + "/uid/" + uid, headers=token_header)
+    assert get_resp2.json()["splash_md"]["etag"] != etag1
+
+    put_resp2 = splash_client.put(
+        url_path + "/uid/" + uid,
+        data=json.dumps(sample_new_object),
+        headers={"If-Match": etag1, **token_header},
+    )
+    assert (
+        put_resp2.status_code == 412
+    ), f"{put_resp2.status_code}: response is {put_resp2.content}"
+    assert put_resp2.json()["document"] == get_resp2.json()
+    equal_dicts(put_resp2.json()["user"], token_user.dict(), ignore_keys=["uid", "splash_md"])
 
 
 def test_search(api_url_root, splash_client, token_header):

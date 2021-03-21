@@ -248,3 +248,28 @@ def test_update_with_bad_metadata(mongo_service: MongoService, request_user_1: U
                 request_user_1, {"splash_md": {field: "test_value"}}, response["uid"]
             )
         assert mongo_service.retrieve_one(request_user_1, response["uid"]) == data
+
+
+def test_etag_functionality(mongo_service: MongoService, request_user_1: User):
+    response = mongo_service.create(
+        request_user_1,
+        deepcopy(celebrimbor),
+    )
+    uid = response["uid"]
+    document_1 = mongo_service.retrieve_one(request_user_1, uid)
+    metadata = document_1["splash_md"]
+    assert len(metadata["etag"]) > 0
+
+    etag1 = metadata["etag"]
+    mongo_service.update(request_user_1, deepcopy(celebrimbor_2), uid, etag=etag1)
+    document_2 = mongo_service.retrieve_one(request_user_1, uid)
+    etag2 = document_2["splash_md"]["etag"]
+    assert etag1 != etag2
+
+    with pytest.raises(
+        WrongEtagError,
+        match=f"Etag argument `{etag1}` does not match current etag: `{etag2}`",
+    ) as exc_info:
+        mongo_service.update(request_user_1, deepcopy(celebrimbor_3), uid, etag=etag1)
+
+    assert exc_info.value.args[1] == document_2
