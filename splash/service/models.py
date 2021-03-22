@@ -13,6 +13,7 @@ class SplashMetadata(BaseModel):
     create_date: datetime
     last_edit: datetime
     edit_record: List[EditElement]
+    etag: str
 
 
 class VersionedSplashMetadata(SplashMetadata):

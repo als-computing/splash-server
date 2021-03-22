@@ -1,9 +1,9 @@
 from attr import dataclass
 
 
-from fastapi import APIRouter, Security, HTTPException
+from fastapi import APIRouter, Security, HTTPException, Response
 from typing import List, Optional
-from fastapi.param_functions import Query
+from fastapi.param_functions import Header, Query
 from pydantic import parse_obj_as, BaseModel
 
 from . import Page, NewPage, UpdatePage
@@ -19,7 +19,6 @@ pages_router = APIRouter()
 @dataclass
 class Services:
     pages: PagesService
-
 
 services = Services(None)
 
@@ -106,18 +105,27 @@ def get_pages_by_type(
     return results
 
 
-@pages_router.put("/{uid}", tags=["pages"], response_model=CreatePageResponse)
+@pages_router.put(
+    "/{uid}",
+    tags=["pages"],
+    response_model=CreatePageResponse,
+)
 def replace_page(
-    uid: str, page: UpdatePage, current_user: User = Security(get_current_user)
+    uid: str,
+    page: UpdatePage,
+    response: Response,
+    current_user: User = Security(get_current_user),
+    if_match: Optional[str] = Header(None),
 ):
     try:
-        response = services.pages.update(current_user, page, uid)
+        update_response = services.pages.update(current_user, page, uid, etag=if_match)
     except ObjectNotFoundError:
         raise HTTPException(
             status_code=404,
             detail="object not found",
         )
-    return response
+
+    return update_response
 
 
 @pages_router.post("", tags=["pages"], response_model=CreatePageResponse)

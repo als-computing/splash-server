@@ -13,6 +13,7 @@ def request_user():
             "create_date": "2020-01-7T13:40:53",
             "last_edit": "2020-01-7T13:40:53",
             "edit_record": [],
+            "etag": "f672367e-c534-4f4a-9e5a-0941dbab2d1c",
         },
         uid="foobar",
         given_name="ford",

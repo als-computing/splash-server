@@ -57,7 +57,7 @@ class ReferencesService(MongoService):
         )
 
     def update(
-        self, current_user: User, data: NewReference, uid: str = None, doi: str = None
+        self, current_user: User, data: NewReference, uid: str = None, doi: str = None, etag: str = None
     ):
         old_data_dict = self.retrieve_one(current_user, uid=uid, doi=doi)
         if old_data_dict is None:

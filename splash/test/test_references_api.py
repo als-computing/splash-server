@@ -1,11 +1,11 @@
-from .testing_utils import equal_dicts
-from ..users import User
+from .testing_utils import equal_dicts, MockSecurityScopes
+from ..api.auth import get_current_user
 import pytest
 import json
 
 
 # TODO: Test the put functions
-@pytest.mark.usefixtures("splash_client", "token_header", "test_user")
+@pytest.mark.usefixtures("splash_client", "token_header", "token_header2")
 def test_flask_crud(api_url_root, splash_client, token_header):
     url_path = api_url_root + "/references"
     post_resp = splash_client.post(url_path, data="{", headers=token_header)
@@ -62,7 +62,7 @@ def test_flask_crud(api_url_root, splash_client, token_header):
 
 
 def test_etag_functionality(
-    sample_new_object, api_url_root, splash_client, token_header, token_user: User
+    api_url_root, splash_client, token_header, token_header2
 ):
     url_path = api_url_root + "/references"
     post_resp = splash_client.post(
@@ -81,8 +81,8 @@ def test_etag_functionality(
 
     put_resp1 = splash_client.put(
         url_path + "/uid/" + uid,
-        data=json.dumps(sample_new_object),
-        headers={"If-Match": etag1, **token_header},
+        data=json.dumps(reference_2),
+        headers={"If-Match": etag1, **token_header2},
     )
     assert (
         put_resp1.status_code == 200
@@ -93,14 +93,18 @@ def test_etag_functionality(
 
     put_resp2 = splash_client.put(
         url_path + "/uid/" + uid,
-        data=json.dumps(sample_new_object),
+        data=json.dumps(reference_1),
         headers={"If-Match": etag1, **token_header},
     )
     assert (
         put_resp2.status_code == 412
     ), f"{put_resp2.status_code}: response is {put_resp2.content}"
     assert put_resp2.json()["document"] == get_resp2.json()
-    equal_dicts(put_resp2.json()["user"], token_user.dict(), ignore_keys=["uid", "splash_md"])
+    equal_dicts(put_resp2.json()["last_editor"], get_current_user(MockSecurityScopes(), token_header2).dict(), ignore_keys=["uid", "splash_md"])
+
+    get_resp3 = splash_client.get(url_path + "/uid/" + uid, headers=token_header)
+    # Ensure that no changes were made to the document
+    assert get_resp3.json() == get_resp2.json()
 
 
 def test_search(api_url_root, splash_client, token_header):

@@ -26,8 +26,6 @@ os.environ["GOOGLE_CLIENT_ID"] = "Gollum"
 os.environ["GOOGLE_CLIENT_SECRET"] = "the_one_ring"
 
 
-token_info = {"sub": None, "scopes": ["splash"]}
-
 db = mongomock.MongoClient().db
 users_svc = UsersService(db, "users")
 pages_svc = PagesService(db, "pages", "pages_old")
@@ -49,7 +47,6 @@ def collationMock(self, collation):
 
 @pytest.fixture(scope="function", autouse=True)
 def mock_collation_prop(monkeypatch):
-    print("hello")
     monkeypatch.setattr(collection.Cursor, "collation", collationMock)
 
 
@@ -59,23 +56,43 @@ def mongodb():
 
 
 @pytest.fixture
-def test_user():
+def test_user1():
     return NewUser(
         given_name="ford", family_name="prefect", email="ford@beetleguice.planet"
     )
 
 
 @pytest.fixture
-def splash_client(mongodb, monkeypatch, test_user):
-    uid = users_svc.create(None, test_user)["uid"]
-    token_info["sub"] = uid
+def test_user2():
+    return NewUser(
+        given_name="Marvin", family_name="The android", email="marvin@heartofgold.net"
+    )
+
+
+token_info1 = {"sub": None, "scopes": ["splash"]}
+token_info2 = {"sub": None, "scopes": ["splash"]}
+
+
+@pytest.fixture
+def splash_client(mongodb, test_user1, test_user2, monkeypatch):
+    uid = users_svc.create(None, test_user1)["uid"]
+    token_info1["sub"] = uid
+
+    uid = users_svc.create(None, test_user2)["uid"]
+    token_info2["sub"] = uid
     client = TestClient(app)
     return client
 
 
 @pytest.fixture
 def token_header():
-    token = create_access_token(token_info)
+    token = create_access_token(token_info1)
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+def token_header2():
+    token = create_access_token(token_info2)
     return {"Authorization": f"Bearer {token}"}
 
 

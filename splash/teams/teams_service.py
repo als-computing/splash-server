@@ -27,7 +27,7 @@ class TeamsService(MongoService):
         for team_dict in cursor:
             yield Team(**team_dict)
 
-    def update(self, current_user: User, data: Team, uid: str):
+    def update(self, current_user: User, data: Team, uid: str, etag: str = None):
         return super().update(current_user, data.dict(), uid)
 
     def delete(self, current_user: User, uid):

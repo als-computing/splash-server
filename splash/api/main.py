@@ -1,6 +1,9 @@
 import logging
 
-from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+from splash.service.base import WrongEtagError
+
+from fastapi import FastAPI, Request
 
 from .config import ConfigStore
 from splash.api.auth import auth_router, set_services as set_auth_services
@@ -58,6 +61,24 @@ def setup_services():
     set_runs_service(runs_svc)
     set_teams_service(teams_svc)
     set_users_service(users_svc)
+
+
+@app.exception_handler(WrongEtagError)
+async def wrong_etag_exc_handler(request: Request, exc: WrongEtagError):
+    current_doc = exc.current_doc
+    last_editor = None
+    if len(exc.current_doc["splash_metadata"]["edit_record"]) == 0:
+        last_editor = users_svc.insecure_get_user(
+            current_doc["splash_metadata"]["creator"]
+        )
+    else:
+        last_editor = users_svc.insecure_get_user(
+            current_doc["splash_metadata"]["edit_record"][-1]["user"]
+        )
+    return JSONResponse(
+        status_code=412,
+        content={"last_editor": last_editor, "document": current_doc},
+    )
 
 
 @app.get("/api/v1/settings")

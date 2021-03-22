@@ -33,7 +33,7 @@ class UsersService(MongoService):
         for user_dict in cursor:
             yield User(**user_dict)
 
-    def update(self, current_user: User, new_user: NewUser, uid: str):
+    def update(self, current_user: User, new_user: NewUser, uid: str, etag: str = None):
         return super().update(current_user, new_user.dict(), uid)
 
     def delete(self, current_user: User, uid):
