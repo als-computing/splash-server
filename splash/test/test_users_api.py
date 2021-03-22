@@ -3,16 +3,16 @@ import pytest
 from .testing_utils import generic_test_api_crud, generic_test_etag_functionality
 
 
-@pytest.mark.usefixtures("splash_client", "token_header", "token_header2")
+@pytest.mark.usefixtures("splash_client", "token_header")
 def test_api_user(api_url_root, splash_client, token_header):
     generic_test_api_crud(
         new_user, api_url_root + "/users", splash_client, token_header
     )
 
 
-def test_etag_functionality(api_url_root, splash_client, token_header, token_header2):
+def test_etag_functionality(api_url_root, splash_client, token_header):
     generic_test_etag_functionality(
-        new_user, api_url_root + "/users", splash_client, token_header, token_header2
+        new_user, api_url_root + "/users", splash_client, token_header
     )
 
 

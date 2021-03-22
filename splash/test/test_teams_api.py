@@ -16,14 +16,14 @@ new_team = NewTeam(
 )
 
 
-@pytest.mark.usefixtures("splash_client", "token_header", "token_header2")
+@pytest.mark.usefixtures("splash_client", "token_header")
 def test_api_crud_team(api_url_root, splash_client, token_header):
     generic_test_api_crud(
         new_team.dict(), api_url_root + "/teams", splash_client, token_header
     )
 
 
-def test_etag_functionality(api_url_root, splash_client, token_header, token_header2):
+def test_etag_functionality(api_url_root, splash_client, token_header):
     generic_test_etag_functionality(
-        new_team.dict(), api_url_root + "/teams", splash_client, token_header, token_header2
+        new_team.dict(), api_url_root + "/teams", splash_client, token_header
     )

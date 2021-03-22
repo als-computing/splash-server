@@ -1,5 +1,4 @@
 import json
-from ..api.auth import get_current_user
 
 
 def generic_test_api_crud(sample_new_object, url_path, splash_client, token_header):
@@ -63,14 +62,8 @@ def generic_test_api_crud(sample_new_object, url_path, splash_client, token_head
     # assert sample_new_object_returned == sample_new_object
 
 
-# Mock the first argument for get_current_user
-class MockSecurityScopes():
-    def __init__(self):
-        self.scopes = []
-
-
 def generic_test_etag_functionality(
-    sample_new_object, url_path, splash_client, token_header, token_header2
+    sample_new_object, url_path, splash_client, token_header
 ):
     post_resp = splash_client.post(
         url_path, data=json.dumps(sample_new_object), headers=token_header
@@ -89,7 +82,7 @@ def generic_test_etag_functionality(
     put_resp1 = splash_client.put(
         url_path + "/" + uid,
         data=json.dumps(sample_new_object),
-        headers={"If-Match": etag1, **token_header2},
+        headers={"If-Match": etag1, **token_header},
     )
     assert (
         put_resp1.status_code == 200
@@ -106,10 +99,8 @@ def generic_test_etag_functionality(
     assert (
         put_resp2.status_code == 412
     ), f"{put_resp2.status_code}: response is {put_resp2.content}"
-    assert put_resp2.json()["document"] == get_resp2.json()
-    equal_dicts(
-        put_resp2.json()["last_editor"], get_current_user(MockSecurityScopes(), token_header2).dict(), ignore_keys=["uid", "splash_md"]
-    )
+
+    assert put_resp2.json()["detail"] == "etag_mismatch_error"
 
     get_resp3 = splash_client.get(url_path + "/" + uid, headers=token_header)
     # Make sure that the document was not changed

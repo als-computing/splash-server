@@ -28,7 +28,7 @@ class TeamsService(MongoService):
             yield Team(**team_dict)
 
     def update(self, current_user: User, data: Team, uid: str, etag: str = None):
-        return super().update(current_user, data.dict(), uid)
+        return super().update(current_user, data.dict(), uid, etag)
 
     def delete(self, current_user: User, uid):
         raise NotImplementedError

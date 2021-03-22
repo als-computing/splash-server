@@ -19,8 +19,9 @@ from splash.teams.teams_routes import set_teams_service
 from splash.teams.teams_service import TeamsService
 from splash.api.auth import create_access_token, set_services as set_auth_services
 
-from splash.api.main import app
 
+from splash.api.main import app
+API_URL_ROOT = "/api/v1"
 os.environ["TOKEN_SECRET_KEY"] = "the_question_to_the_life_the_universe_and_everything"
 os.environ["GOOGLE_CLIENT_ID"] = "Gollum"
 os.environ["GOOGLE_CLIENT_SECRET"] = "the_one_ring"
@@ -62,11 +63,11 @@ def test_user1():
     )
 
 
-@pytest.fixture
-def test_user2():
-    return NewUser(
-        given_name="Marvin", family_name="The android", email="marvin@heartofgold.net"
-    )
+#@pytest.fixture
+#def test_user2():
+#   return NewUser(
+#        given_name="Marvin", family_name="The android", email="marvin@heartofgold.net"
+#    )
 
 
 token_info1 = {"sub": None, "scopes": ["splash"]}
@@ -74,12 +75,9 @@ token_info2 = {"sub": None, "scopes": ["splash"]}
 
 
 @pytest.fixture
-def splash_client(mongodb, test_user1, test_user2, monkeypatch):
+def splash_client(mongodb, test_user1, monkeypatch):
     uid = users_svc.create(None, test_user1)["uid"]
     token_info1["sub"] = uid
-
-    uid = users_svc.create(None, test_user2)["uid"]
-    token_info2["sub"] = uid
     client = TestClient(app)
     return client
 
@@ -90,15 +88,15 @@ def token_header():
     return {"Authorization": f"Bearer {token}"}
 
 
-@pytest.fixture
-def token_header2():
-    token = create_access_token(token_info2)
-    return {"Authorization": f"Bearer {token}"}
+#@pytest.fixture
+#def token_header2():
+#    token = create_access_token(token_info2)
+#    return {"Authorization": f"Bearer {token}"}
 
 
 @pytest.fixture
 def api_url_root():
-    return "/api/v1"
+    return API_URL_ROOT
 
 
 leader = {

@@ -4,10 +4,10 @@ from splash.test.testing_utils import equal_dicts
 from splash.users import User
 import pytest
 from splash.service.base import (
-    VersionNotFoundError,
+    EtagMismatchError, VersionNotFoundError,
     MongoService,
     ObjectNotFoundError,
-    ImmutableMetadataField, WrongEtagError,
+    ImmutableMetadataField,
 )
 import mongomock
 from mongomock import collection
@@ -23,7 +23,7 @@ def request_user_1():
             "create_date": "2020-01-7T13:40:53",
             "last_edit": "2020-01-7T13:40:53",
             "edit_record": [],
-            "etag": "170abbfa-5ce9-49ba-8072-69edb6c263a7"
+            "etag": "170abbfa-5ce9-49ba-8072-69edb6c263a7",
         },
         uid="foobar",
         given_name="ford",
@@ -40,7 +40,7 @@ def request_user_2():
             "create_date": "2020-01-7T13:40:53",
             "last_edit": "2020-01-7T13:40:53",
             "edit_record": [],
-            "etag": "45f3439c-f162-4713-a33b-96d902ae0c2e"
+            "etag": "45f3439c-f162-4713-a33b-96d902ae0c2e",
         },
         uid="barfoo",
         given_name="Arthur",
@@ -269,11 +269,10 @@ def test_etag_functionality(mongo_service: MongoService, request_user_1: User):
     assert etag1 != etag2
 
     with pytest.raises(
-        WrongEtagError,
-    ) as exc_info:
+        EtagMismatchError,
+        match=f"Etag argument `{etag1}` does not match current etag: `{etag2}`",
+    ):
         mongo_service.update(request_user_1, deepcopy(celebrimbor_3), uid, etag=etag1)
-    assert exc_info.value.current_doc == f"Etag argument `{etag1}` does not match current etag: `{etag2}`"
-    assert exc_info.value.current_doc == document_2
 
     doc_2 = mongo_service.retrieve_one(request_user_1, uid)
     # make sure no changes were made
