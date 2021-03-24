@@ -89,7 +89,8 @@ def generic_test_etag_functionality(
     ), f"{put_resp1.status_code}: response is {put_resp1.content}"
 
     get_resp2 = splash_client.get(url_path + "/" + uid, headers=token_header)
-    assert get_resp2.json()["splash_md"]["etag"] != etag1
+    etag2 = get_resp2.json()["splash_md"]["etag"]
+    assert etag2 != etag1
 
     put_resp2 = splash_client.put(
         url_path + "/" + uid,
@@ -100,7 +101,8 @@ def generic_test_etag_functionality(
         put_resp2.status_code == 412
     ), f"{put_resp2.status_code}: response is {put_resp2.content}"
 
-    assert put_resp2.json()["detail"] == "etag_mismatch_error"
+    assert put_resp2.json()["err"] == "etag_mismatch_error"
+    assert put_resp2.json()["etag"] == etag2
 
     get_resp3 = splash_client.get(url_path + "/" + uid, headers=token_header)
     # Make sure that the document was not changed

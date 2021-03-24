@@ -4,13 +4,11 @@ from splash.test.testing_utils import equal_dicts
 from splash.users import User
 import pytest
 from splash.service.base import (
-    EtagMismatchError, VersionNotFoundError,
+    EtagMismatchError,
     MongoService,
-    ObjectNotFoundError,
     ImmutableMetadataField,
 )
 import mongomock
-from mongomock import collection
 from freezegun import freeze_time
 from copy import deepcopy
 
@@ -270,10 +268,11 @@ def test_etag_functionality(mongo_service: MongoService, request_user_1: User):
 
     with pytest.raises(
         EtagMismatchError,
-        match=f"Etag argument `{etag1}` does not match current etag: `{etag2}`",
-    ):
+    ) as exc:
         mongo_service.update(request_user_1, deepcopy(celebrimbor_3), uid, etag=etag1)
 
     doc_2 = mongo_service.retrieve_one(request_user_1, uid)
+    assert exc.value.args[0] == f"Etag argument `{etag1}` does not match current etag: `{etag2}`"
+    assert exc.value.etag == etag2
     # make sure no changes were made
     assert doc_2 == document_2

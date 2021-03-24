@@ -115,7 +115,7 @@ class MongoService:
 
         # If the etags don't match
         if etag is not None and etag != metadata["etag"]:
-            raise EtagMismatchError(f"Etag argument `{etag}` does not match current etag: `{ metadata['etag'] }`",)
+            raise EtagMismatchError(f"Etag argument `{etag}` does not match current etag: `{ metadata['etag'] }`", metadata['etag'])
 
         if "splash_md" not in data:
             data["splash_md"] = metadata
@@ -236,4 +236,6 @@ class ImmutableMetadataField(KeyError):
 
 
 class EtagMismatchError(ValueError):
-    pass
+    def __init__(self, message, etag):
+        self.etag = etag
+        super().__init__(message, etag)

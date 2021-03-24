@@ -74,7 +74,7 @@ def setup_services():
 async def handle_wrong_etag(response, exc):
     return JSONResponse(
         status_code=412,
-        content={"detail": "etag_mismatch_error"},
+        content={"err": "etag_mismatch_error", "etag": exc.etag},
     )
 
 
