@@ -1,14 +1,16 @@
-from pydantic.tools import parse_obj_as
-from splash.service.base import ObjectNotFoundError
+from typing import List
+
 from attr import dataclass
 from fastapi import APIRouter, Security
 from fastapi.exceptions import HTTPException
 from pydantic import BaseModel
-from typing import List
-from ..users import User
+from pydantic.tools import parse_obj_as
 from splash.api.auth import get_current_user
+from splash.service import SplashMetadata
+from splash.service.base import ObjectNotFoundError
 
-from . import Team, NewTeam
+from ..users import User
+from . import NewTeam, Team
 from .teams_service import TeamsService
 
 teams_router = APIRouter()
@@ -28,6 +30,7 @@ def set_teams_service(svc: TeamsService):
 
 class CreateTeamResponse(BaseModel):
     uid: str
+    splash_md: SplashMetadata
 
 
 @teams_router.get("", tags=["teams"], response_model=List[Team])
@@ -51,16 +54,17 @@ def read_team(
 def create_team(
                 team: NewTeam,
                 current_user: User = Security(get_current_user)):
-    uid = services.teams.create(current_user, team)
-    return CreateTeamResponse(uid=uid)
+    response = services.teams.create(current_user, team)
+    return response
 
 
 @teams_router.put("/{uid}", tags=['teams'])
 def update_team(uid: str,
                 team: Team,
-                current_user: User = Security(get_current_user)):
+                current_user: User = Security(get_current_user),
+                response_model=CreateTeamResponse):
     try:
-        services.teams.update(current_user, team, uid)
+        response = services.teams.update(current_user, team, uid)
     except ObjectNotFoundError:
         raise HTTPException(404)
-    return True
+    return response

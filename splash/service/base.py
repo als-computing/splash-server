@@ -69,7 +69,7 @@ class MongoService():
         logger.debug(f"create doc in collection {0}, doc: {1}", self._collection, data)
 
         self._collection.insert_one(data)
-        return data['uid']
+        return {"uid": data["uid"], "splash_md": data["splash_md"]}
 
     def retrieve_one(self, current_user: User, uid) -> dict:
         return self._collection.find_one({"uid": uid}, {'_id': False})
@@ -122,7 +122,7 @@ class MongoService():
         status = self._collection.replace_one({"uid": uid}, data)
         if status.matched_count == 0:
             raise ObjectNotFoundError
-        return uid
+        return {"uid": data["uid"], "splash_md": data["splash_md"]}
 
     def delete(self, current_user: User, uid):
         status = self._collection.delete_one({"uid": uid})

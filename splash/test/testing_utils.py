@@ -4,18 +4,18 @@ import pytest
 
 @pytest.mark.usefixtures("splash_client")
 def generic_test_api_crud(sample_new_object, url_path, splash_client, token_header):
-    response = splash_client.post(url_path, data="{", headers=token_header)
+    post_resp = splash_client.post(url_path, data="{", headers=token_header)
     assert (
-        response.status_code == 422
-    ), f"{response.status_code}: response is {response.content}"
+        post_resp.status_code == 422
+    ), f"{post_resp.status_code}: response is {post_resp.content}"
 
     sample_new_object["uid"] = "test"
-    response = splash_client.post(
+    post_resp = splash_client.post(
         url_path, data=json.dumps(sample_new_object), headers=token_header
     )
     assert (
-        response.status_code == 422
-    ), f"{response.status_code}: response is {response.content}"
+        post_resp.status_code == 422
+    ), f"{post_resp.status_code}: response is {post_resp.content}"
 
     # response = splash_client.get(url_path + '/' + "DOES NOT EXIST", headers=token_header)
     # assert response.status_code == 404, f"{response.status_code}: response is {response.content}"
@@ -26,15 +26,15 @@ def generic_test_api_crud(sample_new_object, url_path, splash_client, token_head
     # assert response.status_code == 422, f"{response.status_code}: response is {response.content}"
 
     sample_new_object.pop("uid")
-    response = splash_client.post(
+    post_resp = splash_client.post(
         url_path, data=json.dumps(sample_new_object), headers=token_header
     )
     assert (
-        response.status_code == 200
-    ), f"{response.status_code}: response is {response.content}"
+        post_resp.status_code == 200
+    ), f"{post_resp.status_code}: response is {post_resp.content}"
 
-    response_dict = response.json()
-    new_uid = response_dict["uid"]
+    post_resp_dict = post_resp.json()
+    new_uid = post_resp_dict["uid"]
     assert new_uid
 
     # retreive all
@@ -51,6 +51,7 @@ def generic_test_api_crud(sample_new_object, url_path, splash_client, token_head
         response.status_code == 200
     ), f"{response.status_code}: response is {response.content}"
 
+    assert post_resp.json()["splash_md"] == response.json()["splash_md"]
     # TODO: TEST put api
 
     # response = splash_client.put(url_path + '/' + new_uid, data=json.dumps(sample_new_object), headers=token_header)

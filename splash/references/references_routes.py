@@ -12,11 +12,14 @@ from ..users import User
 from splash.api.auth import get_current_user
 from .references_service import ReferencesService
 from splash.service.base import UidInDictError
+from splash.service import SplashMetadata
 
 references_router = APIRouter()
 
+
 class CreateReferenceResponse(BaseModel):
     uid: str
+    splash_md: SplashMetadata
 
 @dataclass
 class Services():
@@ -85,14 +88,14 @@ def replace_compound_by_doi(
     # There are enum types in the dict that won't serialize when we try to save to Mongo
     # https://github.com/samuelcolvin/pydantic/issues/133
 
-    uid = services.references.update(current_user, json.loads(reference.json()), doi=doi)
+    response = services.references.update(current_user, json.loads(reference.json()), doi=doi)
 
-    if uid is None:
+    if response is None:
         raise HTTPException(
             status_code=404,
             detail="Not found",
         )
-    return CreateReferenceResponse(uid=uid)
+    return response
 
 
 @ references_router.put("/uid/{uid}", tags=['compounds'], response_model=CreateReferenceResponse)
@@ -104,13 +107,13 @@ def replace_compound_by_uid(
     #  because if we convert straight to dict
     # There are enum types in the dict that won't serialize when we try to save to Mongo
     # https://github.com/samuelcolvin/pydantic/issues/133
-    uid = services.references.update(current_user, json.loads(reference.json()), uid=uid)
+    response = services.references.update(current_user, json.loads(reference.json()), uid=uid)
     if uid is None:
         raise HTTPException(
             status_code=404,
             detail="Not found",
         )
-    return CreateReferenceResponse(uid=uid)
+    return response
 
 
 @ references_router.post("", tags=['references'], response_model=CreateReferenceResponse)
@@ -123,9 +126,9 @@ def create_reference(
     # https://github.com/samuelcolvin/pydantic/issues/133
     # I cannot forbid uid in the NewReferences model and so I must catch the appropriate error
     try:
-        uid = services.references.create(current_user, json.loads(new_reference.json()))
+        response = services.references.create(current_user, json.loads(new_reference.json()))
     except UidInDictError:
         raise HTTPException(
             status_code=422,
         )
-    return CreateReferenceResponse(uid=uid)
+    return response

@@ -64,7 +64,7 @@ def mongodb():
 
 @pytest.fixture
 def splash_client(mongodb, monkeypatch):
-    uid = users_svc.create(None, test_user)
+    uid = users_svc.create(None, test_user)["uid"]
     token_info['sub'] = uid
     client = TestClient(app)
 
@@ -126,9 +126,9 @@ other_team = {
 
 @pytest.fixture(scope="session", autouse=True)
 def users():
-    user_leader_uid = users_svc.create(None, NewUser(**leader))
-    user_same_team_uid = users_svc.create(None, NewUser(**same_team))
-    user_other_team_uid = users_svc.create(None, NewUser(**other_team))
+    user_leader_uid = users_svc.create(None, NewUser(**leader))["uid"]
+    user_same_team_uid = users_svc.create(None, NewUser(**same_team))["uid"]
+    user_other_team_uid = users_svc.create(None, NewUser(**other_team))["uid"]
     users = {}
     users['leader'] = users_svc.retrieve_one(None, user_leader_uid)
     users['same_team'] = users_svc.retrieve_one(None, user_same_team_uid)
