@@ -80,7 +80,7 @@ def read_reference_by_doi(
 
 
 @ references_router.put("/doi/{doi:path}", tags=['compounds'], response_model=CreateReferenceResponse)
-def replace_compound_by_doi(
+def replace_reference_by_doi(
         doi: str,
         reference: UpdateReference,
         current_user: User = Security(get_current_user),
@@ -101,7 +101,7 @@ def replace_compound_by_doi(
 
 
 @ references_router.put("/uid/{uid}", tags=['compounds'], response_model=CreateReferenceResponse)
-def replace_compound_by_uid(
+def replace_reference_by_uid(
         uid: str,
         reference: UpdateReference,
         current_user: User = Security(get_current_user),

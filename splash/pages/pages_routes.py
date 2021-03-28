@@ -113,7 +113,6 @@ def get_pages_by_type(
 def replace_page(
     uid: str,
     page: UpdatePage,
-    response: Response,
     current_user: User = Security(get_current_user),
     if_match: Optional[str] = Header(None),
 ):
