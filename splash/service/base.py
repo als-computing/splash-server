@@ -7,28 +7,25 @@ from splash.users import User
 from pymongo.collation import Collation
 
 
-ValidationIssue = namedtuple('ValidationIssue', 'description, location, exception')
+ValidationIssue = namedtuple("ValidationIssue", "description, location, exception")
 
-logger = logging.getLogger('splash.service')
+logger = logging.getLogger("splash.service")
 
 
 class BadPageArgument(Exception):
     pass
 
 
-class Service():
-
+class Service:
     def create(self, current_user: User, data):
         raise NotImplementedError
 
     def retrieve_one(self, current_user: User, uid):
         raise NotImplementedError
 
-    def retrieve_multiple(self,
-                          current_user: User,
-                          page: int,
-                          query=None,
-                          page_size=10):
+    def retrieve_multiple(
+        self, current_user: User, page: int, query=None, page_size=10
+    ):
         raise NotImplementedError
 
     def update(self, current_user: User, data, uid: str):
@@ -38,33 +35,37 @@ class Service():
         raise NotImplementedError
 
 
-class MongoService():
-
+class MongoService:
     def __init__(self, db, collection_name):
         self._db = db
         self._collection = db[collection_name]
 
     def create(self, current_user: User, data: dict):
-        if 'uid' in data:
-            raise UidInDictError('Document should not have uid field')
+        if "uid" in data:
+            raise UidInDictError("Document should not have uid field")
         uid = uuid.uuid4()
-        data['uid'] = str(uid)
+        data["uid"] = str(uid)
 
         if "splash_md" not in data:
             data["splash_md"] = {}
-        
+
         basic_md_fields = SplashMetadata.__dict__["__fields__"]
         for field in basic_md_fields:
             if field in data["splash_md"]:
-                raise ImmutableMetadataField(f"Cannot mutate field: `{field}` in `splash_md`")
+                raise ImmutableMetadataField(
+                    f"Cannot mutate field: `{field}` in `splash_md`"
+                )
 
-        data["splash_md"]["create_date"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+        data["splash_md"]["create_date"] = datetime.utcnow().strftime(
+            "%Y-%m-%dT%H:%M:%S"
+        )
         data["splash_md"]["last_edit"] = data["splash_md"]["create_date"]
         if current_user is None:
             data["splash_md"]["creator"] = "NONE"
         else:
             data["splash_md"]["creator"] = current_user.uid
         data["splash_md"]["edit_record"] = []
+        data["splash_md"]["etag"] = str(uuid.uuid4())
 
         logger.debug(f"create doc in collection {0}, doc: {1}", self._collection, data)
 
@@ -72,18 +73,20 @@ class MongoService():
         return {"uid": data["uid"], "splash_md": data["splash_md"]}
 
     def retrieve_one(self, current_user: User, uid) -> dict:
-        return self._collection.find_one({"uid": uid}, {'_id': False})
+        return self._collection.find_one({"uid": uid}, {"_id": False})
 
-    def retrieve_multiple(self,
-                          user: User,
-                          page: int = 1,
-                          query=None,
-                          page_size=10,
-                          sort="splash_md.last_edit",
-                          order=-1):
-        if(order != -1 and order != 1):
+    def retrieve_multiple(
+        self,
+        user: User,
+        page: int = 1,
+        query=None,
+        page_size=10,
+        sort="splash_md.last_edit",
+        order=-1,
+    ):
+        if order != -1 and order != 1:
             raise ValueError("`order` argument must be 1 or -1")
-        if (type(sort) is not str):
+        if type(sort) is not str:
             raise TypeError("`sort` argument must be of type string")
         if page <= 0:
             raise BadPageArgument("Page parameter must greater than 0")
@@ -93,32 +96,50 @@ class MongoService():
         # Skip and limit
         if query is None:
             query = {}
-        cursor = self._collection.find(query, {'_id': False})
+        cursor = self._collection.find(query, {"_id": False})
 
         # Return documents
-        return cursor.sort([(sort, order), ("uid", -1)]).collation(Collation('en_US')).skip(skips).limit(page_size)
+        return (
+            cursor.sort([(sort, order), ("uid", -1)])
+            .collation(Collation("en_US"))
+            .skip(skips)
+            .limit(page_size)
+        )
 
-    def update(self, current_user: User, data: dict, uid: str):
-        # update_one might be more efficient, but kinda tricky
-        # if 'uid' in data:
-        #     raise UidInDictError('Document should not have uid field')
-        data['uid'] = uid
-        
+    def update(self, current_user: User, data: dict, uid: str, etag=None):
+        data["uid"] = uid
+
         current_document = MongoService.retrieve_one(self, current_user, uid)
+
         metadata = current_document["splash_md"]
+
+        # If the etags don't match
+        if etag is not None and etag != metadata["etag"]:
+            raise EtagMismatchError(f"Etag argument `{etag}` does not match current etag: `{ metadata['etag'] }`", metadata['etag'])
+
         if "splash_md" not in data:
             data["splash_md"] = metadata
         else:
+            # If the top layer is also sending in metadata
+            # then we want to merge it with the metadata already in the
+            # document
             basic_md_fields = SplashMetadata.__dict__["__fields__"]
             for field in basic_md_fields:
                 # The top layer that called this cannot mutate
                 # any of these fields. They should only be mutated by
-                # This service layer
+                # this service layer
                 if field in data["splash_md"]:
-                    raise ImmutableMetadataField(f"Cannot mutate field: `{field}` in `splash_md`")
+                    raise ImmutableMetadataField(
+                        f"Cannot mutate field: `{field}` in `splash_md`"
+                    )
                 data["splash_md"][field] = metadata[field]
+        # Update the edit_record array and last edit timestamp
         data["splash_md"]["last_edit"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
-        data["splash_md"]["edit_record"].append({"date": data["splash_md"]["last_edit"], "user": current_user.uid})
+        data["splash_md"]["edit_record"].append(
+            {"date": data["splash_md"]["last_edit"], "user": current_user.uid}
+        )
+        data["splash_md"]["etag"] = str(uuid.uuid4())
+
         status = self._collection.replace_one({"uid": uid}, data)
         if status.matched_count == 0:
             raise ObjectNotFoundError
@@ -135,10 +156,12 @@ class VersionedMongoService(MongoService):
         super().__init__(db, collection_name)
         self._versions_svc = MongoService(db, revisions_collection_name)
 
-    def update(self, current_user: User, data: dict, uid: str):
+    def update(self, current_user: User, data: dict, uid: str, etag=None):
         if "splash_md" in data:
             if "version" in data["splash_md"]:
-                raise ImmutableMetadataField("Cannot mutate field: `version` in `splash_md`")
+                raise ImmutableMetadataField(
+                    "Cannot mutate field: `version` in `splash_md`"
+                )
         else:
             data["splash_md"] = {}
 
@@ -147,12 +170,14 @@ class VersionedMongoService(MongoService):
             raise ObjectNotFoundError
         data["splash_md"]["version"] = current_document["splash_md"]["version"] + 1
         self._versions_svc._collection.insert_one(current_document)
-        return super().update(current_user, data, uid)
+        return super().update(current_user, data, uid, etag=etag)
 
     def create(self, current_user: User, data: dict):
         if "splash_md" in data:
             if "version" in data["splash_md"]:
-                raise ImmutableMetadataField("Cannot mutate field: `version` in `splash_md`")
+                raise ImmutableMetadataField(
+                    "Cannot mutate field: `version` in `splash_md`"
+                )
         else:
             data["splash_md"] = {}
         data["splash_md"]["version"] = 1
@@ -166,12 +191,16 @@ class VersionedMongoService(MongoService):
 
         document = super().retrieve_one(current_user, uid)
         if document is None or document["splash_md"]["version"] != version:
-            document = self._versions_svc._collection.find_one({"$and": [{"uid": uid}, {"splash_md.version": version}]}, {'_id': False})
+            document = self._versions_svc._collection.find_one(
+                {"$and": [{"uid": uid}, {"splash_md.version": version}]}, {"_id": False}
+            )
             if document is not None:
                 return document
             # If the document exists nowhere then the object was not found
-            elif self._versions_svc.retrieve_one(current_user, uid) is None \
-                    and super().retrieve_one(current_user, uid) is None:
+            elif (
+                self._versions_svc.retrieve_one(current_user, uid) is None
+                and super().retrieve_one(current_user, uid) is None
+            ):
                 raise ObjectNotFoundError
             # If the document does exist somewhere then version was not found
             else:
@@ -183,7 +212,7 @@ class VersionedMongoService(MongoService):
         document = super().retrieve_one(current_user, uid)
         if document is None:
             raise ObjectNotFoundError
-        num = document["splash_md"]['version']
+        num = document["splash_md"]["version"]
         return num
 
     def delete(self, current_user: User, uid):
@@ -204,3 +233,9 @@ class UidInDictError(KeyError):
 
 class ImmutableMetadataField(KeyError):
     pass
+
+
+class EtagMismatchError(ValueError):
+    def __init__(self, message, etag):
+        self.etag = etag
+        super().__init__(message, etag)

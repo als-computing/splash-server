@@ -4,6 +4,7 @@ from attr import dataclass
 from fastapi import APIRouter,  Security, Query
 from typing import List, Optional
 from fastapi.exceptions import HTTPException
+from fastapi import Header
 from pydantic.main import BaseModel
 
 from pydantic.tools import parse_obj_as
@@ -79,16 +80,17 @@ def read_reference_by_doi(
 
 
 @ references_router.put("/doi/{doi:path}", tags=['compounds'], response_model=CreateReferenceResponse)
-def replace_compound_by_doi(
+def replace_reference_by_doi(
         doi: str,
         reference: UpdateReference,
-        current_user: User = Security(get_current_user)):
+        current_user: User = Security(get_current_user),
+        if_match: Optional[str] = Header(None)):
     # It is necessary to convert to json first, then create a dict,
     #  because if we convert straight to dict
     # There are enum types in the dict that won't serialize when we try to save to Mongo
     # https://github.com/samuelcolvin/pydantic/issues/133
 
-    response = services.references.update(current_user, json.loads(reference.json()), doi=doi)
+    response = services.references.update(current_user, json.loads(reference.json()), doi=doi, etag=if_match)
 
     if response is None:
         raise HTTPException(
@@ -99,15 +101,16 @@ def replace_compound_by_doi(
 
 
 @ references_router.put("/uid/{uid}", tags=['compounds'], response_model=CreateReferenceResponse)
-def replace_compound_by_uid(
+def replace_reference_by_uid(
         uid: str,
         reference: UpdateReference,
-        current_user: User = Security(get_current_user)):
+        current_user: User = Security(get_current_user),
+        if_match: Optional[str] = Header(None)):
     # It is necessary to convert to json first, then create a dict,
     #  because if we convert straight to dict
     # There are enum types in the dict that won't serialize when we try to save to Mongo
     # https://github.com/samuelcolvin/pydantic/issues/133
-    response = services.references.update(current_user, json.loads(reference.json()), uid=uid)
+    response = services.references.update(current_user, json.loads(reference.json()), uid=uid, etag=if_match)
     if uid is None:
         raise HTTPException(
             status_code=404,

@@ -1,10 +1,11 @@
+from fastapi.param_functions import Header
 from splash.service.models import SplashMetadata
 from attr import dataclass
 from fastapi import APIRouter, Security
 from fastapi.exceptions import HTTPException
 # from fastapi.security import OpenIdConnect
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 from . import User, NewUser
 from .users_service import UsersService
@@ -55,8 +56,9 @@ def read_user(
 def replace_user(
         uid: str,
         user: NewUser,
-        current_user: User = Security(get_current_user)):
-    return services.users.update(current_user, user, uid)
+        current_user: User = Security(get_current_user),
+        if_match: Optional[str] = Header(None)):
+    return services.users.update(current_user, user, uid, etag=if_match)
 
 
 @users_router.post("", tags=['users'], response_model=CreateUserResponse)

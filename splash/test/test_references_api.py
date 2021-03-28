@@ -1,3 +1,5 @@
+from .testing_utils import equal_dicts
+from ..api.auth import get_current_user
 import pytest
 import json
 
@@ -108,6 +110,53 @@ def test_search(api_url_root, splash_client, token_header):
     assert len(response.json()) == 0
 
 
+def test_etag_functionality(
+    api_url_root, splash_client, token_header
+):
+    url_path = api_url_root + "/references"
+    post_resp = splash_client.post(
+        url_path, data=json.dumps(reference_3), headers=token_header
+    )
+    assert (
+        post_resp.status_code == 200
+    ), f"{post_resp.status_code}: response is {post_resp.content}"
+    assert len(post_resp.json()["splash_md"]["etag"]) > 0
+    uid = post_resp.json()["uid"]
+
+    get_resp1 = splash_client.get(url_path + "/uid/" + uid, headers=token_header)
+
+    etag1 = get_resp1.json()["splash_md"]["etag"]
+    assert len(etag1) > 0
+
+    put_resp1 = splash_client.put(
+        url_path + "/uid/" + uid,
+        data=json.dumps(reference_4),
+        headers={"If-Match": etag1, **token_header},
+    )
+    assert (
+        put_resp1.status_code == 200
+    ), f"{put_resp1.status_code}: response is {put_resp1.content}"
+
+    get_resp2 = splash_client.get(url_path + "/uid/" + uid, headers=token_header)
+    etag2 = get_resp2.json()["splash_md"]["etag"]
+    assert etag2 != etag1
+
+    put_resp2 = splash_client.put(
+        url_path + "/uid/" + uid,
+        data=json.dumps(reference_3),
+        headers={"If-Match": etag1, **token_header},
+    )
+    assert (
+        put_resp2.status_code == 412
+    ), f"{put_resp2.status_code}: response is {put_resp2.content}"
+    assert put_resp2.json()["etag"] == etag2
+    assert put_resp2.json()["err"] == "etag_mismatch_error"
+
+    get_resp3 = splash_client.get(url_path + "/uid/" + uid, headers=token_header)
+    # Ensure that no changes were made to the document
+    assert get_resp3.json() == get_resp2.json()
+
+
 reference_1 = {
     "DOI": "10.5406/jfilmvideo.67.3-4.0079",
     "title": "The ecological relationship between Mordor and Middle Earth: A life systems analysis",
@@ -122,5 +171,25 @@ reference_2 = {
     "DOI": "10.5406/mordor",
     "title": "The Effects of Sauron's Ring on Middle Earth: A meta-analysis.",
     "author": [{"family": "The Grey", "given": "Gandalf"}, {"literal": "Wizards Inc."}],
+    "origin_url": "https://data.crossref.org/10.5406/jfilmvideo.67.3-4.0079",
+}
+
+reference_3 = {
+    "DOI": "10.5406/jrfff",
+    "title": "Test3",
+    "author": [
+        {"family": "The Grey", "given": "Gandalf"},
+        {"family": "The White", "given": "Saruman"},
+    ],
+    "origin_url": "https://data.crossref.org/10.5406/jfilmvideo.67.3-4.0079",
+}
+
+reference_4 = {
+    "DOI": "10.5406/jrfff",
+    "title": "Test4",
+    "author": [
+        {"family": "The Grey", "given": "Gandalf"},
+        {"family": "The White", "given": "Saruman"},
+    ],
     "origin_url": "https://data.crossref.org/10.5406/jfilmvideo.67.3-4.0079",
 }

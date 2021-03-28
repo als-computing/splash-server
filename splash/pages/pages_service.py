@@ -41,8 +41,8 @@ class PagesService(VersionedMongoService):
         query = {'page_type': page_type}
         return self.retrieve_multiple(current_user, page, query, page_size)
 
-    def update(self, current_user: User, data: UpdatePage, uid: str):
-        return super().update(current_user, data.dict(), uid)
+    def update(self, current_user: User, data: UpdatePage, uid: str, etag: str = None):
+        return super().update(current_user, data.dict(), uid, etag=etag)
 
     def delete(self, current_user: User, uid):
         raise NotImplementedError

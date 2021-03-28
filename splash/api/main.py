@@ -1,21 +1,28 @@
 import logging
 
-from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 
+from splash.service.base import EtagMismatchError
+
+from fastapi import FastAPI
+from fastapi.requests import Request
 from .config import ConfigStore
 from splash.api.auth import auth_router, set_services as set_auth_services
 from splash.pages.pages_routes import set_pages_service, pages_router
 from splash.pages.pages_service import PagesService
 from splash.users.users_routes import set_users_service, users_router
 from splash.users.users_service import UsersService
-from splash.references.references_routes import set_references_service, references_router
+from splash.references.references_routes import (
+    set_references_service,
+    references_router,
+)
 from splash.references.references_service import ReferencesService
 from splash.runs.runs_routes import set_runs_service, runs_router
 from splash.runs.runs_service import RunsService, TeamRunChecker
 from splash.teams.teams_routes import set_teams_service, teams_router
 from splash.teams.teams_service import TeamsService
 
-logger = logging.getLogger('splash')
+logger = logging.getLogger("splash")
 db = None
 
 
@@ -24,7 +31,9 @@ def init_logging():
     ch = logging.StreamHandler()
     # ch.setLevel(logging.INFO)
     # root_logger.addHandler(ch)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
     ch.setFormatter(formatter)
     logger.addHandler(ch)
     logger.setLevel(ConfigStore.SPLASH_LOG_LEVEL)
@@ -44,13 +53,14 @@ def setup_services():
     # is decoupled from app creation, allowing test code to
     # mock the service_provider
     from pymongo import MongoClient
+
     init_logging()
     db_uri = ConfigStore.MONGO_DB_URI
     db = MongoClient(db_uri).splash
-    users_svc = UsersService(db, 'users')
-    pages_svc = PagesService(db, 'pages', 'pages_old')
-    references_svc = ReferencesService(db, 'references')
-    teams_svc = TeamsService(db, 'teams')
+    users_svc = UsersService(db, "users")
+    pages_svc = PagesService(db, "pages", "pages_old")
+    references_svc = ReferencesService(db, "references")
+    teams_svc = TeamsService(db, "teams")
     runs_svc = RunsService(teams_svc, TeamRunChecker())
     set_auth_services(users_svc)
     set_pages_service(pages_svc)
@@ -60,49 +70,57 @@ def setup_services():
     set_users_service(users_svc)
 
 
+@app.exception_handler(EtagMismatchError)
+async def handle_wrong_etag(response, exc):
+    return JSONResponse(
+        status_code=412,
+        content={"err": "etag_mismatch_error", "etag": exc.etag},
+    )
+
+
 @app.get("/api/v1/settings")
 async def get_settings():
     return {"google_client_id": ConfigStore.GOOGLE_CLIENT_ID}
+
 
 app.include_router(
     auth_router,
     prefix="/api/v1/idtokensignin",
     tags=["tokens"],
     responses={404: {"description": "Not found"}},
-
 )
 
 app.include_router(
     users_router,
     prefix="/api/v1/users",
     tags=["users"],
-    responses={404: {"description": "Not found"}}
+    responses={404: {"description": "Not found"}},
 )
 
 app.include_router(
     pages_router,
     prefix="/api/v1/pages",
     tags=["pages"],
-    responses={404: {"description": "Not found"}}
+    responses={404: {"description": "Not found"}},
 )
 
 app.include_router(
     runs_router,
     prefix="/api/v1/runs",
     tags=["runs"],
-    responses={404: {"description": "Not found"}}
+    responses={404: {"description": "Not found"}},
 )
 
 app.include_router(
     teams_router,
     prefix="/api/v1/teams",
     tags=["teams"],
-    responses={404: {"description": "Not found"}}
+    responses={404: {"description": "Not found"}},
 )
 
 app.include_router(
     references_router,
     prefix="/api/v1/references",
     tags=["references"],
-    responses={404: {"description": "Not found"}}
+    responses={404: {"description": "Not found"}},
 )

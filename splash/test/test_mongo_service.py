@@ -4,13 +4,11 @@ from splash.test.testing_utils import equal_dicts
 from splash.users import User
 import pytest
 from splash.service.base import (
-    VersionNotFoundError,
+    EtagMismatchError,
     MongoService,
-    ObjectNotFoundError,
     ImmutableMetadataField,
 )
 import mongomock
-from mongomock import collection
 from freezegun import freeze_time
 from copy import deepcopy
 
@@ -23,6 +21,7 @@ def request_user_1():
             "create_date": "2020-01-7T13:40:53",
             "last_edit": "2020-01-7T13:40:53",
             "edit_record": [],
+            "etag": "170abbfa-5ce9-49ba-8072-69edb6c263a7",
         },
         uid="foobar",
         given_name="ford",
@@ -39,6 +38,7 @@ def request_user_2():
             "create_date": "2020-01-7T13:40:53",
             "last_edit": "2020-01-7T13:40:53",
             "edit_record": [],
+            "etag": "45f3439c-f162-4713-a33b-96d902ae0c2e",
         },
         uid="barfoo",
         given_name="Arthur",
@@ -248,3 +248,31 @@ def test_update_with_bad_metadata(mongo_service: MongoService, request_user_1: U
                 request_user_1, {"splash_md": {field: "test_value"}}, response["uid"]
             )
         assert mongo_service.retrieve_one(request_user_1, response["uid"]) == data
+
+
+def test_etag_functionality(mongo_service: MongoService, request_user_1: User):
+    response = mongo_service.create(
+        request_user_1,
+        deepcopy(celebrimbor),
+    )
+    uid = response["uid"]
+    document_1 = mongo_service.retrieve_one(request_user_1, uid)
+    metadata = document_1["splash_md"]
+    assert len(metadata["etag"]) > 0
+
+    etag1 = metadata["etag"]
+    mongo_service.update(request_user_1, deepcopy(celebrimbor_2), uid, etag=etag1)
+    document_2 = mongo_service.retrieve_one(request_user_1, uid)
+    etag2 = document_2["splash_md"]["etag"]
+    assert etag1 != etag2
+
+    with pytest.raises(
+        EtagMismatchError,
+    ) as exc:
+        mongo_service.update(request_user_1, deepcopy(celebrimbor_3), uid, etag=etag1)
+
+    doc_2 = mongo_service.retrieve_one(request_user_1, uid)
+    assert exc.value.args[0] == f"Etag argument `{etag1}` does not match current etag: `{etag2}`"
+    assert exc.value.etag == etag2
+    # make sure no changes were made
+    assert doc_2 == document_2

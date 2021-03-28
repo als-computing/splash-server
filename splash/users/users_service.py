@@ -33,8 +33,8 @@ class UsersService(MongoService):
         for user_dict in cursor:
             yield User(**user_dict)
 
-    def update(self, current_user: User, new_user: NewUser, uid: str):
-        return super().update(current_user, new_user.dict(), uid)
+    def update(self, current_user: User, new_user: NewUser, uid: str, etag: str = None):
+        return super().update(current_user, new_user.dict(), uid, etag=etag)
 
     def delete(self, current_user: User, uid):
         raise NotImplementedError

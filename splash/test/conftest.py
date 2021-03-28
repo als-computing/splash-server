@@ -5,5 +5,6 @@ from .fixtures.add import (
     api_url_root,
     users,
     teams_service,
-    mock_collation_prop
+    mock_collation_prop,
+    test_user1,
 )

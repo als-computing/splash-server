@@ -57,17 +57,14 @@ class ReferencesService(MongoService):
         )
 
     def update(
-        self, current_user: User, data: NewReference, uid: str = None, doi: str = None
+        self, current_user: User, data: NewReference, uid: str = None, doi: str = None, etag: str = None
     ):
         old_data_dict = self.retrieve_one(current_user, uid=uid, doi=doi)
         if old_data_dict is None:
             return None
         old_data_dict = old_data_dict.dict()
 
-        data["splash_date_created"] = old_data_dict["splash_date_created"]
-        data["splash_user_uid"] = old_data_dict["splash_user_uid"]
-
-        return super().update(current_user, data, old_data_dict["uid"])
+        return super().update(current_user, data, old_data_dict["uid"], etag=etag)
 
     def delete(self, current_user: User, uid):
         raise NotImplementedError
