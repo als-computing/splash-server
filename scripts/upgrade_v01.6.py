@@ -3,9 +3,9 @@ from re import match
 import uuid
 import pymongo
 
-#mongo_uri = os.getenv("MONGO_DB_URI")
-db = pymongo.MongoClient("localhost").splash
-#print(f"using {mongo_uri}")
+mongo_uri = os.getenv("MONGO_DB_URI")
+print(f"using {mongo_uri}")
+db = pymongo.MongoClient(mongo_uri).get_database()
 
 
 def set_etags_for_collection(collection_name):
