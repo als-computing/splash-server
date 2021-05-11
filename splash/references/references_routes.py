@@ -66,8 +66,6 @@ def read_reference_by_uid(
 def read_reference_by_doi(
         doi: str,
         current_user: User = Security(get_current_user)):
-    print('HI IM HERE')
-    print(doi)
 
     reference_dict = services.references.retrieve_one(current_user, doi=doi)
 
