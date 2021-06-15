@@ -1,3 +1,4 @@
+import copy
 import json
 
 
@@ -25,7 +26,7 @@ def generic_test_api_crud(sample_new_object, url_path, splash_client, token_head
 
     sample_new_object.pop("uid")
     post_resp = splash_client.post(
-        url_path, data=json.dumps(sample_new_object), headers=token_header
+        url_path, json=copy.deepcopy(sample_new_object), headers=token_header
     )
     assert (
         post_resp.status_code == 200
@@ -66,7 +67,7 @@ def generic_test_etag_functionality(
     sample_new_object, url_path, splash_client, token_header
 ):
     post_resp = splash_client.post(
-        url_path, data=json.dumps(sample_new_object), headers=token_header
+        url_path, json=sample_new_object, headers=token_header
     )
     assert (
         post_resp.status_code == 200
@@ -81,7 +82,7 @@ def generic_test_etag_functionality(
 
     put_resp1 = splash_client.put(
         url_path + "/" + uid,
-        data=json.dumps(sample_new_object),
+        json=copy.deepcopy(sample_new_object),
         headers={"If-Match": etag1, **token_header},
     )
     assert (
@@ -94,7 +95,7 @@ def generic_test_etag_functionality(
 
     put_resp2 = splash_client.put(
         url_path + "/" + uid,
-        data=json.dumps(sample_new_object),
+        json=copy.deepcopy(sample_new_object),
         headers={"If-Match": etag1, **token_header},
     )
     assert (
