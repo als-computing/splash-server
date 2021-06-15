@@ -1,3 +1,5 @@
+#This upgrade script removes all metadata properties from all the pages. 
+# This is because we are no longer supporting the side metadata properties within the UI.
 import os
 import pymongo
 
