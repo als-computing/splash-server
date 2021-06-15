@@ -1,5 +1,8 @@
-import pytest
+import copy
 import json
+
+import pytest
+
 from .testing_utils import generic_test_api_crud, generic_test_etag_functionality
 
 
@@ -19,25 +22,25 @@ def test_etag_functionality(api_url_root, splash_client, token_header):
 def test_no_empty_strings(api_url_root, splash_client, token_header):
     url = api_url_root + "/pages"
     post_resp = splash_client.post(
-        url, data=json.dumps(empty_string_metadata_title), headers=token_header
+        url, json=copy.deepcopy(empty_string_metadata_title), headers=token_header
     )
     assert (
         post_resp.status_code == 422
     ), f"{post_resp.status_code}: response is {post_resp.content}"
     post_resp = splash_client.post(
-        url, data=json.dumps(empty_string_metadata_text), headers=token_header
+        url,json=copy.deepcopy(empty_string_metadata_text), headers=token_header
     )
     assert (
         post_resp.status_code == 422
     ), f"{post_resp.status_code}: response is {post_resp.content}"
     post_resp = splash_client.post(
-        url, data=json.dumps(empty_string_title), headers=token_header
+        url, json=copy.deepcopy(empty_string_title), headers=token_header
     )
     assert (
         post_resp.status_code == 422
     ), f"{post_resp.status_code}: response is {post_resp.content}"
     post_resp = splash_client.post(
-        url, data=json.dumps(empty_string_documentation), headers=token_header
+        url, json=copy.deepcopy(empty_string_documentation), headers=token_header
     )
     assert (
         post_resp.status_code == 422
@@ -48,15 +51,13 @@ def test_retrieve_by_type(api_url_root, splash_client, token_header):
     url = api_url_root + "/pages"
     post_resp1 = splash_client.post(
         url,
-        data=json.dumps(
-            {
+        json={
                 "title": "Maiar",
                 "page_type": "mythical_animals",
                 "metadata": [],
                 "documentation": "Hello",
                 "references": [],
-            }
-        ),
+            },
         headers=token_header,
     )
     assert (
@@ -64,15 +65,13 @@ def test_retrieve_by_type(api_url_root, splash_client, token_header):
     ), f"{post_resp1.status_code}: response is {post_resp1.content}"
     post_resp2 = splash_client.post(
         url,
-        data=json.dumps(
-            {
+        json={
                 "title": "Troll",
                 "page_type": "mythical_animals",
                 "metadata": [],
                 "documentation": "Hello",
                 "references": [],
-            }
-        ),
+            },
         headers=token_header,
     )
     assert (
@@ -80,15 +79,13 @@ def test_retrieve_by_type(api_url_root, splash_client, token_header):
     ), f"{post_resp2.status_code}: response is {post_resp2.content}"
     post_resp3 = splash_client.post(
         url,
-        data=json.dumps(
-            {
+        json={
                 "title": "Wand",
                 "page_type": "mythical_items",
                 "metadata": [],
                 "documentation": "Hello",
                 "references": [],
-            }
-        ),
+            },
         headers=token_header,
     )
     assert (
@@ -111,15 +108,13 @@ def test_versioning(api_url_root, splash_client, token_header):
     url = api_url_root + "/pages"
     post_resp = splash_client.post(
         url,
-        data=json.dumps(
-            {
+        json={
                 "title": "Drake",
                 "page_type": "mythical_animals",
                 "metadata": [],
                 "documentation": "Hello",
                 "references": [],
-            }
-        ),
+            },
         headers=token_header,
     )
     uid = post_resp.json()["uid"]
@@ -130,15 +125,13 @@ def test_versioning(api_url_root, splash_client, token_header):
 
     put_resp = splash_client.put(
         url + "/" + uid,
-        data=json.dumps(
-            {
+        json={
                 "title": "Drake/Dragon",
                 "page_type": "mythical_animals",
                 "metadata": [],
                 "documentation": "Hello",
                 "references": [],
-            }
-        ),
+            },
         headers=token_header,
     )
     response = splash_client.get(url + "/" + uid, headers=token_header)
@@ -184,15 +177,13 @@ def test_versioning(api_url_root, splash_client, token_header):
 
     put_resp = splash_client.put(
         url + "/" + "does not exist",
-        data=json.dumps(
-            {
+        json={
                 "title": "Drake/Dragon",
                 "page_type": "mythical_animals",
                 "metadata": [],
                 "documentation": "Hello",
                 "references": [],
-            }
-        ),
+            },
         headers=token_header,
     )
     assert (
@@ -216,16 +207,14 @@ def test_versioning(api_url_root, splash_client, token_header):
 
     put_resp = splash_client.put(
         url + "/" + uid,
-        data=json.dumps(
-            {
+        json={
                 "title": "Drake/Dragon",
                 "page_type": "mythical_animals",
                 "metadata": [],
                 "documentation": "test",
                 "document_version": 3,
                 "references": [],
-            }
-        ),
+            },
         headers=token_header,
     )
 
@@ -235,16 +224,14 @@ def test_versioning(api_url_root, splash_client, token_header):
 
     post_resp = splash_client.post(
         url,
-        data=json.dumps(
-            {
+        json={
                 "title": "Drake/Dragon",
                 "page_type": "mythical_animals",
                 "metadata": [],
                 "documentation": "test",
                 "document_version": 3,
                 "references": [],
-            }
-        ),
+            },
         headers=token_header,
     )
 
@@ -257,15 +244,13 @@ def test_retrieve_num_versions(api_url_root, splash_client, token_header):
     url = api_url_root + "/pages"
     post_resp = splash_client.post(
         url,
-        data=json.dumps(
-            {
+        json={
                 "title": "Beethoven's 5th",
                 "page_type": "songs",
                 "metadata": [],
                 "documentation": "test",
                 "references": [],
-            }
-        ),
+            },
         headers=token_header,
     )
     uid = post_resp.json()["uid"]
@@ -277,15 +262,13 @@ def test_retrieve_num_versions(api_url_root, splash_client, token_header):
 
     response = splash_client.put(
         url + "/" + uid,
-        data=json.dumps(
-            {
+        json= {
                 "title": "Schicksals-Sinfonie",
                 "page_type": "songs",
                 "metadata": [],
                 "documentation": "test",
                 "references": [],
-            }
-        ),
+            },
         headers=token_header,
     )
     response = splash_client.get(url + "/num_versions/" + uid, headers=token_header)
@@ -296,15 +279,13 @@ def test_retrieve_num_versions(api_url_root, splash_client, token_header):
 
     response = splash_client.put(
         url + "/" + uid,
-        data=json.dumps(
-            {
+        json={
                 "title": "Schicksals-Sinfonie, Beethoven's 5th",
                 "page_type": "songs",
                 "metadata": [],
                 "documentation": "test",
                 "references": [],
-            }
-        ),
+            },
         headers=token_header,
     )
     response = splash_client.get(url + "/num_versions/" + uid, headers=token_header)
