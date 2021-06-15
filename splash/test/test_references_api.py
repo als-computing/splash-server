@@ -1,7 +1,7 @@
-from .testing_utils import equal_dicts
-from ..api.auth import get_current_user
-import pytest
+import copy
 import json
+
+import pytest
 
 
 # TODO: Test the put functions
@@ -28,7 +28,7 @@ def test_flask_crud(api_url_root, splash_client, token_header):
 
     reference_1.pop("uid")
     post_resp = splash_client.post(
-        url_path, data=json.dumps(reference_1), headers=token_header
+        url_path, json=copy.deepcopy(reference_1), headers=token_header
     )
     assert (
         post_resp.status_code == 200
@@ -65,7 +65,7 @@ def test_search(api_url_root, splash_client, token_header):
     url = api_url_root + "/references"
 
     post_resp = splash_client.post(
-        url, data=json.dumps(reference_2), headers=token_header
+        url, json=copy.deepcopy(reference_2), headers=token_header
     )
     assert (
         post_resp.status_code == 200
@@ -115,7 +115,7 @@ def test_etag_functionality(
 ):
     url_path = api_url_root + "/references"
     post_resp = splash_client.post(
-        url_path, data=json.dumps(reference_3), headers=token_header
+        url_path, json=copy.deepcopy(reference_3), headers=token_header
     )
     assert (
         post_resp.status_code == 200
@@ -130,7 +130,7 @@ def test_etag_functionality(
 
     put_resp1 = splash_client.put(
         url_path + "/uid/" + uid,
-        data=json.dumps(reference_4),
+        json=copy.deepcopy(reference_4),
         headers={"If-Match": etag1, **token_header},
     )
     assert (
@@ -143,7 +143,7 @@ def test_etag_functionality(
 
     put_resp2 = splash_client.put(
         url_path + "/uid/" + uid,
-        data=json.dumps(reference_3),
+        json=copy.deepcopy(reference_3),
         headers={"If-Match": etag1, **token_header},
     )
     assert (
