@@ -22,19 +22,7 @@ def test_etag_functionality(api_url_root, splash_client, token_header):
 def test_no_empty_strings(api_url_root, splash_client, token_header):
     url = api_url_root + "/pages"
     post_resp = splash_client.post(
-        url, json=copy.deepcopy(empty_string_metadata_title), headers=token_header
-    )
-    assert (
-        post_resp.status_code == 422
-    ), f"{post_resp.status_code}: response is {post_resp.content}"
-    post_resp = splash_client.post(
-        url,json=copy.deepcopy(empty_string_metadata_text), headers=token_header
-    )
-    assert (
-        post_resp.status_code == 422
-    ), f"{post_resp.status_code}: response is {post_resp.content}"
-    post_resp = splash_client.post(
-        url, json=copy.deepcopy(empty_string_title), headers=token_header
+        url, data=json.dumps(empty_string_title), headers=token_header
     )
     assert (
         post_resp.status_code == 422
@@ -54,7 +42,7 @@ def test_retrieve_by_type(api_url_root, splash_client, token_header):
         json={
                 "title": "Maiar",
                 "page_type": "mythical_animals",
-                "metadata": [],
+
                 "documentation": "Hello",
                 "references": [],
             },
@@ -68,7 +56,6 @@ def test_retrieve_by_type(api_url_root, splash_client, token_header):
         json={
                 "title": "Troll",
                 "page_type": "mythical_animals",
-                "metadata": [],
                 "documentation": "Hello",
                 "references": [],
             },
@@ -82,7 +69,6 @@ def test_retrieve_by_type(api_url_root, splash_client, token_header):
         json={
                 "title": "Wand",
                 "page_type": "mythical_items",
-                "metadata": [],
                 "documentation": "Hello",
                 "references": [],
             },
@@ -111,7 +97,6 @@ def test_versioning(api_url_root, splash_client, token_header):
         json={
                 "title": "Drake",
                 "page_type": "mythical_animals",
-                "metadata": [],
                 "documentation": "Hello",
                 "references": [],
             },
@@ -128,7 +113,6 @@ def test_versioning(api_url_root, splash_client, token_header):
         json={
                 "title": "Drake/Dragon",
                 "page_type": "mythical_animals",
-                "metadata": [],
                 "documentation": "Hello",
                 "references": [],
             },
@@ -180,7 +164,6 @@ def test_versioning(api_url_root, splash_client, token_header):
         json={
                 "title": "Drake/Dragon",
                 "page_type": "mythical_animals",
-                "metadata": [],
                 "documentation": "Hello",
                 "references": [],
             },
@@ -210,7 +193,6 @@ def test_versioning(api_url_root, splash_client, token_header):
         json={
                 "title": "Drake/Dragon",
                 "page_type": "mythical_animals",
-                "metadata": [],
                 "documentation": "test",
                 "document_version": 3,
                 "references": [],
@@ -227,7 +209,6 @@ def test_versioning(api_url_root, splash_client, token_header):
         json={
                 "title": "Drake/Dragon",
                 "page_type": "mythical_animals",
-                "metadata": [],
                 "documentation": "test",
                 "document_version": 3,
                 "references": [],
@@ -247,7 +228,6 @@ def test_retrieve_num_versions(api_url_root, splash_client, token_header):
         json={
                 "title": "Beethoven's 5th",
                 "page_type": "songs",
-                "metadata": [],
                 "documentation": "test",
                 "references": [],
             },
@@ -265,7 +245,6 @@ def test_retrieve_num_versions(api_url_root, splash_client, token_header):
         json= {
                 "title": "Schicksals-Sinfonie",
                 "page_type": "songs",
-                "metadata": [],
                 "documentation": "test",
                 "references": [],
             },
@@ -282,7 +261,6 @@ def test_retrieve_num_versions(api_url_root, splash_client, token_header):
         json={
                 "title": "Schicksals-Sinfonie, Beethoven's 5th",
                 "page_type": "songs",
-                "metadata": [],
                 "documentation": "test",
                 "references": [],
             },
@@ -305,7 +283,6 @@ def test_retrieve_num_versions(api_url_root, splash_client, token_header):
 new_page = {
     "title": "Boron",
     "page_type": "compound",
-    "metadata": [{"title": "contributors", "text": "Matt Landsman, Lauren Nalley"}],
     "documentation": "- Naturally occurring in the environment\n\t - Seawater concentration around 5 mg/L [[1]](#1)\
                 \n - Toxicity\n\t - boron has an extremely narrow concentration range between deficiency and toxicity \
                 in some plants [[2]](#2) and it has been shown to suppress plant growth [[3]](#3) and immune response \
@@ -315,6 +292,12 @@ new_page = {
     "references": [{"doi": "10.XX/XXXX", "in_text": False}],
 }
 
+empty_string_documentation = {
+    "title": "Boron",
+    "page_type": "compound",
+    "documentation": "",
+    "references": [],
+}
 empty_string_title = {
     "title": "",
     "page_type": "compound",
@@ -324,28 +307,3 @@ empty_string_title = {
     "references": [],
 }
 
-empty_string_metadata_title = {
-    "title": "Boron",
-    "page_type": "compound",
-    "metadata": [{"title": "", "text": "Matt Landsman, Lauren Nalley"}],
-    "documentation": " - Landsman, Lawler, Katz (2020). Application of electrodialysis pretreatment to enhance boron \
-                removal and reduce fouling during nanofiltration/reverse osmosis",
-    "references": [],
-}
-
-empty_string_metadata_text = {
-    "title": "",
-    "page_type": "compound",
-    "metadata": [{"title": "contributors", "text": ""}],
-    "documentation": " - Landsman, Lawler, Katz (2020). Application of electrodialysis pretreatment to enhance boron \
-                    removal and reduce fouling during nanofiltration/reverse osmosis",
-    "references": [],
-}
-
-empty_string_documentation = {
-    "title": "Boron",
-    "page_type": "compound",
-    "metadata": [{"title": "contributors", "text": "Matt Landsman, Lauren Nalley"}],
-    "documentation": "",
-    "references": [],
-}
