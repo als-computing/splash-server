@@ -9,6 +9,7 @@ class TeamsService(MongoService):
 
     def __init__(self, db, collection_name):
         super().__init__(db, collection_name)
+        self._collection.create_index("name", unique=True)
 
     def create(self, current_user: User, team: NewTeam) -> str:
         return super().create(current_user, team.dict())
