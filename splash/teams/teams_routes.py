@@ -59,11 +59,10 @@ def create_team(
     return response
 
 
-@teams_router.put("/{uid}", tags=['teams'])
+@teams_router.put("/{uid}", tags=['teams'], response_model=CreateTeamResponse)
 def update_team(uid: str,
                 team: NewTeam,
                 current_user: User = Security(get_current_user),
-                response_model=CreateTeamResponse,
                 if_match: Optional[str] = Header(None)):
     try:
         response = services.teams.update(current_user, team, uid, etag=if_match)
