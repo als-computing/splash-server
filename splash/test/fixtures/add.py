@@ -142,6 +142,7 @@ def users():
 @pytest.fixture
 def teams_service(mongodb, users):
     teams_service = TeamsService(mongodb, "teams")
+    db.teams.delete_many({})
     teams_service.create(
         users["leader"],
         NewTeam(
