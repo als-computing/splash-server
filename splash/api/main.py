@@ -62,6 +62,9 @@ def setup_services():
     references_svc = ReferencesService(db, "references")
     teams_svc = TeamsService(db, "teams")
     runs_svc = RunsService(teams_svc, TeamRunChecker())
+    logger.info(f"setting MONGO_DB_URI {db_uri}")
+    logger.info(f"setting db {db}")
+
     set_auth_services(users_svc)
     set_pages_service(pages_svc)
     set_references_service(references_svc)
