@@ -2,7 +2,7 @@ from collections import namedtuple
 import logging
 from splash.service.models import SplashMetadata
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 from splash.users import User
 from pymongo.collation import Collation
 
