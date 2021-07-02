@@ -1,3 +1,4 @@
+import datetime
 from splash.service.models import SplashMetadata
 from splash.test.test_teams_service import request_user
 from splash.test.testing_utils import equal_dicts
@@ -55,9 +56,9 @@ def mongo_service():
 
 
 mock_times = [
-    "2021-01-05T19:15:53",
-    "2021-01-06T19:15:53",
-    "2021-03-06T19:15:53",
+    datetime.datetime.strptime("2021-01-05T19:15:53", "%Y-%m-%dT%H:%M:%S"),
+    datetime.datetime.strptime("2021-01-06T19:15:53", "%Y-%m-%dT%H:%M:%S"),
+    datetime.datetime.strptime("2021-03-06T19:15:53", "%Y-%m-%dT%H:%M:%S"),
 ]
 
 celebrimbor = {"name": "Celebrimbor", "Occupation": "Ringmaker"}

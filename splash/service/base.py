@@ -55,10 +55,8 @@ class MongoService:
                 raise ImmutableMetadataField(
                     f"Cannot mutate field: `{field}` in `splash_md`"
                 )
-
-        data["splash_md"]["create_date"] = datetime.utcnow().strftime(
-            "%Y-%m-%dT%H:%M:%S"
-        )
+        # remove the microsecond because mongo will truncate past a certain amount of decimal places
+        data["splash_md"]["create_date"] = datetime.utcnow().replace(microsecond=0)
         data["splash_md"]["last_edit"] = data["splash_md"]["create_date"]
         if current_user is None:
             data["splash_md"]["creator"] = "NONE"
@@ -134,7 +132,8 @@ class MongoService:
                     )
                 data["splash_md"][field] = metadata[field]
         # Update the edit_record array and last edit timestamp
-        data["splash_md"]["last_edit"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
+        # remove the microsecond because mongo will truncate past a certain amount of decimal places
+        data["splash_md"]["last_edit"] = datetime.utcnow().replace(microsecond=0)
         data["splash_md"]["edit_record"].append(
             {"date": data["splash_md"]["last_edit"], "user": current_user.uid}
         )
