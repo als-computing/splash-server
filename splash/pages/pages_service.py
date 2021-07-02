@@ -1,4 +1,7 @@
 from typing import Generator
+
+from pymongo.operations import IndexModel
+from pymongo import ASCENDING, DESCENDING, TEXT
 from . import Page, NewPage, UpdatePage
 from ..service.base import VersionedMongoService
 from ..users import User
@@ -6,8 +9,14 @@ from ..users import User
 
 class PagesService(VersionedMongoService):
 
-    def __init__(self, db, collection_name, create_indexes,  versioned_collection_name, create_indexes_on_old):
-        super().__init__(db, collection_name, create_indexes,  versioned_collection_name, create_indexes_on_old)
+    def __init__(self, db, collection_name,  versioned_collection_name):
+        super().__init__(db, collection_name,  versioned_collection_name)
+
+    def _create_indexes(self):
+        text_index = IndexModel([("title", TEXT), ("documentation", TEXT)])
+        sort_index = IndexModel([("title", ASCENDING), ("splash_md.last_edit", DESCENDING)])
+        self._collection.create_indexes([text_index, sort_index])
+        super()._create_indexes()
 
     def create(self, current_user: User, page: NewPage) -> str:
         return super().create(current_user, page.dict())
@@ -29,7 +38,7 @@ class PagesService(VersionedMongoService):
                           page: int = 1,
                           query=None,
                           page_size=10,
-                          sort=[("title", 1), ("splash_md.last_edit", -1)]) -> Generator[Page, None, None]:
+                          sort=[("title", ASCENDING), ("splash_md.last_edit", DESCENDING)]) -> Generator[Page, None, None]:
         cursor = super().retrieve_multiple(current_user, page, query, page_size, sort)
         for page_dict in cursor:
             yield Page(**page_dict)

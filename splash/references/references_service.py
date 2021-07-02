@@ -1,15 +1,21 @@
+from pymongo import TEXT
+from pymongo.operations import IndexModel
 from . import NewReference, Reference
 from ..service.base import MongoService
 from ..users import User
-import re
 
 
 class ReferencesService(MongoService):
-    def __init__(self, db, collection_name, create_indexes):
-        super().__init__(db, collection_name, create_indexes)
+    def __init__(self, db, collection_name):
+        super().__init__(db, collection_name)
+    
+    def _create_indexes(self):
+        full_text_index = IndexModel([("$**", TEXT)])
+        doi_index = IndexModel("DOI")
+        self._collection.create_indexes([full_text_index, doi_index])
+        super()._create_indexes()
 
     def create(self, current_user: User, reference: NewReference):
-        
         return super().create(current_user=current_user, data=reference)
 
     def retrieve_one(
@@ -39,7 +45,7 @@ class ReferencesService(MongoService):
 
     def search(self, current_user: User, search, page: int = 1, page_size=10):
         query = {
-            "$text":{'$search': search}
+            "$text": {'$search': search}
         }
         return self.retrieve_multiple(
             current_user, page=page, page_size=page_size, query=query

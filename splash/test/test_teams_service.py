@@ -1,4 +1,3 @@
-from splash.api import indexes
 import pytest
 from splash.teams.teams_service import TeamsService
 from splash.teams import NewTeam
@@ -25,7 +24,7 @@ def request_user():
 
 @pytest.fixture
 def teams_service(mongodb, request_user):
-    teams_service = TeamsService(mongodb, "teams", indexes.create_teams_indexes)
+    teams_service = TeamsService(mongodb, "teams")
     with freeze_time("2020-02-9T13:40:53", tz_offset=-4, auto_tick_seconds=15):
         teams_service.create(
             request_user,

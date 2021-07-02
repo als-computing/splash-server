@@ -1,7 +1,5 @@
 import datetime
-from splash.api import indexes
 from splash.service.models import SplashMetadata
-from splash.test.test_teams_service import request_user
 from splash.test.testing_utils import equal_dicts
 from splash.users import User
 import pytest
@@ -52,7 +50,7 @@ def request_user_2():
 @pytest.fixture
 def mongo_service():
     db = mongomock.MongoClient().db
-    mongo_service = MongoService(db, "elves", indexes.create_indexes)
+    mongo_service = MongoService(db, "elves")
     return mongo_service
 
 

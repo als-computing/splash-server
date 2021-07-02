@@ -1,5 +1,4 @@
 from splash.users import User
-from splash.api import indexes
 import pytest
 from splash.service.base import (
     EtagMismatchError,
@@ -31,7 +30,7 @@ def request_user():
 @pytest.fixture
 def versioned_service():
     db = mongomock.MongoClient().db
-    versioned_service = VersionedMongoService(db, "elves", indexes.create_pages_indexes, "elves_old", indexes.create_indexes_pages_old)
+    versioned_service = VersionedMongoService(db, "elves",  "elves_old")
     return versioned_service
 
 
