@@ -6,8 +6,8 @@ from ..users import User
 
 class PagesService(VersionedMongoService):
 
-    def __init__(self, db, collection_name, versioned_collection_name):
-        super().__init__(db, collection_name, versioned_collection_name)
+    def __init__(self, db, collection_name, create_indexes,  versioned_collection_name, create_indexes_on_old):
+        super().__init__(db, collection_name, create_indexes,  versioned_collection_name, create_indexes_on_old)
 
     def create(self, current_user: User, page: NewPage) -> str:
         return super().create(current_user, page.dict())
@@ -28,8 +28,9 @@ class PagesService(VersionedMongoService):
                           current_user: User,
                           page: int = 1,
                           query=None,
-                          page_size=10) -> Generator[Page, None, None]:
-        cursor = super().retrieve_multiple(current_user, page, query, page_size, sort="title", order=1)
+                          page_size=10,
+                          sort=[("title", 1), ("splash_md.last_edit", -1)]) -> Generator[Page, None, None]:
+        cursor = super().retrieve_multiple(current_user, page, query, page_size, sort)
         for page_dict in cursor:
             yield Page(**page_dict)
 
@@ -49,9 +50,4 @@ class PagesService(VersionedMongoService):
 
     def get_user_pages(self, request_user: User, uid: str):
         # find Pages that contain the member by uid
-        query = {
-            "members." + uid: {"$exists": True}
-        }
-        pages_dicts = list(self.retrieve_multiple(request_user, page=1, query=query))
-        for page_dict in pages_dicts:
-            yield Page(**page_dict)
+        raise NotImplementedError()

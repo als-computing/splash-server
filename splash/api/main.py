@@ -21,6 +21,7 @@ from splash.runs.runs_routes import set_runs_service, runs_router
 from splash.runs.runs_service import RunsService, TeamRunChecker
 from splash.teams.teams_routes import set_teams_service, teams_router
 from splash.teams.teams_service import TeamsService
+from . import indexes
 
 logger = logging.getLogger("splash")
 db = None
@@ -57,10 +58,10 @@ def setup_services():
     init_logging()
     db_uri = ConfigStore.MONGO_DB_URI
     db = MongoClient(db_uri).splash
-    users_svc = UsersService(db, "users")
-    pages_svc = PagesService(db, "pages", "pages_old")
-    references_svc = ReferencesService(db, "references")
-    teams_svc = TeamsService(db, "teams")
+    users_svc = UsersService(db, "users", indexes.create_users_indexes)
+    pages_svc = PagesService(db, "pages", indexes.create_pages_indexes, "pages_old", indexes.create_indexes_pages_old)
+    references_svc = ReferencesService(db, "references", indexes.create_references_indexes)
+    teams_svc = TeamsService(db, "teams", indexes.create_teams_indexes)
     runs_svc = RunsService(teams_svc, TeamRunChecker())
     logger.info(f"setting MONGO_DB_URI {db_uri}")
     logger.info(f"setting db {db}")

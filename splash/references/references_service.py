@@ -5,9 +5,8 @@ import re
 
 
 class ReferencesService(MongoService):
-    def __init__(self, db, collection_name):
-        super().__init__(db, collection_name)
-        self._collection.create_index("DOI", unique=True)
+    def __init__(self, db, collection_name, create_indexes):
+        super().__init__(db, collection_name, create_indexes)
 
     def create(self, current_user: User, reference: NewReference):
         
@@ -32,25 +31,15 @@ class ReferencesService(MongoService):
             return Reference(**reference_dict)
 
     def retrieve_multiple(
-        self, current_user: User, page: int = 1, query=None, page_size=10, sort="splash_md.last_edit"
+        self, current_user: User, page: int = 1, query=None, page_size=10, 
     ):
-        cursor = super().retrieve_multiple(current_user, page, query, page_size, sort)
+        cursor = super().retrieve_multiple(current_user, page, query, page_size)
         for reference_dict in cursor:
             yield Reference(**reference_dict)
 
     def search(self, current_user: User, search, page: int = 1, page_size=10):
-        escaped_search = re.escape(search)
-        regex_query = {"$regex": escaped_search, "$options": "i"}
         query = {
-            "$or": [
-                {"title": regex_query},
-                {"author.given": regex_query},
-                {"author.family": regex_query},
-                {"author.literal": regex_query},
-                {"author.dropping-particle": regex_query},
-                {"author.non-dropping-particle": regex_query},
-                {"author.suffix": regex_query},
-            ]
+            "$text":{'$search': search}
         }
         return self.retrieve_multiple(
             current_user, page=page, page_size=page_size, query=query

@@ -1,3 +1,4 @@
+from splash.api import indexes
 import pytest
 from splash.teams.teams_service import TeamsService
 from splash.teams import NewTeam
@@ -24,7 +25,7 @@ def request_user():
 
 @pytest.fixture
 def teams_service(mongodb, request_user):
-    teams_service = TeamsService(mongodb, "teams")
+    teams_service = TeamsService(mongodb, "teams", indexes.create_teams_indexes)
     with freeze_time("2020-02-9T13:40:53", tz_offset=-4, auto_tick_seconds=15):
         teams_service.create(
             request_user,
@@ -62,5 +63,5 @@ def test_get_user_teams(teams_service: TeamsService, request_user):
 
     teams = list(teams_service.get_user_teams(request_user, "shared_user"))
     assert len(teams) == 2
-    assert teams[0].name == "motorola"
-    assert teams[1].name == "banesto"
+    assert teams[0].name == "banesto"
+    assert teams[1].name == "motorola"

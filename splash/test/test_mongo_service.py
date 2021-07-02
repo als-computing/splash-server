@@ -1,4 +1,5 @@
 import datetime
+from splash.api import indexes
 from splash.service.models import SplashMetadata
 from splash.test.test_teams_service import request_user
 from splash.test.testing_utils import equal_dicts
@@ -51,7 +52,7 @@ def request_user_2():
 @pytest.fixture
 def mongo_service():
     db = mongomock.MongoClient().db
-    mongo_service = MongoService(db, "elves")
+    mongo_service = MongoService(db, "elves", indexes.create_indexes)
     return mongo_service
 
 
@@ -123,7 +124,7 @@ def test_order_by_key(mongo_service: MongoService, request_user_1: User, monkeyp
     mongo_service.create(request_user_1, deepcopy(legolas))
     mongo_service.create(request_user_1, deepcopy(galadriel))
     mongo_service.create(request_user_1, deepcopy(elrond))
-    elves = list(mongo_service.retrieve_multiple(request_user_1, sort="name", order=1))
+    elves = list(mongo_service.retrieve_multiple(request_user_1, sort=[("name", 1)],))
 
     assert len(elves) == 4
     equal_dicts(celebrimbor, elves[0], ignore_keys)
@@ -142,10 +143,8 @@ def test_retrieve_multiple_errors(
     mongo_service.create(request_user_1, deepcopy(legolas))
     mongo_service.create(request_user_1, deepcopy(galadriel))
     mongo_service.create(request_user_1, deepcopy(elrond))
-    with pytest.raises(TypeError, match="`sort` argument must be of type string"):
-        mongo_service.retrieve_multiple(request_user_1, sort=None, order=1)
-    with pytest.raises(ValueError, match="`order` argument must be 1 or -1"):
-        mongo_service.retrieve_multiple(request_user_1, sort=None, order=0)
+    with pytest.raises(TypeError, match="`sort` argument must be of type list"):
+        mongo_service.retrieve_multiple(request_user_1, sort=None)
 
 
 def test_edits(mongo_service: MongoService, request_user_1: User, request_user_2: User):

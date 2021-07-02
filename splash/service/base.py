@@ -5,6 +5,7 @@ import uuid
 from datetime import datetime, timezone
 from splash.users import User
 from pymongo.collation import Collation
+from pymongo import IndexModel
 
 
 ValidationIssue = namedtuple("ValidationIssue", "description, location, exception")
@@ -36,9 +37,10 @@ class Service:
 
 
 class MongoService:
-    def __init__(self, db, collection_name):
+    def __init__(self, db, collection_name, create_indexes):
         self._db = db
         self._collection = db[collection_name]
+        create_indexes(self._collection)
 
     def create(self, current_user: User, data: dict):
         if "uid" in data:
@@ -79,13 +81,14 @@ class MongoService:
         page: int = 1,
         query=None,
         page_size=10,
-        sort="splash_md.last_edit",
-        order=-1,
+        # KEEP IN MIND THAT SORT ORDER MAY NOT BE CONSISTENT IF YOU HAVE EQUALITY
+        # AMONG ALL OF ITS CLAUSES IN TWO DOCUMENTS.
+        # IF YOU WANT TO MAKE SURE IT STAYS CONSISTENT,
+        # PLACE A UID AT THE END: https://docs.mongodb.com/manual/reference/method/cursor.sort/#sort-consistency
+        sort=[('splash_md.last_edit', -1), ('uid', 1)],
     ):
-        if order != -1 and order != 1:
-            raise ValueError("`order` argument must be 1 or -1")
-        if type(sort) is not str:
-            raise TypeError("`sort` argument must be of type string")
+        if type(sort) is not list:
+            raise TypeError("`sort` argument must be of type list")
         if page <= 0:
             raise BadPageArgument("Page parameter must greater than 0")
 
@@ -98,7 +101,7 @@ class MongoService:
 
         # Return documents
         return (
-            cursor.sort([(sort, order), ("uid", -1)])
+            cursor.sort(sort)
             .collation(Collation("en_US"))
             .skip(skips)
             .limit(page_size)
@@ -151,9 +154,9 @@ class MongoService:
 
 
 class VersionedMongoService(MongoService):
-    def __init__(self, db, collection_name, revisions_collection_name):
-        super().__init__(db, collection_name)
-        self._versions_svc = MongoService(db, revisions_collection_name)
+    def __init__(self, db, collection_name, create_indexes, revisions_collection_name, create_indexes_on_old):
+        super().__init__(db, collection_name, create_indexes)
+        self._versions_svc = MongoService(db, revisions_collection_name, create_indexes_on_old)
 
     def update(self, current_user: User, data: dict, uid: str, etag=None):
         if "splash_md" in data:
@@ -168,8 +171,9 @@ class VersionedMongoService(MongoService):
         if current_document is None:
             raise ObjectNotFoundError
         data["splash_md"]["version"] = current_document["splash_md"]["version"] + 1
+        result = super().update(current_user, data, uid, etag=etag)
         self._versions_svc._collection.insert_one(current_document)
-        return super().update(current_user, data, uid, etag=etag)
+        return result
 
     def create(self, current_user: User, data: dict):
         if "splash_md" in data:

@@ -1,6 +1,8 @@
 from splash.users import User
+from splash.api import indexes
 import pytest
 from splash.service.base import (
+    EtagMismatchError,
     VersionNotFoundError,
     VersionedMongoService,
     ObjectNotFoundError,
@@ -29,7 +31,7 @@ def request_user():
 @pytest.fixture
 def versioned_service():
     db = mongomock.MongoClient().db
-    versioned_service = VersionedMongoService(db, "elves", "elves_old")
+    versioned_service = VersionedMongoService(db, "elves", indexes.create_pages_indexes, "elves_old", indexes.create_indexes_pages_old)
     return versioned_service
 
 
@@ -114,6 +116,20 @@ def test_versioned_update(versioned_service: VersionedMongoService, request_user
         )
 
     assert versioned_service.retrieve_one(request_user, uid="Does not exist") is None
+
+def test_conflict_resolution(versioned_service: VersionedMongoService, request_user: User):
+    # TODO: Implement more tests, this one is only to catch a specific edge case that
+    # I had to fix
+    response = versioned_service.create(
+        request_user, {"name": "Celebrimbor", "Occupation": "Ringmaker"}
+    )
+    uid = response["uid"]
+    with pytest.raises(EtagMismatchError):
+        versioned_service.update(request_user, {"name": "Celebrimbor", "Occupation": "Ringmaker"}, uid, etag="wrong_etag")
+    # Make sure that the versioned collection was not changed
+    result = versioned_service._versions_svc.retrieve_one(request_user, uid)
+    assert result is None
+
 
 
 def test_retrieve_version(versioned_service: VersionedMongoService, request_user: User):

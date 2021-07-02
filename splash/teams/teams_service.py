@@ -7,9 +7,8 @@ from ..service.base import MongoService
 
 class TeamsService(MongoService):
 
-    def __init__(self, db, collection_name):
-        super().__init__(db, collection_name)
-        self._collection.create_index("name", unique=True)
+    def __init__(self, db, collection_name, create_indexes):
+        super().__init__(db, collection_name, create_indexes)
 
     def create(self, current_user: User, team: NewTeam) -> str:
         return super().create(current_user, team.dict())
@@ -23,7 +22,7 @@ class TeamsService(MongoService):
                           page: int = 1,
                           query=None,
                           page_size=10,
-                          sort="splash_md.last_edit"):
+                          sort=[("name", 1), ("splash_md.last_edit", -1)]):
         cursor = super().retrieve_multiple(current_user, page, query, page_size, sort)
         for team_dict in cursor:
             yield Team(**team_dict)

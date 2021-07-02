@@ -1,4 +1,5 @@
 import os
+from splash.api import indexes
 
 from fastapi.testclient import TestClient
 import mongomock
@@ -28,10 +29,10 @@ os.environ["GOOGLE_CLIENT_SECRET"] = "the_one_ring"
 
 
 db = mongomock.MongoClient().db
-users_svc = UsersService(db, "users")
-pages_svc = PagesService(db, "pages", "pages_old")
-references_svc = ReferencesService(db, "references")
-teams_svc = TeamsService(db, "teams")
+users_svc = UsersService(db, "users", indexes.create_users_indexes)
+pages_svc = PagesService(db, "pages", indexes.create_pages_indexes, "pages_old", indexes.create_indexes_pages_old)
+references_svc = ReferencesService(db, "references", indexes.create_references_indexes)
+teams_svc = TeamsService(db, "teams", indexes.create_teams_indexes)
 runs_svc = RunsService(teams_svc, TeamRunChecker())
 set_auth_services(users_svc)
 set_pages_service(pages_svc)
@@ -141,7 +142,7 @@ def users():
 
 @pytest.fixture
 def teams_service(mongodb, users):
-    teams_service = TeamsService(mongodb, "teams")
+    teams_service = TeamsService(mongodb, "teams", indexes.create_teams_indexes)
     db.teams.delete_many({})
     teams_service.create(
         users["leader"],

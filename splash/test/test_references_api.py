@@ -60,7 +60,7 @@ def test_flask_crud(api_url_root, splash_client, token_header):
         response.status_code == 200
     ), f"{response.status_code}: response is {response.content}"
 
-
+@pytest.mark.skip(reason="mongomock does not implement the '$text' operator yet")
 def test_search(api_url_root, splash_client, token_header):
     url = api_url_root + "/references"
 

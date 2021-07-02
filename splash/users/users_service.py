@@ -12,8 +12,8 @@ class UserNotFoundException(Exception):
 
 class UsersService(MongoService):
 
-    def __init__(self, db, collection_name):
-        super().__init__(db, collection_name)
+    def __init__(self, db, collection_name, create_indexes):
+        super().__init__(db, collection_name, create_indexes)
 
     def create(self, current_user: User, new_user: NewUser) -> str:
         return super().create(current_user, new_user.dict())
@@ -28,8 +28,9 @@ class UsersService(MongoService):
                           current_user: User,
                           page: int = 1,
                           query=None,
-                          page_size=10):
-        cursor = super().retrieve_multiple(current_user, page, query, page_size)
+                          page_size=10,
+                          sort=[("splash_md.family_name", 1), ("splash_md.last_edit", -1)]):
+        cursor = super().retrieve_multiple(current_user, page, query, page_size, sort)
         for user_dict in cursor:
             yield User(**user_dict)
 
