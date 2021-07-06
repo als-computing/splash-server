@@ -1,3 +1,5 @@
+from pymongo import ASCENDING, DESCENDING, TEXT
+from pymongo.operations import IndexModel
 from ..users import NewUser, User
 from ..service.base import MongoService
 
@@ -11,9 +13,16 @@ class UserNotFoundException(Exception):
 
 
 class UsersService(MongoService):
-
     def __init__(self, db, collection_name):
         super().__init__(db, collection_name)
+
+    def _create_indexes(self):
+        text_index = IndexModel(
+            [("given_name", TEXT), ("family_name", TEXT), ("email", TEXT)]
+        )
+        sort_index = IndexModel([("family_name", ASCENDING), ("splash_md.last_edit", DESCENDING)])
+        self._collection.create_indexes([text_index, sort_index])
+        super()._create_indexes()
 
     def create(self, current_user: User, new_user: NewUser) -> str:
         return super().create(current_user, new_user.dict())
@@ -24,12 +33,15 @@ class UsersService(MongoService):
             return None
         return User(**user_dict)
 
-    def retrieve_multiple(self,
-                          current_user: User,
-                          page: int = 1,
-                          query=None,
-                          page_size=10):
-        cursor = super().retrieve_multiple(current_user, page, query, page_size)
+    def retrieve_multiple(
+        self,
+        current_user: User,
+        page: int = 1,
+        query=None,
+        page_size=10,
+        sort=[("family_name", ASCENDING), ("splash_md.last_edit", DESCENDING)],
+    ):
+        cursor = super().retrieve_multiple(current_user, page, query, page_size, sort)
         for user_dict in cursor:
             yield User(**user_dict)
 
@@ -50,9 +62,9 @@ class UsersService(MongoService):
         subject : str
             subject id in the authority's system
         """
-        users = list(self.retrieve_multiple(current_user, query={
-                "authenticators.email": email
-            }))
+        users = list(
+            self.retrieve_multiple(current_user, query={"authenticators.email": email})
+        )
 
         if len(users) == 0:
             raise UserNotFoundException()

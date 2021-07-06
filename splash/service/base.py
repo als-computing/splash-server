@@ -5,6 +5,8 @@ import uuid
 from datetime import datetime
 from splash.users import User
 from pymongo.collation import Collation
+from pymongo import DESCENDING, IndexModel
+from pymongo import ASCENDING
 
 
 ValidationIssue = namedtuple("ValidationIssue", "description, location, exception")
@@ -39,6 +41,13 @@ class MongoService:
     def __init__(self, db, collection_name):
         self._db = db
         self._collection = db[collection_name]
+        self._create_indexes()
+
+    def _create_indexes(self):
+        uid_unique_index = IndexModel("uid", unique=True)
+        creator_index = IndexModel("splash_md.creator")
+        sort_index = IndexModel([("splash_md.last_edit", DESCENDING), ("uid", DESCENDING)])
+        self._collection.create_indexes([uid_unique_index, creator_index, sort_index])
 
     def create(self, current_user: User, data: dict):
         if "uid" in data:
@@ -79,13 +88,14 @@ class MongoService:
         page: int = 1,
         query=None,
         page_size=10,
-        sort="splash_md.last_edit",
-        order=-1,
+        # KEEP IN MIND THAT SORT ORDER MAY NOT BE CONSISTENT IF YOU HAVE EQUALITY
+        # AMONG ALL OF ITS CLAUSES IN TWO DOCUMENTS.
+        # IF YOU WANT TO MAKE SURE IT STAYS CONSISTENT,
+        # PLACE A UID AT THE END: https://docs.mongodb.com/manual/reference/method/cursor.sort/#sort-consistency
+        sort=[("splash_md.last_edit", DESCENDING), ("uid", DESCENDING)],
     ):
-        if order != -1 and order != 1:
-            raise ValueError("`order` argument must be 1 or -1")
-        if type(sort) is not str:
-            raise TypeError("`sort` argument must be of type string")
+        if type(sort) is not list:
+            raise TypeError("`sort` argument must be of type list")
         if page <= 0:
             raise BadPageArgument("Page parameter must greater than 0")
 
@@ -98,10 +108,7 @@ class MongoService:
 
         # Return documents
         return (
-            cursor.sort([(sort, order), ("uid", -1)])
-            .collation(Collation("en_US"))
-            .skip(skips)
-            .limit(page_size)
+            cursor.sort(sort).collation(Collation("en_US")).skip(skips).limit(page_size)
         )
 
     def update(self, current_user: User, data: dict, uid: str, etag=None):
@@ -113,7 +120,10 @@ class MongoService:
 
         # If the etags don't match
         if etag is not None and etag != metadata["etag"]:
-            raise EtagMismatchError(f"Etag argument `{etag}` does not match current etag: `{ metadata['etag'] }`", metadata['etag'])
+            raise EtagMismatchError(
+                f"Etag argument `{etag}` does not match current etag: `{ metadata['etag'] }`",
+                metadata["etag"],
+            )
 
         if "splash_md" not in data:
             data["splash_md"] = metadata
@@ -150,10 +160,21 @@ class MongoService:
             raise ObjectNotFoundError
 
 
+class HistoricMongoService(MongoService):
+    def __init__(self, db, collection_name):
+        super().__init__(db, collection_name)
+
+    def _create_indexes(self):
+        uid_version_unique_index = IndexModel(
+            [("uid", ASCENDING), ("splash_md.version", ASCENDING)], unique=True
+        )
+        self._collection.create_indexes([uid_version_unique_index])
+
+
 class VersionedMongoService(MongoService):
     def __init__(self, db, collection_name, revisions_collection_name):
         super().__init__(db, collection_name)
-        self._versions_svc = MongoService(db, revisions_collection_name)
+        self._versions_svc = HistoricMongoService(db, revisions_collection_name)
 
     def update(self, current_user: User, data: dict, uid: str, etag=None):
         if "splash_md" in data:
@@ -168,8 +189,9 @@ class VersionedMongoService(MongoService):
         if current_document is None:
             raise ObjectNotFoundError
         data["splash_md"]["version"] = current_document["splash_md"]["version"] + 1
+        result = super().update(current_user, data, uid, etag=etag)
         self._versions_svc._collection.insert_one(current_document)
-        return super().update(current_user, data, uid, etag=etag)
+        return result
 
     def create(self, current_user: User, data: dict):
         if "splash_md" in data:

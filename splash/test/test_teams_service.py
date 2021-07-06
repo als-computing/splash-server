@@ -62,5 +62,5 @@ def test_get_user_teams(teams_service: TeamsService, request_user):
 
     teams = list(teams_service.get_user_teams(request_user, "shared_user"))
     assert len(teams) == 2
-    assert teams[0].name == "motorola"
-    assert teams[1].name == "banesto"
+    assert teams[0].name == "banesto"
+    assert teams[1].name == "motorola"

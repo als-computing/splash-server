@@ -110,6 +110,7 @@ def generic_test_etag_functionality(
     assert get_resp3.json() == get_resp2.json()
 
 
+
 # Utility function for asserting that dicts are equal, excluding specific keys
 # https://stackoverflow.com/questions/10480806/compare-dictionaries-ignoring-specific-keys
 def equal_dicts(d1, d2, ignore_keys=[]):
