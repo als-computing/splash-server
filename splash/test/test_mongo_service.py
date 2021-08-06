@@ -232,6 +232,18 @@ def test_create_with_bad_metadata(mongo_service: MongoService, request_user_1: U
             mongo_service.create(request_user_1, {"splash_md": {field: "test_value"}})
 
 
+def test_update_with_good_metadata(mongo_service: MongoService, request_user_1: User):
+    response = mongo_service.create(request_user_1, {"Mordor": "Mt. Doom"})
+
+    data = mongo_service.retrieve_one(request_user_1, response["uid"])
+    data.pop("splash_md")
+    data["splash_md"] = {"muteable_field": "test"}
+    data.pop("uid")
+
+    mongo_service.update(request_user_1, data, response["uid"])
+    assert data == mongo_service.retrieve_one(request_user_1, response["uid"])
+
+
 def test_update_with_bad_metadata(mongo_service: MongoService, request_user_1: User):
     response = mongo_service.create(request_user_1, {"Mordor": "Mt. Doom"})
 
