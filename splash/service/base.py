@@ -1,5 +1,7 @@
 from collections import namedtuple
 import logging
+
+from pydantic.main import BaseModel
 from splash.service.models import SplashMetadata, VersionedSplashMetadata
 import uuid
 from datetime import datetime
@@ -14,7 +16,15 @@ ValidationIssue = namedtuple("ValidationIssue", "description, location, exceptio
 logger = logging.getLogger("splash.service")
 
 
-# This is a decorator which ensures that none of fields in SplashMetadata 
+def check_for_fields(model: BaseModel, data: dict):
+    model_fields = model.__dict__["__fields__"]
+    for field in model_fields:
+        if field in data["splash_md"]:
+            return field
+    return None
+
+
+# This is a decorator which ensures that none of fields in SplashMetadata
 # Are being modified. We only want these fields to be modified by MongoService
 # It also ensures that the uid is not being modified
 def validate_base_metadata(func):
@@ -24,17 +34,15 @@ def validate_base_metadata(func):
 
         if "splash_md" not in data:
             return func(self, current_user, data, *args, **kwargs)
+            # The top layer that called this cannot mutate
+            # any of these fields. They should only be mutated by
+            # the service layer that uses this decorator or a lower one
+        field = check_for_fields(SplashMetadata, data)
+        if field is not None:
+            raise ImmutableMetadataField(f"Cannot mutate field: `{field}` in `splash_md`")
 
-        basic_md_fields = SplashMetadata.__dict__["__fields__"]
-        # The top layer that called this cannot mutate
-        # any of these fields. They should only be mutated by
-        # this service layer
-        for field in basic_md_fields:
-            if field in data["splash_md"]:
-                raise ImmutableMetadataField(
-                    f"Cannot mutate field: `{field}` in `splash_md`"
-                )
         return func(self, current_user, data, *args, **kwargs)
+
     return wrapper
 
 
@@ -46,16 +54,11 @@ def validate_versioned_metadata(func):
         if "splash_md" not in data:
             return func(self, current_user, data, *args, **kwargs)
 
-        versioned_md_fields = VersionedSplashMetadata.__dict__["__fields__"]
-        # The top layer that called this cannot mutate
-        # any of these fields. They should only be mutated by
-        # this service layer
-        for field in versioned_md_fields:
-            if field in data["splash_md"]:
-                raise ImmutableMetadataField(
-                    f"Cannot mutate field: `{field}` in `splash_md`"
-                )
+        field = check_for_fields(VersionedSplashMetadata, data)
+        if field is not None:
+            raise ImmutableMetadataField(f"Cannot mutate field: `{field}` in `splash_md`")
         return func(self, current_user, data, *args, **kwargs)
+
     return wrapper
 
 
@@ -91,7 +94,9 @@ class MongoService:
     def _create_indexes(self):
         uid_unique_index = IndexModel("uid", unique=True)
         creator_index = IndexModel("splash_md.creator")
-        sort_index = IndexModel([("splash_md.last_edit", DESCENDING), ("uid", DESCENDING)])
+        sort_index = IndexModel(
+            [("splash_md.last_edit", DESCENDING), ("uid", DESCENDING)]
+        )
         self._collection.create_indexes([uid_unique_index, creator_index, sort_index])
 
     @validate_base_metadata
