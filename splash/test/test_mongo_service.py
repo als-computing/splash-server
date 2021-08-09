@@ -235,13 +235,18 @@ def test_create_with_bad_metadata(mongo_service: MongoService, request_user_1: U
 def test_update_with_good_metadata(mongo_service: MongoService, request_user_1: User):
     response = mongo_service.create(request_user_1, {"Mordor": "Mt. Doom"})
 
-    data = mongo_service.retrieve_one(request_user_1, response["uid"])
-    data.pop("splash_md")
-    data["splash_md"] = {"muteable_field": "test"}
-    data.pop("uid")
+    incoming_data = mongo_service.retrieve_one(request_user_1, response["uid"])
+    incoming_data.pop("splash_md")
+    incoming_data["splash_md"] = {"muteable_field": "test"}
+    incoming_data.pop("uid")
 
-    mongo_service.update(request_user_1, data, response["uid"])
-    assert data == mongo_service.retrieve_one(request_user_1, response["uid"])
+    mongo_service.update(request_user_1, deepcopy(incoming_data), response["uid"])
+
+    stored_data = mongo_service.retrieve_one(request_user_1, response["uid"])
+    # Make sure body stayed the same
+    equal_dicts(incoming_data, stored_data, ignore_keys)
+    # Make sure that the field was changed
+    assert incoming_data["splash_md"]["muteable_field"] == stored_data["splash_md"]["muteable_field"]
 
 
 def test_update_with_bad_metadata(mongo_service: MongoService, request_user_1: User):

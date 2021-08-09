@@ -2,6 +2,7 @@ from pymongo import ASCENDING, DESCENDING, TEXT
 from pymongo.operations import IndexModel
 from ..users import NewUser, User
 from ..service.base import MongoService
+from ..service.authorization import authorize_admin_action
 
 
 class MultipleUsersAuthenticatorException(Exception):
@@ -24,7 +25,8 @@ class UsersService(MongoService):
         self._collection.create_indexes([text_index, sort_index])
         super()._create_indexes()
 
-    def create(self, current_user: User, new_user: NewUser) -> str:
+    @authorize_admin_action
+    def create(self, current_user: User, new_user: NewUser) -> dict:
         return super().create(current_user, new_user.dict())
 
     def retrieve_one(self, current_user: User, uid: str) -> User:
@@ -45,9 +47,11 @@ class UsersService(MongoService):
         for user_dict in cursor:
             yield User(**user_dict)
 
+    @authorize_admin_action
     def update(self, current_user: User, new_user: NewUser, uid: str, etag: str = None):
         return super().update(current_user, new_user.dict(), uid, etag=etag)
 
+    @authorize_admin_action
     def delete(self, current_user: User, uid):
         raise NotImplementedError
 

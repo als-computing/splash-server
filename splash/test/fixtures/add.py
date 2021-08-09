@@ -9,7 +9,7 @@ from splash.pages.pages_routes import set_pages_service
 from splash.pages.pages_service import PagesService
 from splash.references.references_routes import set_references_service
 from splash.references.references_service import ReferencesService
-from splash.users import NewUser
+from splash.users import NewUser, User
 from splash.users.users_routes import set_users_service
 from splash.users.users_service import UsersService
 from splash.runs.runs_routes import set_runs_service
@@ -55,11 +55,15 @@ def mock_collation_prop(monkeypatch):
 def mongodb():
     return db
 
+# @pytest.fixture
+# def fresh_mongodb():
+#     return mongomock.MongoClient().db
+
 
 @pytest.fixture
 def test_user1():
     return NewUser(
-        given_name="ford", family_name="prefect", email="ford@beetleguice.planet"
+        given_name="ford", family_name="prefect", email="ford@beetleguice.planet", 
     )
 
 
@@ -73,10 +77,33 @@ def test_user1():
 token_info1 = {"sub": None, "scopes": ["splash"]}
 token_info2 = {"sub": None, "scopes": ["splash"]}
 
+admin_user1 = User(
+        splash_md={
+            "creator": "NONE",
+            "create_date": "2020-01-7T13:40:53",
+            "last_edit": "2020-01-7T13:40:53",
+            "edit_record": [],
+            "etag": "f672367e-c534-4f4a-9e5a-0941dbab2d1c",
+            "admin": True
+        },
+        uid="foobar1",
+        given_name="Sauron",
+        family_name="The Dark Lord",
+        email="Sauron@mordor.net",
+    )
+
+admin_user2 = NewUser(
+        splash_md={
+            "admin": True
+        },
+        given_name="Melkor",
+        family_name="The Ainur",
+        email="Melkor@silmarillion.com",
+    )
 
 @pytest.fixture
 def splash_client(mongodb, test_user1, monkeypatch):
-    uid = users_svc.create(None, test_user1)["uid"]
+    uid = users_svc.create(admin_user1, admin_user2)["uid"]
     token_info1["sub"] = uid
     client = TestClient(app)
     return client
@@ -129,13 +156,13 @@ other_team = {
 
 @pytest.fixture(scope="session", autouse=True)
 def users():
-    user_leader_uid = users_svc.create(None, NewUser(**leader))["uid"]
-    user_same_team_uid = users_svc.create(None, NewUser(**same_team))["uid"]
-    user_other_team_uid = users_svc.create(None, NewUser(**other_team))["uid"]
+    user_leader_uid = users_svc.create(admin_user1, NewUser(**leader))["uid"]
+    user_same_team_uid = users_svc.create(admin_user1, NewUser(**same_team))["uid"]
+    user_other_team_uid = users_svc.create(admin_user1, NewUser(**other_team))["uid"]
     users = {}
-    users["leader"] = users_svc.retrieve_one(None, user_leader_uid)
-    users["same_team"] = users_svc.retrieve_one(None, user_same_team_uid)
-    users["other_team"] = users_svc.retrieve_one(None, user_other_team_uid)
+    users["leader"] = users_svc.retrieve_one(admin_user1, user_leader_uid)
+    users["same_team"] = users_svc.retrieve_one(admin_user1, user_same_team_uid)
+    users["other_team"] = users_svc.retrieve_one(admin_user1, user_other_team_uid)
     return users
 
 
