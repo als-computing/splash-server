@@ -73,6 +73,7 @@ def generic_test_etag_functionality(
         post_resp.status_code == 200
     ), f"{post_resp.status_code}: response is {post_resp.content}"
     assert len(post_resp.json()["splash_md"]["etag"]) > 0
+    post_resp.json()["splash_md"]["etag"] is str
     uid = post_resp.json()["uid"]
 
     get_resp1 = splash_client.get(url_path + "/" + uid, headers=token_header)
