@@ -311,6 +311,7 @@ def test_etag_functionality(mongo_service: MongoService, request_user_1: User):
         == f"Etag argument `{etag1}` does not match current etag: `{etag2}`"
     )
     assert exc.value.etag == etag2
+    assert exc.value.splash_md == document_2['splash_md']
     # make sure no changes were made
     assert doc_2 == document_2
 

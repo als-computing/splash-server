@@ -1,6 +1,9 @@
 import logging
+from splash.service.models import SplashMetadataAllowExtra
 
 from fastapi.responses import JSONResponse
+
+from fastapi.encoders import jsonable_encoder
 
 from splash.service.base import EtagMismatchError
 
@@ -77,7 +80,13 @@ def setup_services():
 async def handle_wrong_etag(response, exc):
     return JSONResponse(
         status_code=412,
-        content={"err": "etag_mismatch_error", "etag": exc.etag},
+        content={
+            "err": "etag_mismatch_error",
+            "etag": exc.etag,
+            # Parse to make sure that optional fields, such as archive,
+            # are inserted as None and not left out
+            "splash_md": jsonable_encoder(SplashMetadataAllowExtra.parse_obj(exc.splash_md)),
+        },
     )
 
 

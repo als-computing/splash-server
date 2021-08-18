@@ -184,6 +184,7 @@ class MongoService:
             raise EtagMismatchError(
                 f"Etag argument `{etag}` does not match current etag: `{ metadata['etag'] }`",
                 metadata["etag"],
+                metadata,
             )
 
         if "splash_md" not in data:
@@ -330,8 +331,9 @@ class ImmutableMetadataField(KeyError):
 
 
 class EtagMismatchError(ValueError):
-    def __init__(self, message, etag):
+    def __init__(self, message, etag, splash_md):
         self.etag = etag
+        self.splash_md = splash_md
         super().__init__(message, etag)
 
 

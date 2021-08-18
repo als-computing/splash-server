@@ -109,6 +109,8 @@ def generic_test_etag_functionality(
     get_resp3 = splash_client.get(url_path + "/" + uid, headers=token_header)
     # Make sure that the document was not changed
     assert get_resp3.json() == get_resp2.json()
+    assert put_resp2.json()['splash_md'] == get_resp3.json()['splash_md'], f'{put_resp2.json()["splash_md"]} is not {get_resp3.json()["splash_md"]}'
+
 
 
 
