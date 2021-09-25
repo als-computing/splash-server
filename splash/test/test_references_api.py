@@ -1,7 +1,13 @@
 import copy
 import json
+from splash.test.testing_utils import equal_dicts
 
 import pytest
+
+
+def create_resource(api_url_root, splash_client, token_header, resource):
+    url_path = api_url_root + "/references"
+    return splash_client.post(url_path, json=copy.deepcopy(resource), headers=token_header)
 
 
 # TODO: Test the put functions
@@ -15,7 +21,7 @@ def test_flask_crud(api_url_root, splash_client, token_header):
 
     reference_1["uid"] = "test"
     post_resp = splash_client.post(
-        url_path, data=json.dumps(reference_1), headers=token_header
+        url_path, json=copy.deepcopy(reference_1), headers=token_header
     )
     assert (
         post_resp.status_code == 422
@@ -53,12 +59,7 @@ def test_flask_crud(api_url_root, splash_client, token_header):
         response.status_code == 200
     ), f"{response.status_code}: response is {response.content}"
 
-    response = splash_client.get(
-        url_path + "/doi/" + reference_1["DOI"], headers=token_header
-    )
-    assert (
-        response.status_code == 200
-    ), f"{response.status_code}: response is {response.content}"
+
 
 @pytest.mark.skip(reason="mongomock does not implement the '$text' operator yet")
 def test_search(api_url_root, splash_client, token_header):
@@ -157,6 +158,35 @@ def test_etag_functionality(
     assert get_resp3.json() == get_resp2.json()
 
 
+def test_retrieve_by_DOI(api_url_root, splash_client, token_header):
+    url_path = api_url_root + "/references"
+    post_resp1 = create_resource(api_url_root,splash_client, token_header, reference_5)
+    assert (
+        post_resp1.status_code == 200
+    ), f"{post_resp1.status_code}: response is {post_resp1.content}"
+
+    create_resource(api_url_root, splash_client, token_header, reference_7)
+    get_resp1 = splash_client.get(
+        url_path + "/doi/" + reference_5["DOI"], headers=token_header
+    )
+    assert post_resp1.json()['uid'] == get_resp1.json()[0]['uid']
+    equal_dicts(reference_5, get_resp1.json()[0], ignore_keys=['uid', 'splash_md'])
+    assert len(get_resp1.json()) == 1
+
+    post_resp2 = create_resource(api_url_root, splash_client, token_header, reference_6)
+    get_resp2 = splash_client.get(
+        url_path + "/doi/" + reference_6["DOI"], headers=token_header
+    )
+
+    assert (
+        post_resp2.status_code == 200
+    ), f"{post_resp2.status_code}: response is {post_resp2.content}"
+
+    assert any(post_resp2.json()['uid'] == page['uid'] for page in get_resp2.json())
+    assert any(post_resp1.json()['uid'] == page['uid'] for page in get_resp2.json())
+    assert len(get_resp2.json()) == 2
+
+
 reference_1 = {
     "DOI": "10.5406/jfilmvideo.67.3-4.0079",
     "title": "The ecological relationship between Mordor and Middle Earth: A life systems analysis",
@@ -190,6 +220,36 @@ reference_4 = {
     "author": [
         {"family": "The Grey", "given": "Gandalf"},
         {"family": "The White", "given": "Saruman"},
+    ],
+    "origin_url": "https://data.crossref.org/10.5406/jfilmvideo.67.3-4.0079",
+}
+
+
+
+reference_5 = {
+    "DOI": "10.xx/xx",
+    "title": "Test5",
+    "author": [
+        {"family": "Baggins", "given": "Frodo"},
+    ],
+    "origin_url": "https://data.crossref.org/10.5406/jfilmvideo.67.3-4.0079",
+}
+
+reference_6 = {
+    "DOI": "10.xx/xx",
+    "title": "Test6",
+    "author": [
+        {"family": "Baggins", "given": "Bilbo"},
+    ],
+    "origin_url": "https://data.crossref.org/10.5406/jfilmvideo.67.3-4.0079",
+}
+
+
+reference_7 = {
+    "DOI": "10.ff/ff",
+    "title": "Test7",
+    "author": [
+        {"family": "Baggins", "given": "Bilbo"},
     ],
     "origin_url": "https://data.crossref.org/10.5406/jfilmvideo.67.3-4.0079",
 }
