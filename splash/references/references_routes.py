@@ -67,14 +67,14 @@ def read_reference_by_doi(
         doi: str,
         current_user: User = Security(get_current_user)):
 
-    reference_dict = services.references.retrieve_by_doi(current_user, doi=doi)
+    reference_list = services.references.retrieve_by_doi(current_user, doi=doi)
 
-    if reference_dict is None:
+    if reference_list is None:
         raise HTTPException(
             status_code=404,
             detail="Not found",
         )
-    return reference_dict
+    return reference_list
 
 @ references_router.put("/uid/{uid}", tags=['compounds'], response_model=CreateReferenceResponse)
 def replace_reference_by_uid(

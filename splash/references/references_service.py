@@ -1,4 +1,6 @@
 from pymongo import TEXT
+import pymongo
+from pymongo.collation import Collation, CollationStrength
 from pymongo.operations import IndexModel
 from . import NewReference, Reference
 from ..service.base import MongoService
@@ -13,7 +15,10 @@ class ReferencesService(MongoService):
         full_text_index = IndexModel([("$**", TEXT)])
         # This allows us to ensure that all DOIs that are of type string are unique
         # which ensures that we can have multiple null DOIs but no duplicate string DOIs
-        doi_index = IndexModel("DOI")
+        doi_index = IndexModel(
+                                [("splash_md.archived", pymongo.ASCENDING), ("DOI", pymongo.ASCENDING)],
+                                collation=Collation("en_US", strength=2),
+                            )
         self._collection.create_indexes([full_text_index, doi_index])
         super()._create_indexes()
 
@@ -32,8 +37,9 @@ class ReferencesService(MongoService):
         page: int = 1,
         query=None,
         page_size=10,
+        collation=None
     ):
-        cursor = super().retrieve_multiple(current_user, page, query, page_size)
+        cursor = super().retrieve_multiple(current_user, page, query, page_size, collation=collation)
         for reference_dict in cursor:
             yield Reference(**reference_dict)
 
@@ -48,7 +54,9 @@ class ReferencesService(MongoService):
             current_user,
             page=page,
             page_size=page_size,
-            query={"DOI": {"$eq": doi, "$type": "string"}},
+            query={"DOI": doi},
+            # ensure that requests are case insensitive
+            collation=Collation(locale='en_US', strength=CollationStrength.SECONDARY)
         )
 
     def search(self, current_user: User, search, page: int = 1, page_size=10):

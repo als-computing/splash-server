@@ -112,11 +112,12 @@ def generic_test_etag_functionality(
     assert put_resp2.json()['splash_md'] == get_resp3.json()['splash_md'], f'{put_resp2.json()["splash_md"]} is not {get_resp3.json()["splash_md"]}'
 
 
-
-
 # Utility function for asserting that dicts are equal, excluding specific keys
 # https://stackoverflow.com/questions/10480806/compare-dictionaries-ignoring-specific-keys
-def equal_dicts(d1, d2, ignore_keys=[]):
+def equal_dicts(d1, d2, ignore_keys=[], return_value=False):
     d1_filtered = {k: v for k, v in d1.items() if k not in ignore_keys}
     d2_filtered = {k: v for k, v in d2.items() if k not in ignore_keys}
-    assert d1_filtered == d2_filtered, f"{d1_filtered} does not equal {d2_filtered}"
+    if return_value is False:
+        assert d1_filtered == d2_filtered, f"{d1_filtered} does not equal {d2_filtered}"
+        return
+    return d1_filtered == d2_filtered

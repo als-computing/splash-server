@@ -160,7 +160,7 @@ def test_etag_functionality(
 
 def test_retrieve_by_DOI(api_url_root, splash_client, token_header):
     url_path = api_url_root + "/references"
-    post_resp1 = create_resource(api_url_root,splash_client, token_header, reference_5)
+    post_resp1 = create_resource(api_url_root, splash_client, token_header, reference_5)
     assert (
         post_resp1.status_code == 200
     ), f"{post_resp1.status_code}: response is {post_resp1.content}"
@@ -185,6 +185,28 @@ def test_retrieve_by_DOI(api_url_root, splash_client, token_header):
     assert any(post_resp2.json()['uid'] == page['uid'] for page in get_resp2.json())
     assert any(post_resp1.json()['uid'] == page['uid'] for page in get_resp2.json())
     assert len(get_resp2.json()) == 2
+
+@pytest.mark.skip(reason="mongomock does not do case insensitive collation yet")
+def test_case_insensitivity(api_url_root, splash_client, token_header):
+    url_path = api_url_root + "/references"
+    post_resp1 = create_resource(api_url_root, splash_client, token_header, reference_8)
+    assert (
+        post_resp1.status_code == 200
+    ), f"{post_resp1.status_code}: response is {post_resp1.content}"
+
+    post_resp2 = create_resource(api_url_root, splash_client, token_header, reference_9)
+    assert (
+        post_resp2.status_code == 200
+    ), f"{post_resp2.status_code}: response is {post_resp2.content}"
+
+    get_resp = splash_client.get(
+        url_path + "/doi/" + reference_8["DOI"], headers=token_header
+    )
+    assert get_resp.status_code == 200
+    assert len(get_resp.json()) == 2
+    
+    assert any(equal_dicts(reference_8, page, ignore_keys=["uid", "splash_md"], return_value=True) for page in get_resp.json())
+    assert any(equal_dicts(reference_9, page, ignore_keys=["uid", "splash_md"], return_value=True) for page in get_resp.json())
 
 
 reference_1 = {
@@ -252,4 +274,14 @@ reference_7 = {
         {"family": "Baggins", "given": "Bilbo"},
     ],
     "origin_url": "https://data.crossref.org/10.5406/jfilmvideo.67.3-4.0079",
+}
+
+reference_8 = {
+    "DOI": "10.rrr/rrr",
+    "title": "Test8",
+}
+
+reference_9 = {
+    "title": "Test9",
+    "DOI": "10.RRR/RRR"
 }
