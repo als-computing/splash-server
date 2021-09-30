@@ -50,7 +50,7 @@ def generic_test_api_crud(sample_new_object, url_path, splash_client, token_head
         response.status_code == 200
     ), f"{response.status_code}: response is {response.content}"
 
-    assert post_resp.json()["splash_md"] == response.json()["splash_md"]
+    assert post_resp.json()["splash_md"] == response.json()["splash_md"], f'{post_resp.json()["splash_md"]} is not {response.json()["splash_md"]}'
     # TODO: TEST put api
 
     # response = splash_client.put(url_path + '/' + new_uid, data=json.dumps(sample_new_object), headers=token_header)

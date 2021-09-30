@@ -1,6 +1,8 @@
 from collections import namedtuple
 import logging
-from splash.service.models import SplashMetadata
+
+from pydantic.main import BaseModel
+from splash.service.models import SplashMetadata, VersionedSplashMetadata
 import uuid
 from datetime import datetime
 from splash.users import User
@@ -12,6 +14,52 @@ from pymongo import ASCENDING
 ValidationIssue = namedtuple("ValidationIssue", "description, location, exception")
 
 logger = logging.getLogger("splash.service")
+
+
+def check_for_fields(model: BaseModel, data: dict):
+    model_fields = model.__dict__["__fields__"]
+    for field in model_fields:
+        if field in data["splash_md"]:
+            return field
+    return None
+
+
+# This is a decorator which ensures that none of fields in SplashMetadata
+# Are being modified. We only want these fields to be modified by MongoService
+# It also ensures that the uid is not being modified
+def validate_base_metadata(func):
+    def wrapper(self, current_user: User, data: dict, *args, **kwargs):
+        if "uid" in data:
+            raise UidInDictError("Document should not have uid field")
+
+        if "splash_md" not in data:
+            return func(self, current_user, data, *args, **kwargs)
+            # The top layer that called this cannot mutate
+            # any of these fields. They should only be mutated by
+            # the service layer that uses this decorator or a lower one
+        field = check_for_fields(SplashMetadata, data)
+        if field is not None:
+            raise ImmutableMetadataField(f"Cannot mutate field: `{field}` in `splash_md`")
+
+        return func(self, current_user, data, *args, **kwargs)
+
+    return wrapper
+
+
+# This is a decorator which ensures that none of the fields in VersionedSplashMetadata
+# are being modified.
+def validate_versioned_metadata(func):
+    def wrapper(self, current_user: User, data: dict, *args, **kwargs):
+
+        if "splash_md" not in data:
+            return func(self, current_user, data, *args, **kwargs)
+
+        field = check_for_fields(VersionedSplashMetadata, data)
+        if field is not None:
+            raise ImmutableMetadataField(f"Cannot mutate field: `{field}` in `splash_md`")
+        return func(self, current_user, data, *args, **kwargs)
+
+    return wrapper
 
 
 class BadPageArgument(Exception):
@@ -46,24 +94,19 @@ class MongoService:
     def _create_indexes(self):
         uid_unique_index = IndexModel("uid", unique=True)
         creator_index = IndexModel("splash_md.creator")
-        sort_index = IndexModel([("splash_md.last_edit", DESCENDING), ("uid", DESCENDING)])
+        sort_index = IndexModel(
+            [("splash_md.last_edit", DESCENDING), ("uid", DESCENDING)]
+        )
         self._collection.create_indexes([uid_unique_index, creator_index, sort_index])
 
+    @validate_base_metadata
     def create(self, current_user: User, data: dict):
-        if "uid" in data:
-            raise UidInDictError("Document should not have uid field")
         uid = uuid.uuid4()
         data["uid"] = str(uid)
 
         if "splash_md" not in data:
             data["splash_md"] = {}
 
-        basic_md_fields = SplashMetadata.__dict__["__fields__"]
-        for field in basic_md_fields:
-            if field in data["splash_md"]:
-                raise ImmutableMetadataField(
-                    f"Cannot mutate field: `{field}` in `splash_md`"
-                )
         # remove the microsecond because mongo will truncate past a certain amount of decimal places
         data["splash_md"]["create_date"] = datetime.utcnow().replace(microsecond=0)
         data["splash_md"]["last_edit"] = data["splash_md"]["create_date"]
@@ -111,6 +154,7 @@ class MongoService:
             cursor.sort(sort).collation(Collation("en_US")).skip(skips).limit(page_size)
         )
 
+    @validate_base_metadata
     def update(self, current_user: User, data: dict, uid: str, etag=None):
         data["uid"] = uid
 
@@ -131,16 +175,8 @@ class MongoService:
             # If the top layer is also sending in metadata
             # then we want to merge it with the metadata already in the
             # document
-            basic_md_fields = SplashMetadata.__dict__["__fields__"]
-            for field in basic_md_fields:
-                # The top layer that called this cannot mutate
-                # any of these fields. They should only be mutated by
-                # this service layer
-                if field in data["splash_md"]:
-                    raise ImmutableMetadataField(
-                        f"Cannot mutate field: `{field}` in `splash_md`"
-                    )
-                data["splash_md"][field] = metadata[field]
+            metadata.update(data["splash_md"])
+            data["splash_md"] = metadata
         # Update the edit_record array and last edit timestamp
         # remove the microsecond because mongo will truncate past a certain amount of decimal places
         data["splash_md"]["last_edit"] = datetime.utcnow().replace(microsecond=0)
@@ -176,15 +212,10 @@ class VersionedMongoService(MongoService):
         super().__init__(db, collection_name)
         self._versions_svc = HistoricMongoService(db, revisions_collection_name)
 
+    @validate_versioned_metadata
     def update(self, current_user: User, data: dict, uid: str, etag=None):
-        if "splash_md" in data:
-            if "version" in data["splash_md"]:
-                raise ImmutableMetadataField(
-                    "Cannot mutate field: `version` in `splash_md`"
-                )
-        else:
+        if "splash_md" not in data:
             data["splash_md"] = {}
-
         current_document = super().retrieve_one(current_user, uid)
         if current_document is None:
             raise ObjectNotFoundError
@@ -193,13 +224,9 @@ class VersionedMongoService(MongoService):
         self._versions_svc._collection.insert_one(current_document)
         return result
 
+    @validate_versioned_metadata
     def create(self, current_user: User, data: dict):
-        if "splash_md" in data:
-            if "version" in data["splash_md"]:
-                raise ImmutableMetadataField(
-                    "Cannot mutate field: `version` in `splash_md`"
-                )
-        else:
+        if "splash_md" not in data:
             data["splash_md"] = {}
         data["splash_md"]["version"] = 1
         return super().create(current_user, data)
