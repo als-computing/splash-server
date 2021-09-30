@@ -73,6 +73,7 @@ def generic_test_etag_functionality(
         post_resp.status_code == 200
     ), f"{post_resp.status_code}: response is {post_resp.content}"
     assert len(post_resp.json()["splash_md"]["etag"]) > 0
+    post_resp.json()["splash_md"]["etag"] is str
     uid = post_resp.json()["uid"]
 
     get_resp1 = splash_client.get(url_path + "/" + uid, headers=token_header)
@@ -108,6 +109,8 @@ def generic_test_etag_functionality(
     get_resp3 = splash_client.get(url_path + "/" + uid, headers=token_header)
     # Make sure that the document was not changed
     assert get_resp3.json() == get_resp2.json()
+    assert put_resp2.json()['splash_md'] == get_resp3.json()['splash_md'], f'{put_resp2.json()["splash_md"]} is not {get_resp3.json()["splash_md"]}'
+
 
 
 

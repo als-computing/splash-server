@@ -1,8 +1,9 @@
 from collections import namedtuple
 import logging
+from typing import Type
 
 from pydantic.main import BaseModel
-from splash.service.models import SplashMetadata, VersionedSplashMetadata
+from splash.service.models import PrivateSplashMetadata, PrivateVersionedSplashMetadata
 import uuid
 from datetime import datetime
 from splash.users import User
@@ -37,9 +38,11 @@ def validate_base_metadata(func):
             # The top layer that called this cannot mutate
             # any of these fields. They should only be mutated by
             # the service layer that uses this decorator or a lower one
-        field = check_for_fields(SplashMetadata, data)
+        field = check_for_fields(PrivateSplashMetadata, data)
         if field is not None:
-            raise ImmutableMetadataField(f"Cannot mutate field: `{field}` in `splash_md`")
+            raise ImmutableMetadataField(
+                f"Cannot mutate field: `{field}` in `splash_md`"
+            )
 
         return func(self, current_user, data, *args, **kwargs)
 
@@ -54,9 +57,11 @@ def validate_versioned_metadata(func):
         if "splash_md" not in data:
             return func(self, current_user, data, *args, **kwargs)
 
-        field = check_for_fields(VersionedSplashMetadata, data)
+        field = check_for_fields(PrivateVersionedSplashMetadata, data)
         if field is not None:
-            raise ImmutableMetadataField(f"Cannot mutate field: `{field}` in `splash_md`")
+            raise ImmutableMetadataField(
+                f"Cannot mutate field: `{field}` in `splash_md`"
+            )
         return func(self, current_user, data, *args, **kwargs)
 
     return wrapper
@@ -136,17 +141,27 @@ class MongoService:
         # IF YOU WANT TO MAKE SURE IT STAYS CONSISTENT,
         # PLACE A UID AT THE END: https://docs.mongodb.com/manual/reference/method/cursor.sort/#sort-consistency
         sort=[("splash_md.last_edit", DESCENDING), ("uid", DESCENDING)],
+        exclude_archived=True,
     ):
         if type(sort) is not list:
             raise TypeError("`sort` argument must be of type list")
         if page <= 0:
             raise BadPageArgument("Page parameter must greater than 0")
 
+        exclude_archived_query = {
+            "splash_md.archived": {'$ne': True}
+        }
         # Calculate number of documents to skip
         skips = page_size * (page - 1)
-        # Skip and limit
+
         if query is None:
             query = {}
+        elif type(query) is not dict:
+            raise TypeError("`query` argument must be of type dict or None")
+
+        if exclude_archived is True:
+            query = {"$and": [exclude_archived_query, query]}
+
         cursor = self._collection.find(query, {"_id": False})
 
         # Return documents
@@ -159,6 +174,8 @@ class MongoService:
         data["uid"] = uid
 
         current_document = MongoService.retrieve_one(self, current_user, uid)
+        if current_document is None:
+            raise ObjectNotFoundError()
 
         metadata = current_document["splash_md"]
 
@@ -167,6 +184,7 @@ class MongoService:
             raise EtagMismatchError(
                 f"Etag argument `{etag}` does not match current etag: `{ metadata['etag'] }`",
                 metadata["etag"],
+                metadata,
             )
 
         if "splash_md" not in data:
@@ -189,6 +207,35 @@ class MongoService:
         if status.matched_count == 0:
             raise ObjectNotFoundError
         return {"uid": data["uid"], "splash_md": data["splash_md"]}
+
+    def archive_action(self, current_user: User, action: str, uid, etag=None):
+        if action not in ("restore", "archive"):
+            raise ValueError(
+                "third positional argument `action` must match the string 'archive' or 'restore'"
+            )
+        stored_doc = MongoService.retrieve_one(self, current_user, uid)
+        if stored_doc is None:
+            raise ObjectNotFoundError()
+
+        if action == "archive":
+            if "archived" not in stored_doc["splash_md"] or stored_doc["splash_md"][
+                "archived"
+            ] in (False, None):
+                new_doc = stored_doc
+                new_doc["splash_md"] = {"archived": True}
+                new_doc.pop("uid")
+                return MongoService.update(self, current_user, new_doc, uid, etag=etag)
+            raise ArchiveConflictError()
+        if action == "restore":
+            if "archived" in stored_doc["splash_md"] and stored_doc["splash_md"]["archived"] is True:
+                new_doc = stored_doc
+                new_doc["splash_md"] = {"archived": False}
+                new_doc.pop("uid")
+                return MongoService.update(self, current_user, new_doc, uid, etag=etag)
+            raise RestoreConflictError()
+
+    def retrieve_archived(self, current_user: User, page=1, page_size=10):
+        return MongoService.retrieve_multiple(self, current_user, page=page, page_size=page_size, query={'splash_md.archived': True}, exclude_archived=False)
 
     def delete(self, current_user: User, uid):
         status = self._collection.delete_one({"uid": uid})
@@ -284,6 +331,15 @@ class ImmutableMetadataField(KeyError):
 
 
 class EtagMismatchError(ValueError):
-    def __init__(self, message, etag):
+    def __init__(self, message, etag, splash_md):
         self.etag = etag
+        self.splash_md = splash_md
         super().__init__(message, etag)
+
+
+class ArchiveConflictError(Exception):
+    pass
+
+
+class RestoreConflictError(Exception):
+    pass
