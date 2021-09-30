@@ -7,7 +7,7 @@ from splash.service.models import PrivateSplashMetadata, PrivateVersionedSplashM
 import uuid
 from datetime import datetime
 from splash.users import User
-from pymongo.collation import Collation
+from pymongo.collation import Collation, CollationStrength
 from pymongo import DESCENDING, IndexModel
 from pymongo import ASCENDING
 
@@ -142,11 +142,16 @@ class MongoService:
         # PLACE A UID AT THE END: https://docs.mongodb.com/manual/reference/method/cursor.sort/#sort-consistency
         sort=[("splash_md.last_edit", DESCENDING), ("uid", DESCENDING)],
         exclude_archived=True,
+        collation=None,
     ):
         if type(sort) is not list:
             raise TypeError("`sort` argument must be of type list")
         if page <= 0:
             raise BadPageArgument("Page parameter must greater than 0")
+        if collation is None:
+            collation = Collation("en_US")
+        elif type(collation) is not Collation:
+            raise BadCollationArgument("argument `collation` must be of type Collation")
 
         exclude_archived_query = {
             "splash_md.archived": {'$ne': True}
@@ -162,11 +167,11 @@ class MongoService:
         if exclude_archived is True:
             query = {"$and": [exclude_archived_query, query]}
 
-        cursor = self._collection.find(query, {"_id": False})
+        cursor = self._collection.find(query, {"_id": False}, collation=collation)
 
         # Return documents
         return (
-            cursor.sort(sort).collation(Collation("en_US")).skip(skips).limit(page_size)
+            cursor.sort(sort).skip(skips).limit(page_size)
         )
 
     @validate_base_metadata
@@ -342,4 +347,8 @@ class ArchiveConflictError(Exception):
 
 
 class RestoreConflictError(Exception):
+    pass
+
+
+class BadCollationArgument(Exception):
     pass

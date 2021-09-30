@@ -409,7 +409,7 @@ new_page = {
                 in several crops [[4]](#4) .\n - Small, neutral solute\n\t - Boric acid is a small solute, with an \
                 estimated Stokes radius of 1.6 Å [[5]](#5) , compared to 1.8 Å and 1.2 Å for sodium and chloride, \
                 respectively [[6]](#6) .\n\t - The Stokes radius of borate has been estimated as 2.6 Å [[7]](#7) .",
-    "references": [{"doi": "10.XX/XXXX", "in_text": False}],
+    "references": [{"uid": "ffff-ffff-fffff-fffff", "in_text": False}],
 }
 
 empty_string_documentation = {

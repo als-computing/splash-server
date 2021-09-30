@@ -5,7 +5,7 @@ from pydantic import BaseModel, Extra, constr
 
 
 class ReferenceDois(BaseModel):
-    doi: constr(min_length=1)
+    uid: constr(min_length=1)
     in_text: StrictBool
 
 
