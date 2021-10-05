@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.7, 3.8, 3.9]
+        python-version: [3.9]
 
     steps:
     - uses: actions/checkout@v2
@@ -48,8 +48,6 @@ jobs:
       permissions:
         contents: read
         packages: write
-      # Only run when we are pushing to the repo's master branch
-      if: ${{ github.event_name == 'push' }}
       steps:
         - name: Checkout repository
           uses: actions/checkout@v2
