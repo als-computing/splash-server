@@ -40,9 +40,9 @@ def init_logging():
 
 
 app = FastAPI(
-    openapi_url="/api/v1/openapi.json",
-    docs_url="/api/docs",
-    redoc_url="/api/redoc",
+    openapi_url="/splash/api/v1/openapi.json",
+    docs_url="/splash/api/docs",
+    redoc_url="/splash/api/redoc",
     # swagger_ui_oauth2_redirect_url="/api/docs/oauth2-redirect"
 )
 
@@ -81,49 +81,49 @@ async def handle_wrong_etag(response, exc):
     )
 
 
-@app.get("/api/v1/settings")
+@app.get("/splash/api/v1/settings")
 async def get_settings():
     return {"google_client_id": ConfigStore.GOOGLE_CLIENT_ID}
 
 
 app.include_router(
     auth_router,
-    prefix="/api/v1/idtokensignin",
+    prefix="/splash/api/v1/idtokensignin",
     tags=["tokens"],
     responses={404: {"description": "Not found"}},
 )
 
 app.include_router(
     users_router,
-    prefix="/api/v1/users",
+    prefix="/splash/api/v1/users",
     tags=["users"],
     responses={404: {"description": "Not found"}},
 )
 
 app.include_router(
     pages_router,
-    prefix="/api/v1/pages",
+    prefix="/splash/api/v1/pages",
     tags=["pages"],
     responses={404: {"description": "Not found"}},
 )
 
 app.include_router(
     runs_router,
-    prefix="/api/v1/runs",
+    prefix="/splash/api/v1/runs",
     tags=["runs"],
     responses={404: {"description": "Not found"}},
 )
 
 app.include_router(
     teams_router,
-    prefix="/api/v1/teams",
+    prefix="/splash/api/v1/teams",
     tags=["teams"],
     responses={404: {"description": "Not found"}},
 )
 
 app.include_router(
     references_router,
-    prefix="/api/v1/references",
+    prefix="/splash/api/v1/references",
     tags=["references"],
     responses={404: {"description": "Not found"}},
 )
