@@ -21,7 +21,7 @@ from splash.api.auth import create_access_token, set_services as set_auth_servic
 
 
 from splash.api.main import app
-API_URL_ROOT = "/api/v1"
+API_URL_ROOT = "/splash/api/v1"
 os.environ["TOKEN_SECRET_KEY"] = "the_question_to_the_life_the_universe_and_everything"
 os.environ["GOOGLE_CLIENT_ID"] = "Gollum"
 os.environ["GOOGLE_CLIENT_SECRET"] = "the_one_ring"
