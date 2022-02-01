@@ -1,5 +1,4 @@
 from fastapi.param_functions import Header
-from splash.service.models import SplashMetadata
 from attr import dataclass
 from fastapi import APIRouter, Security
 from fastapi.exceptions import HTTPException
@@ -7,7 +6,7 @@ from fastapi.exceptions import HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
 
-from . import User, NewUser
+from . import User, NewUser, UserSplashMd
 from .users_service import UsersService
 
 from splash.api.auth import get_current_user
@@ -29,7 +28,7 @@ def set_users_service(users_service: UsersService):
 
 class CreateUserResponse(BaseModel):
     uid: str
-    splash_md: SplashMetadata
+    splash_md: UserSplashMd
 
 
 @users_router.get("", tags=["users"], response_model=List[User])

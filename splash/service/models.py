@@ -1,6 +1,8 @@
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
+
+from pydantic.main import Extra
 
 
 class EditElement(BaseModel):
@@ -8,7 +10,8 @@ class EditElement(BaseModel):
     user: str
 
 
-class SplashMetadata(BaseModel):
+# This model is for fields that can only be changed by the base mongo service
+class PrivateSplashMetadata(BaseModel):
     creator: str
     create_date: datetime
     last_edit: datetime
@@ -16,8 +19,22 @@ class SplashMetadata(BaseModel):
     etag: str
 
 
-class VersionedSplashMetadata(SplashMetadata):
+class SplashMetadata(PrivateSplashMetadata):
+    archived: Optional[bool] = None
+
+
+class SplashMetadataAllowExtra(SplashMetadata):
+    class Config:
+        extra = Extra.allow
+
+
+# This model is for fields that can only be changed by the base mongo versioned service
+class PrivateVersionedSplashMetadata(BaseModel):
     version: int
+
+
+class VersionedSplashMetadata(SplashMetadata, PrivateVersionedSplashMetadata):
+    pass
 
 
 class CreatedDocument(BaseModel):
@@ -28,3 +45,4 @@ class CreatedDocument(BaseModel):
 class CreatedVersionedDocument(BaseModel):
     uid: str
     splash_md: VersionedSplashMetadata
+

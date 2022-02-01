@@ -50,7 +50,7 @@ def generic_test_api_crud(sample_new_object, url_path, splash_client, token_head
         response.status_code == 200
     ), f"{response.status_code}: response is {response.content}"
 
-    assert post_resp.json()["splash_md"] == response.json()["splash_md"]
+    assert post_resp.json()["splash_md"] == response.json()["splash_md"], f'{post_resp.json()["splash_md"]} is not {response.json()["splash_md"]}'
     # TODO: TEST put api
 
     # response = splash_client.put(url_path + '/' + new_uid, data=json.dumps(sample_new_object), headers=token_header)
@@ -73,6 +73,7 @@ def generic_test_etag_functionality(
         post_resp.status_code == 200
     ), f"{post_resp.status_code}: response is {post_resp.content}"
     assert len(post_resp.json()["splash_md"]["etag"]) > 0
+    post_resp.json()["splash_md"]["etag"] is str
     uid = post_resp.json()["uid"]
 
     get_resp1 = splash_client.get(url_path + "/" + uid, headers=token_header)
@@ -108,12 +109,15 @@ def generic_test_etag_functionality(
     get_resp3 = splash_client.get(url_path + "/" + uid, headers=token_header)
     # Make sure that the document was not changed
     assert get_resp3.json() == get_resp2.json()
-
+    assert put_resp2.json()['splash_md'] == get_resp3.json()['splash_md'], f'{put_resp2.json()["splash_md"]} is not {get_resp3.json()["splash_md"]}'
 
 
 # Utility function for asserting that dicts are equal, excluding specific keys
 # https://stackoverflow.com/questions/10480806/compare-dictionaries-ignoring-specific-keys
-def equal_dicts(d1, d2, ignore_keys=[]):
+def equal_dicts(d1, d2, ignore_keys=[], return_value=False):
     d1_filtered = {k: v for k, v in d1.items() if k not in ignore_keys}
     d2_filtered = {k: v for k, v in d2.items() if k not in ignore_keys}
-    assert d1_filtered == d2_filtered, f"{d1_filtered} does not equal {d2_filtered}"
+    if return_value is False:
+        assert d1_filtered == d2_filtered, f"{d1_filtered} does not equal {d2_filtered}"
+        return
+    return d1_filtered == d2_filtered

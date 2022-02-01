@@ -1,12 +1,15 @@
 import datetime
-from splash.service.models import SplashMetadata
+from splash.service.models import PrivateSplashMetadata
 from splash.test.testing_utils import equal_dicts
 from splash.users import User
 import pytest
 from splash.service.base import (
+    ArchiveConflictError,
     EtagMismatchError,
     MongoService,
     ImmutableMetadataField,
+    ObjectNotFoundError,
+    RestoreConflictError,
 )
 import mongomock
 from freezegun import freeze_time
@@ -122,7 +125,12 @@ def test_order_by_key(mongo_service: MongoService, request_user_1: User, monkeyp
     mongo_service.create(request_user_1, deepcopy(legolas))
     mongo_service.create(request_user_1, deepcopy(galadriel))
     mongo_service.create(request_user_1, deepcopy(elrond))
-    elves = list(mongo_service.retrieve_multiple(request_user_1, sort=[("name", 1)],))
+    elves = list(
+        mongo_service.retrieve_multiple(
+            request_user_1,
+            sort=[("name", 1)],
+        )
+    )
 
     assert len(elves) == 4
     equal_dicts(celebrimbor, elves[0], ignore_keys)
@@ -219,7 +227,7 @@ def test_create_with_good_metadata(mongo_service: MongoService, request_user_1: 
     assert response
 
 
-immutable_fields = SplashMetadata.__dict__["__fields__"]
+immutable_fields = PrivateSplashMetadata.__dict__["__fields__"]
 
 
 def test_create_with_bad_metadata(mongo_service: MongoService, request_user_1: User):
@@ -230,6 +238,26 @@ def test_create_with_bad_metadata(mongo_service: MongoService, request_user_1: U
             match=f"Cannot mutate field: `{field}` in `splash_md`",
         ):
             mongo_service.create(request_user_1, {"splash_md": {field: "test_value"}})
+
+
+def test_update_with_good_metadata(mongo_service: MongoService, request_user_1: User):
+    response = mongo_service.create(request_user_1, {"Mordor": "Mt. Doom"})
+
+    incoming_data = mongo_service.retrieve_one(request_user_1, response["uid"])
+    incoming_data.pop("splash_md")
+    incoming_data["splash_md"] = {"muteable_field": "test"}
+    incoming_data.pop("uid")
+
+    mongo_service.update(request_user_1, deepcopy(incoming_data), response["uid"])
+
+    stored_data = mongo_service.retrieve_one(request_user_1, response["uid"])
+    # Make sure body stayed the same
+    equal_dicts(incoming_data, stored_data, ignore_keys)
+    # Make sure that the field was changed
+    assert (
+        incoming_data["splash_md"]["muteable_field"]
+        == stored_data["splash_md"]["muteable_field"]
+    )
 
 
 def test_update_with_bad_metadata(mongo_service: MongoService, request_user_1: User):
@@ -247,6 +275,14 @@ def test_update_with_bad_metadata(mongo_service: MongoService, request_user_1: U
             )
         assert mongo_service.retrieve_one(request_user_1, response["uid"]) == data
 
+
+def test_update_does_not_exist(mongo_service: MongoService, request_user_1: User):
+    mongo_service.create(
+        request_user_1,
+        deepcopy(celebrimbor),
+    )
+    with pytest.raises(ObjectNotFoundError):
+        mongo_service.update(request_user_1, {}, "uid_does_not_exist")
 
 def test_etag_functionality(mongo_service: MongoService, request_user_1: User):
     response = mongo_service.create(
@@ -270,7 +306,183 @@ def test_etag_functionality(mongo_service: MongoService, request_user_1: User):
         mongo_service.update(request_user_1, deepcopy(celebrimbor_3), uid, etag=etag1)
 
     doc_2 = mongo_service.retrieve_one(request_user_1, uid)
-    assert exc.value.args[0] == f"Etag argument `{etag1}` does not match current etag: `{etag2}`"
+    assert (
+        exc.value.args[0]
+        == f"Etag argument `{etag1}` does not match current etag: `{etag2}`"
+    )
     assert exc.value.etag == etag2
+    assert exc.value.splash_md == document_2['splash_md']
     # make sure no changes were made
     assert doc_2 == document_2
+
+
+# This is to make sure that documents that have None as the value work
+# The same as docs that don't have any 'archived' key
+archived_status_none = {
+    'splash_md': {
+        'archived': None,
+    },
+    'test': 'test'
+}
+
+
+def test_archive_restore(mongo_service: MongoService, request_user_1: User):
+    with freeze_time(mock_times[0], tz_offset=-4, auto_tick_seconds=15):
+        response1 = mongo_service.create(
+            request_user_1,
+            deepcopy(celebrimbor),
+        )
+
+        mongo_service.create(
+            request_user_1,
+            deepcopy(legolas),
+        )
+
+        mongo_service.create(
+            request_user_1,
+            deepcopy(archived_status_none)
+        )
+
+        patch_resp = mongo_service.archive_action(request_user_1, "archive", response1["uid"])
+
+        assert patch_resp == {"uid": response1["uid"], "splash_md": mongo_service.retrieve_one(request_user_1, response1["uid"])["splash_md"]}
+
+        non_archived_docs = list(mongo_service.retrieve_multiple(request_user_1))
+
+        assert len(non_archived_docs) == 2
+        equal_dicts(archived_status_none, non_archived_docs[0], ignore_keys)
+        equal_dicts(legolas, non_archived_docs[1], ignore_keys)
+
+        archived_celebrimbor = mongo_service.retrieve_one(request_user_1, response1["uid"])
+        assert archived_celebrimbor["splash_md"]["archived"] is True
+        equal_dicts(archived_celebrimbor, celebrimbor, ignore_keys)
+
+        patch_resp = mongo_service.archive_action(request_user_1, "restore", response1["uid"])
+        assert patch_resp == {"uid": response1["uid"], "splash_md": mongo_service.retrieve_one(request_user_1, response1["uid"])["splash_md"]}
+
+        non_archived_docs = list(mongo_service.retrieve_multiple(request_user_1))
+
+        assert len(non_archived_docs) == 3
+
+        equal_dicts(non_archived_docs[0], celebrimbor, ignore_keys)
+        assert non_archived_docs[0]["splash_md"]["archived"] is False
+        equal_dicts(non_archived_docs[1], archived_status_none, ignore_keys)
+        equal_dicts(non_archived_docs[2], legolas, ignore_keys)
+
+
+def test_get_archived(mongo_service: MongoService, request_user_1: User):
+    response1 = mongo_service.create(
+        request_user_1,
+        deepcopy(celebrimbor),
+    )
+
+    mongo_service.create(
+        request_user_1,
+        deepcopy(archived_status_none),
+    )
+
+    archived_docs = list(mongo_service.retrieve_archived(request_user_1))
+    assert len(archived_docs) == 0
+
+    mongo_service.archive_action(request_user_1, "archive", response1["uid"])
+    archived_docs = list(mongo_service.retrieve_archived(request_user_1))
+    assert len(archived_docs) == 1
+    equal_dicts(archived_docs[0], celebrimbor, ignore_keys)
+
+    mongo_service.archive_action(request_user_1, "restore", response1["uid"])
+    archived_docs = list(mongo_service.retrieve_archived(request_user_1))
+    assert len(archived_docs) == 0
+
+
+def test_retrieve_multiple_archived_options(mongo_service: MongoService, request_user_1: User):
+    response1 = mongo_service.create(
+        request_user_1,
+        deepcopy(celebrimbor),
+    )
+
+    mongo_service.create(
+        request_user_1,
+        deepcopy(legolas),
+    )
+
+    mongo_service.create(
+        request_user_1,
+        deepcopy(archived_status_none)
+    )
+
+    mongo_service.archive_action(request_user_1, "archive", response1["uid"])
+
+    all_docs = list(mongo_service.retrieve_multiple(request_user_1, exclude_archived=False))
+    assert len(all_docs) == 3
+
+    no_docs = list(mongo_service.retrieve_multiple(request_user_1, query={"name": "Celebrimbor"}))
+    assert len(no_docs) == 0
+
+    celebrimbor_docs = list(mongo_service.retrieve_multiple(request_user_1, query={"name": "Celebrimbor"}, exclude_archived=False))
+    assert len(celebrimbor_docs) == 1
+
+
+def test_archive_action_conflict(mongo_service: MongoService, request_user_1: User):
+    response = mongo_service.create(
+        request_user_1,
+        deepcopy(celebrimbor),
+    )
+
+    with pytest.raises(RestoreConflictError):
+        mongo_service.archive_action(request_user_1, "restore", response["uid"])
+
+    stored = mongo_service.retrieve_one(request_user_1, response["uid"])
+    assert "archived" not in stored["splash_md"]
+
+    mongo_service.archive_action(request_user_1, "archive", response["uid"])
+
+    with pytest.raises(ArchiveConflictError):
+        mongo_service.archive_action(request_user_1, "archive", response["uid"])
+
+    stored = mongo_service.retrieve_one(request_user_1, response["uid"])
+    assert stored["splash_md"]["archived"] is True
+
+    mongo_service.archive_action(request_user_1, "restore", response["uid"])
+
+    with pytest.raises(RestoreConflictError):
+        mongo_service.archive_action(request_user_1, "restore", response["uid"])
+
+    stored = mongo_service.retrieve_one(request_user_1, response["uid"])
+    assert stored["splash_md"]["archived"] is False
+
+
+def test_bad_archive_action(mongo_service: MongoService, request_user_1: User):
+    response = mongo_service.create(
+        request_user_1,
+        deepcopy(celebrimbor),
+    )
+    with pytest.raises(ValueError, match="third positional argument `action` must match the string 'archive' or 'restore'"):
+        mongo_service.archive_action(request_user_1, "bad_action", response["uid"])
+
+
+def test_archive_and_restore_does_not_exist(mongo_service: MongoService, request_user_1: User):
+    mongo_service.create(
+        request_user_1,
+        deepcopy(celebrimbor),
+    )
+    with pytest.raises(ObjectNotFoundError):
+        mongo_service.archive_action(request_user_1, 'archive', "uid_does_not_exist")
+
+    with pytest.raises(ObjectNotFoundError):
+        mongo_service.archive_action(request_user_1, 'restore', "uid_does_not_exist")
+
+
+def test_archive_and_restore_etag(mongo_service: MongoService, request_user_1: User):
+    response = mongo_service.create(
+        request_user_1,
+        deepcopy(celebrimbor),
+    )
+    with pytest.raises(EtagMismatchError):
+        mongo_service.archive_action(request_user_1, 'archive', response["uid"], etag="bad_etag")
+
+    response = mongo_service.archive_action(request_user_1, 'archive', response["uid"], etag=response['splash_md']['etag'])
+
+    with pytest.raises(EtagMismatchError):
+        mongo_service.archive_action(request_user_1, 'restore', response["uid"], etag="bad_etag")
+
+    mongo_service.archive_action(request_user_1, 'restore', response["uid"], etag=response['splash_md']['etag'])

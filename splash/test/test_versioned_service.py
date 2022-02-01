@@ -48,13 +48,14 @@ def test_versioned_update(versioned_service: VersionedMongoService, request_user
         )
 
     response = versioned_service.create(
-        request_user, {"name": "Celebrimbor", "Occupation": "Ringmaker"}
+        request_user, {"splash_md": {"test": "test"}, "name": "Celebrimbor", "Occupation": "Ringmaker"}
     )
     uid = response["uid"]
 
     document_1 = versioned_service.retrieve_one(request_user, uid)
     assert document_1["uid"] == uid
     assert document_1["splash_md"]["version"] == 1
+    assert document_1["splash_md"]["test"] == "test"
     assert document_1["name"] == "Celebrimbor"
     assert document_1["Occupation"] == "Ringmaker"
     assert document_1["splash_md"] == response["splash_md"]
